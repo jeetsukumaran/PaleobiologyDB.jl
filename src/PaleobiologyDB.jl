@@ -227,7 +227,7 @@ end
 
 """ Autocomplete: list of taxonomic names matching a prefix/partial name. """
 function pbdb_taxa_auto(; kwargs...)
-    return pbdb_query("taxa/auto"; kwargs...)
+    return pbdb_query("taxa/auto"; format=:json, kwargs...)
 end
 
 # Intervals & scales ----------------------------------------------------------
@@ -261,7 +261,7 @@ end
 
 """ Autocomplete: list of strata matching a prefix/partial name. """
 function pbdb_strata_auto(; kwargs...)
-    return pbdb_query("strata/auto"; kwargs...)
+    return pbdb_query("strata/auto"; format=:json, kwargs...)
 end
 
 # References ------------------------------------------------------------------
