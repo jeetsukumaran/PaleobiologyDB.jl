@@ -13,7 +13,7 @@ Until the package is registered, install directly from the repository:
 
 ```julia
 using Pkg
-Pkg.add(url="https://github.com/username/PaleobiologyDB.jl")
+Pkg.add(url="https://github.com/jeetsukumaran/PaleobiologyDB.jl")
 ````
 
 ## Quick start
