@@ -212,6 +212,10 @@ function pbdb_collections_geo(level; kwargs...)
     isnothing(level) && error("Parameter `level` is required (see PBDB config clusters)")
     return pbdb_query("colls/summary"; level=level, kwargs...)
 end
+function pbdb_collections_geo(; level, kwargs...)
+    isnothing(level) && error("Parameter `level` is required (see PBDB config clusters)")
+    return pbdb_query("colls/summary"; level=level, kwargs...)
+end
 
 # Taxa ------------------------------------------------------------------------
 
