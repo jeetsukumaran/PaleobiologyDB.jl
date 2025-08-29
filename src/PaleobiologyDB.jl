@@ -24,8 +24,6 @@ coll = pbdb_collection(1003; show=["loc", "stratext"])
 clusters = pbdb_collections_geo(2; lngmin=0, lngmax=15, latmin=45, latmax=55)
 ```
 
-# Acknowledgements
-Function names mirror PBDB API endpoints; implementation is independent of the R client.
 """
 
 module PaleobiologyDB
