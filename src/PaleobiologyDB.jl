@@ -67,29 +67,27 @@ const _FORMAT_SUFFIX = Dict(
 
 const _TEXT_DELIM = Dict(
     :csv => ',',
-    :tsv => '	',
+    :tsv => '\t',
     :txt => ',', # PBDB's .txt is comma-separated
 )
 
 pbdb_version() = _PBDB_VERSION
 
-# Normalize a value for URL query: vectors -> comma-separated, Bool -> true/false
+# Normalize a value for URL query
 _joinvals(v) = v isa AbstractVector ? join(string.(v), ",") : v isa Bool ? (v ? "true" : "false") : string(v)
 
-# Build full URL for an endpoint with query parameters and chosen format
+# Build full URL
 function _build_url(endpoint::AbstractString; base_url::AbstractString=DEFAULT_BASE_URL,
                     format::Symbol=:csv, query::Dict{String,<:Any}=Dict{String,Any}())
     suffix = get(_FORMAT_SUFFIX, format) do
-        error("Unsupported format: $format. Use one of $(collect(keys(_FORMAT_SUFFIX))).")
+        error("Unsupported format: $format")
     end
 
-    # Merge-in default vocabulary for text responses if user didn't provide one
     if format in (:csv, :tsv, :txt) && !haskey(query, "vocab")
         query = copy(query)
         query["vocab"] = "pbdb"
     end
 
-    # Assemble query string
     pairs = String[]
     for (k, v) in query
         push!(pairs, string(HTTP.escapeuri(k), '=', HTTP.escapeuri(_joinvals(v))))
@@ -99,26 +97,20 @@ function _build_url(endpoint::AbstractString; base_url::AbstractString=DEFAULT_B
     return string(base_url, endpoint, suffix, qs)
 end
 
-# Parse PBDB JSON (records array) into a DataFrame
+# Parse PBDB JSON into DataFrame
 function _json_to_df(body::Vector{UInt8})
     obj = JSON3.read(body)
     if hasproperty(obj, :error)
-        msg = try
-            String(obj.error)
-        catch
-            "PBDB returned an error"
-        end
-        error(msg)
+        error(String(obj.error))
     end
     if hasproperty(obj, :records)
-        recs = obj.records
-        return DataFrame(recs)  # handles missing fields automatically
+        return DataFrame(obj.records)
     else
         return DataFrame([obj])
     end
 end
 
-# GET with simple retries
+# GET with retries
 function _get(url::AbstractString; headers=Dict{String,String}(), readtimeout::Integer=60, retries::Int=3)
     last_err = nothing
     for attempt in 1:retries
@@ -137,12 +129,12 @@ function _get(url::AbstractString; headers=Dict{String,String}(), readtimeout::I
 end
 
 # Core request -> DataFrame
-function _fetch_df(url::AbstractString; format::Symbol=:csv)
+function _fetch_df(url::AbstractString; format::Symbol=:csv, readtimeout::Integer=60, retries::Int=3)
     if format == :json
-        resp = _get(url; headers=Dict("Accept" => "application/json"))
+        resp = _get(url; headers=Dict("Accept" => "application/json"), readtimeout=readtimeout, retries=retries)
         return _json_to_df(resp.body)
     elseif format in keys(_TEXT_DELIM)
-        resp = _get(url; headers=Dict("Accept" => "text/plain, text/csv"))
+        resp = _get(url; headers=Dict("Accept" => "text/plain, text/csv"), readtimeout=readtimeout, retries=retries)
         io = IOBuffer(resp.body)
         return DataFrame(CSV.File(io; normalizenames=true, ignorerepeated=true, delim=_TEXT_DELIM[format]))
     else
@@ -150,189 +142,65 @@ function _fetch_df(url::AbstractString; format::Symbol=:csv)
     end
 end
 
-# Public: central query function ---------------------------------------------
-
-"""
-    pbdb_query(endpoint::AbstractString; format::Symbol=:csv, base_url::AbstractString=DEFAULT_BASE_URL, kwargs...)
-
-Low-level function that sends a request to a PBDB endpoint and returns a `DataFrame`.
-
-- `endpoint`: path like `"occs/list"`, `"taxa/single"`, etc.
-- `format`: one of `:csv` (default), `:tsv`, `:txt`, or `:json`.
-- `base_url`: override host/version if needed.
-- `kwargs...`: keyword arguments turned into query parameters. Values may be
-  scalars or vectors (vectors become comma-separated lists). Bools become `true`/`false`.
-
-Notes:
-- For text formats, `vocab="pbdb"` is added by default if not provided.
-- JSON responses use PBDB's JSON schema and are converted from the `records` array.
-"""
-function pbdb_query(endpoint::AbstractString; format::Symbol=:csv, base_url::AbstractString=DEFAULT_BASE_URL, kwargs...)
+# Public: central query function
+function pbdb_query(endpoint::AbstractString;
+                    format::Symbol=:csv,
+                    base_url::AbstractString=DEFAULT_BASE_URL,
+                    readtimeout::Integer=60,
+                    retries::Int=3,
+                    kwargs...)
     q = Dict{String,Any}()
     for (k,v) in pairs(kwargs)
         q[string(k)] = v
     end
     url = _build_url(endpoint; base_url=base_url, format=format, query=q)
-    return _fetch_df(url; format=format)
+    return _fetch_df(url; format=format, readtimeout=readtimeout, retries=retries)
 end
 
-# --- Thin, idiomatic wrappers (keywords mirror PBDB) ------------------------
+# --- Wrappers ---------------------------------------------------------------
 
-# Occurrences -----------------------------------------------------------------
+pbdb_occurrence(id::Union{Integer,AbstractString}; kwargs...) =
+    pbdb_query("occs/single"; id=id, kwargs...)
 
-""" Get information about a single occurrence record. """
-function pbdb_occurrence(id; kwargs...)
-    return pbdb_query("occs/single"; id=id, kwargs...)
-end
+pbdb_occurrences(; kwargs...) = pbdb_query("occs/list"; kwargs...)
+pbdb_ref_occurrences(; kwargs...) = pbdb_query("occs/refs"; kwargs...)
 
-""" Get information about fossil occurrence records. """
-function pbdb_occurrences(; kwargs...)
-    return pbdb_query("occs/list"; kwargs...)
-end
+pbdb_collection(id::Union{Integer,AbstractString}; kwargs...) =
+    pbdb_query("colls/single"; id=id, kwargs...)
 
-""" Get references associated with fossil occurrences. """
-function pbdb_ref_occurrences(; kwargs...)
-    return pbdb_query("occs/refs"; kwargs...)
-end
+pbdb_collections(; kwargs...) = pbdb_query("colls/list"; kwargs...)
+pbdb_collections_geo(level::Union{Integer,AbstractString}; kwargs...) =
+    pbdb_query("colls/summary"; level=level, kwargs...)
 
-# Collections -----------------------------------------------------------------
+pbdb_taxon(; kwargs...) = pbdb_query("taxa/single"; kwargs...)
+pbdb_taxa(; kwargs...) = pbdb_query("taxa/list"; kwargs...)
+pbdb_taxa_auto(; kwargs...) = pbdb_query("taxa/auto"; format=:json, kwargs...)
 
-""" Get information about a single collection record. """
-function pbdb_collection(id; kwargs...)
-    return pbdb_query("colls/single"; id=id, kwargs...)
-end
+pbdb_interval(; kwargs...) = pbdb_query("intervals/single"; kwargs...)
+pbdb_intervals(; kwargs...) = pbdb_query("intervals/list"; kwargs...)
+pbdb_scale(id::Union{Integer,AbstractString}; kwargs...) =
+    pbdb_query("scales/single"; id=id, kwargs...)
+pbdb_scales(; kwargs...) = pbdb_query("scales/list"; kwargs...)
 
-""" Get information about multiple collections. """
-function pbdb_collections(; kwargs...)
-    return pbdb_query("colls/list"; kwargs...)
-end
+pbdb_strata(; kwargs...) = pbdb_query("strata/list"; kwargs...)
+pbdb_strata_auto(; kwargs...) = pbdb_query("strata/auto"; format=:json, kwargs...)
 
-""" Geographic clusters (summary) of collections. `level` is required. """
-function pbdb_collections_geo(level; kwargs...)
-    isnothing(level) && error("Parameter `level` is required (see PBDB config clusters)")
-    return pbdb_query("colls/summary"; level=level, kwargs...)
-end
-function pbdb_collections_geo(; level, kwargs...)
-    isnothing(level) && error("Parameter `level` is required (see PBDB config clusters)")
-    return pbdb_query("colls/summary"; level=level, kwargs...)
-end
+pbdb_reference(id::Union{Integer,AbstractString}; kwargs...) =
+    pbdb_query("refs/single"; id=id, kwargs...)
+pbdb_references(; kwargs...) = pbdb_query("refs/list"; kwargs...)
+pbdb_ref_collections(; kwargs...) = pbdb_query("colls/refs"; kwargs...)
+pbdb_ref_taxa(; kwargs...) = pbdb_query("taxa/refs"; kwargs...)
 
-# Taxa ------------------------------------------------------------------------
+pbdb_specimen(id::Union{Integer,AbstractString}; kwargs...) =
+    pbdb_query("specs/single"; id=id, kwargs...)
+pbdb_specimens(; kwargs...) = pbdb_query("specs/list"; kwargs...)
+pbdb_ref_specimens(; kwargs...) = pbdb_query("specs/refs"; kwargs...)
+pbdb_measurements(; kwargs...) = pbdb_query("specs/measurements"; kwargs...)
 
-""" Get information about a single taxonomic name (by `name` or `id`). """
-function pbdb_taxon(; kwargs...)
-    return pbdb_query("taxa/single"; kwargs...)
-end
-
-""" Get information about multiple taxonomic names. """
-function pbdb_taxa(; kwargs...)
-    return pbdb_query("taxa/list"; kwargs...)
-end
-
-""" Autocomplete: list of taxonomic names matching a prefix/partial name. """
-function pbdb_taxa_auto(; kwargs...)
-    return pbdb_query("taxa/auto"; format=:json, kwargs...)
-end
-
-# Intervals & scales ----------------------------------------------------------
-
-""" Get information about a single interval (by `name` or `id`). """
-function pbdb_interval(; kwargs...)
-    return pbdb_query("intervals/single"; kwargs...)
-end
-
-""" Get information about multiple intervals. """
-function pbdb_intervals(; kwargs...)
-    return pbdb_query("intervals/list"; kwargs...)
-end
-
-""" Get information about a single time scale. """
-function pbdb_scale(id; kwargs...)
-    return pbdb_query("scales/single"; id=id, kwargs...)
-end
-
-""" Get information about multiple time scales. """
-function pbdb_scales(; kwargs...)
-    return pbdb_query("scales/list"; kwargs...)
-end
-
-# Strata ----------------------------------------------------------------------
-
-""" Get information about geological strata. """
-function pbdb_strata(; kwargs...)
-    return pbdb_query("strata/list"; kwargs...)
-end
-
-""" Autocomplete: list of strata matching a prefix/partial name. """
-function pbdb_strata_auto(; kwargs...)
-    return pbdb_query("strata/auto"; format=:json, kwargs...)
-end
-
-# References ------------------------------------------------------------------
-
-""" Get information about a single reference. """
-function pbdb_reference(id; kwargs...)
-    return pbdb_query("refs/single"; id=id, kwargs...)
-end
-
-""" Get information about multiple references. """
-function pbdb_references(; kwargs...)
-    return pbdb_query("refs/list"; kwargs...)
-end
-
-""" Get references from which collection data were entered. """
-function pbdb_ref_collections(; kwargs...)
-    return pbdb_query("colls/refs"; kwargs...)
-end
-
-""" Get references for taxonomic names. """
-function pbdb_ref_taxa(; kwargs...)
-    return pbdb_query("taxa/refs"; kwargs...)
-end
-
-# Specimens & measurements -----------------------------------------------------
-
-""" Get information about a single fossil specimen. """
-function pbdb_specimen(id; kwargs...)
-    return pbdb_query("specs/single"; id=id, kwargs...)
-end
-
-""" Get information about multiple fossil specimens. """
-function pbdb_specimens(; kwargs...)
-    return pbdb_query("specs/list"; kwargs...)
-end
-
-""" Get references for fossil specimens. """
-function pbdb_ref_specimens(; kwargs...)
-    return pbdb_query("specs/refs"; kwargs...)
-end
-
-""" Get information about specimen measurements. """
-function pbdb_measurements(; kwargs...)
-    return pbdb_query("specs/measurements"; kwargs...)
-end
-
-# Opinions --------------------------------------------------------------------
-
-""" Get information about a single taxonomic opinion. """
-function pbdb_opinion(id; kwargs...)
-    return pbdb_query("opinions/single"; id=id, kwargs...)
-end
-
-""" Get information about multiple taxonomic opinions. """
-function pbdb_opinions(; kwargs...)
-    return pbdb_query("opinions/list"; kwargs...)
-end
-
-""" Get taxonomic opinions about taxa. """
-function pbdb_opinions_taxa(; kwargs...)
-    return pbdb_query("taxa/opinions"; kwargs...)
-end
-
-# --- Examples (commented) ----------------------------------------------------
-
-# using .PaleobiologyDB
-# df = pbdb_occurrences(base_name="Canidae", interval="Quaternary", show=["coords","classext","ident"], limit="all")
-# first(df, 5)
+pbdb_opinion(id::Union{Integer,AbstractString}; kwargs...) =
+    pbdb_query("opinions/single"; id=id, kwargs...)
+pbdb_opinions(; kwargs...) = pbdb_query("opinions/list"; kwargs...)
+pbdb_opinions_taxa(; kwargs...) = pbdb_query("taxa/opinions"; kwargs...)
 
 end # module
+
