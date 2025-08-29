@@ -237,7 +237,7 @@ If you use PaleobiologyDB.jl in your research, please cite both this package and
 
 ## Acknowledgments
 
-- General design API endpoint design following the [paleobioDB R package](https://cran.r-project.org/web/packages/paleobioDB/index.html).
+- API endpoint design following the [paleobioDB R package](https://cran.r-project.org/web/packages/paleobioDB/index.html).
 - The [Paleobiology Database](https://paleobiodb.org/) for providing the data and API
 - Julia community packages: JSON3.jl, HTTP.jl, DataFrames.jl, CSV.jl, URIs.jl
 - The [Julia Community](https://julialang.org/community/)!
