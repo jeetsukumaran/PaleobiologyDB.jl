@@ -1,1 +1,207 @@
+# =====================================
+# Quarto: output directories and formats
+# =====================================
+
+# Temporary artifacts of the Quarto rendering process
+.quarto/
+
+# Default output directory for Quarto websites
+_artifacts/
+_site/
+_book/
+
+# Quarto output cruft
+**/*_files/**
+*/_imagify/**
+
+# Computing environments
+**/.CondaPkg/**
+
+# Common Quarto rendered output formats (when not outputting to _site/)
+*.html
+*.pdf
+*.docx
+*.epub
+
+# Knitted markdown intermediates
+*.knit.md
+*.utf8.md
+
+# Other
+.bkp
+
+# Quarto Wiley NJD extensions
+# Fonts/
+# *.STY
+# *.sty
+# *.cls
+# *.pag
+# *.pdf.md
+# *.bst
+# ms.tex
+
+# =====================================
+# Quarto: notebook, cache, and runtime
+# =====================================
+
+# Quarto runtime cache
+.cache/
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Quarto publish metadata
+*.quarto-publish
+
+# =====================================
+# Office artifacts
+# =====================================
+
+*.~lock.*#
+
+
+# =====================================
+# Programming language artifacts
+# =====================================
+
+# ------- Python -------
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.ipynb
+
+# Virtual environments
+.env/
+.venv/
+venv/
+ENV/
+env/
+
+# Conda environment folders (if created locally)
+*.conda
+*.egg-info/
+
+# Pipenv, poetry, or other tools
+Pipfile.lock
+poetry.lock
+
+# ------- R -------
+.Rhistory
+.RData
+.Ruserdata
+.Rproj.user/
+
+# Renviron (local configuration file)
+.Renviron
+
+# ------- Julia -------
+
+# Julia package development
 /Manifest*.toml
+
+# Julia compiled packages (cache)
+.julia/compiled/
+
+# Julia package installations (optional to ignore)
+.julia/packages/
+.julia/environments/
+
+# Julia REPL command history (optional)
+.julia/logs/repl_history.jl
+
+# IMPORTANT: Keep Julia project and environment files
+# These are essential for reproducibility
+# DO NOT IGNORE:
+#   Project.toml
+#   Manifest.toml
+
+# =====================================
+# Editor / IDE-specific files
+# =====================================
+
+# VS Code
+.vscode/
+
+# Vim / Neovim
+*.swp
+*.swo
+*.swn
+.session
+
+# Emacs
+*~
+\#*\#
+.\#*
+
+# Obsidian
+
+**/.obsidian/**
+**/.obsidian/workspace.json
+**/.obsidian/workspaces.json
+**/.obsidian/workspace-mobile.json
+**/.obsidian/plugins/obsidian-pandoc-reference-list/data.json
+**/.obsidian/plugins/recent-files-obsidian/data.json
+
+# JetBrains IDEs
+.idea/
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# =====================================
+# OS / Desktop / Miscellaneous
+# =====================================
+
+# macOS metadata
+.DS_Store
+
+# Windows thumbnail database
+Thumbs.db
+
+# Linux trash folder
+.Trash-*
+
+# Logs and temporary files
+*.log
+*.tmp
+*.bak
+*.aux
+*.out
+*.toc
+
+# =====================================
+# Build system / deployment
+# =====================================
+
+# Generic build outputs
+build/
+dist/
+
+# If using Quarto to render to `docs/` for GitHub Pages, DO NOT ignore it:
+# Uncomment the next line only if docs/ is NOT your Quarto output directory.
+# docs/
+
+# Netlify deploy previews
+.netlify/
+
+# =====================================
+# GitHub and CI
+# =====================================
+
+# GitHub Actions temp data
+.github/workflows/*.log
+
+# Coverage reports
+coverage/
+*.lcov
+
+# =====================================
+# Manual inclusion overrides
+# =====================================
+
+# !docs/  ← Uncomment this to *include* `docs/` if Quarto outputs there
+
+
+/.quarto/
