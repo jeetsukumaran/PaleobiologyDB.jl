@@ -496,105 +496,528 @@ function pbdb_taxa_auto(; kwargs...)
 end
 
 
+# # Intervals & scales ----------------------------------------------------------
+
+# """ Get information about a single interval (by `name` or `id`). """
+# function pbdb_interval(; kwargs...)
+#     return pbdb_query("intervals/single"; kwargs...)
+# end
+
+# """ Get information about multiple intervals. """
+# function pbdb_intervals(; kwargs...)
+#     return pbdb_query("intervals/list"; kwargs...)
+# end
+
+# """ Get information about a single time scale. """
+# function pbdb_scale(id; kwargs...)
+#     return pbdb_query("scales/single"; id=id, kwargs...)
+# end
+
+# """ Get information about multiple time scales. """
+# function pbdb_scales(; kwargs...)
+#     return pbdb_query("scales/list"; kwargs...)
+# end
+
+# # Strata ----------------------------------------------------------------------
+
+# """ Get information about geological strata. """
+# function pbdb_strata(; kwargs...)
+#     return pbdb_query("strata/list"; kwargs...)
+# end
+
+# """ Autocomplete: list of strata matching a prefix/partial name. """
+# function pbdb_strata_auto(; kwargs...)
+#     return pbdb_query("strata/auto"; format=:json, kwargs...)
+# end
+
+# # References ------------------------------------------------------------------
+
+# """ Get information about a single reference. """
+# function pbdb_reference(id; kwargs...)
+#     return pbdb_query("refs/single"; id=id, kwargs...)
+# end
+
+# """ Get information about multiple references. """
+# function pbdb_references(; kwargs...)
+#     return pbdb_query("refs/list"; kwargs...)
+# end
+
+# """ Get references from which collection data were entered. """
+# function pbdb_ref_collections(; kwargs...)
+#     return pbdb_query("colls/refs"; kwargs...)
+# end
+
+# """ Get references for taxonomic names. """
+# function pbdb_ref_taxa(; kwargs...)
+#     return pbdb_query("taxa/refs"; kwargs...)
+# end
+
+
 # Intervals & scales ----------------------------------------------------------
 
-""" Get information about a single interval (by `name` or `id`). """
+"""
+    pbdb_interval(; kwargs...)
+
+Get information about a single geologic time interval, selected by `name` or `id`.
+
+# Arguments
+- `kwargs...`: One of the following must be provided (but not both):
+  - `name`: Interval name (e.g. "Miocene").
+  - `id`: PBDB interval identifier.
+  Additional options:
+  - `vocab`: Set to "pbdb" to return full field names (default for text formats).
+  - `order`: Return the interval in a specific order (rarely used here; see PBDB docs).
+
+# Returns
+A `DataFrame` describing the selected interval.
+
+# Examples
+```julia
+pbdb_interval(name="Miocene")
+pbdb_interval(id=1; vocab="pbdb")
+```
+"""
 function pbdb_interval(; kwargs...)
     return pbdb_query("intervals/single"; kwargs...)
 end
 
-""" Get information about multiple intervals. """
+"""
+    pbdb_intervals(; kwargs...)
+
+Get information about multiple geologic time intervals.
+
+# Arguments
+- `kwargs...`: Filtering and output parameters. Common options include:
+  - `min_ma`: Return only intervals at least this old (Ma).
+  - `max_ma`: Return only intervals at most this old (Ma).
+  - `order`: Return intervals in the requested order (e.g. "age" or "name").
+  - `vocab`: Field naming vocabulary ("pbdb" for full names).
+
+# Returns
+A `DataFrame` with the selected intervals.
+
+# Examples
+```julia
+pbdb_intervals(min_ma=0, max_ma=5; vocab="pbdb")
+```
+"""
 function pbdb_intervals(; kwargs...)
     return pbdb_query("intervals/list"; kwargs...)
 end
 
-""" Get information about a single time scale. """
+"""
+    pbdb_scale(id; kwargs...)
+
+Get information about a single time scale, selected by identifier.
+
+# Arguments
+- `id`: PBDB scale identifier (required).
+- `kwargs...`: Additional parameters, e.g.:
+  - `vocab`: Set to "pbdb" to return full field names.
+
+# Returns
+A `DataFrame` with information about the requested time scale.
+
+# Examples
+```julia
+pbdb_scale(1)
+pbdb_scale(1; vocab="pbdb")
+```
+"""
 function pbdb_scale(id; kwargs...)
     return pbdb_query("scales/single"; id=id, kwargs...)
 end
 
-""" Get information about multiple time scales. """
+"""
+    pbdb_scales(; kwargs...)
+
+Get information about multiple time scales.
+
+# Arguments
+- `kwargs...`: Optional parameters, e.g.:
+  - `vocab`: Set to "pbdb" to return full field names.
+
+# Returns
+A `DataFrame` listing the requested time scales (or all, if no filter provided).
+
+# Examples
+```julia
+pbdb_scales()
+```
+"""
 function pbdb_scales(; kwargs...)
     return pbdb_query("scales/list"; kwargs...)
 end
 
 # Strata ----------------------------------------------------------------------
 
-""" Get information about geological strata. """
+"""
+    pbdb_strata(; kwargs...)
+
+Get information about geological strata, selected by name, rank, and/or geography.
+
+# Arguments
+- `kwargs...`: Filtering and output parameters. Common options include:
+  - `name`: Full or partial name (wildcards `%` and `_` allowed).
+  - `rank`: One of "formation", "group", or "member".
+  - `lngmin`, `lngmax`, `latmin`, `latmax`: Bounding box (if you provide one of `lngmin`/`latmin`, you must provide the paired max).
+  - `loc`: WKT geometry string to constrain by polygon/geometry.
+  - `vocab`: Set to "pbdb" to return full field names (default for text formats).
+
+# Returns
+A `DataFrame` with strata records matching the query.
+
+# Examples
+```julia
+pbdb_strata(rank="formation", lngmin=-120, lngmax=-100, latmin=30, latmax=50)
+```
+"""
 function pbdb_strata(; kwargs...)
     return pbdb_query("strata/list"; kwargs...)
 end
 
-""" Autocomplete: list of strata matching a prefix/partial name. """
+"""
+    pbdb_strata_auto(; kwargs...)
+
+Autocomplete: list of strata matching a given prefix or partial name.
+
+# Arguments
+- `kwargs...`: Common options include:
+  - `name`: Prefix or partial name (≥ 3 significant characters). May end with a space + `g` or `f` to hint at group/formation.
+  - `rank`: Optional rank filter ("formation" or "group").
+  - `lngmin`, `lngmax`, `latmin`, `latmax`: Optional bounding box to constrain suggestions.
+  - `limit`: Maximum number of matches.
+
+# Returns
+A `DataFrame` of matching stratum names, ranks, and occurrence counts (JSON endpoint is converted to `DataFrame`).
+
+# Examples
+```julia
+pbdb_strata_auto(name="Pin"; vocab="pbdb")
+```
+"""
 function pbdb_strata_auto(; kwargs...)
     return pbdb_query("strata/auto"; format=:json, kwargs...)
 end
 
 # References ------------------------------------------------------------------
 
-""" Get information about a single reference. """
+"""
+    pbdb_reference(id; kwargs...)
+
+Get information about a single bibliographic reference.
+
+# Arguments
+- `id`: Reference identifier (required).
+- `kwargs...`: Additional parameters, for example:
+  - `vocab`: Set to "pbdb" to use full field names.
+  - `show`: Extra information blocks (e.g. "counts" to report numbers of taxa/opinions/occurrences/specimens; "both" to include both formatted reference and individual fields).
+
+# Returns
+A `DataFrame` with information about the requested reference.
+
+# Examples
+```julia
+pbdb_reference(1003; vocab="pbdb", show="both")
+```
+"""
 function pbdb_reference(id; kwargs...)
     return pbdb_query("refs/single"; id=id, kwargs...)
 end
 
-""" Get information about multiple references. """
+"""
+    pbdb_references(; kwargs...)
+
+Get information about multiple bibliographic references.
+
+# Arguments
+- `kwargs...`: Filtering and output parameters. Common options include:
+  - `ref_author`: Match on author last name(s).
+  - `ref_pubyr`: Publication year.
+  - `pub_title`: Publication title.
+  - `order`: Sort order; one or more of "author", "pubyr", "reftitle", "pubtitle", "pubtype", "created", "modified", "rank", with optional ".asc"/".desc" suffix.
+  - `vocab`: Set to "pbdb" for full field names.
+
+# Returns
+A `DataFrame` with references matching the query.
+
+# Examples
+```julia
+pbdb_references(ref_author="Polly")
+```
+"""
 function pbdb_references(; kwargs...)
     return pbdb_query("refs/list"; kwargs...)
 end
 
-""" Get references from which collection data were entered. """
+"""
+    pbdb_ref_collections(; kwargs...)
+
+Get bibliographic references from which collection data were entered.
+
+# Arguments
+- `kwargs...`: Filtering options, e.g.:
+  - `id`: One or more collection identifiers.
+  - `base_name`: Restrict to collections associated with a given taxon (and all descendants).
+  - `ref_author`, `ref_pubyr`, `pub_title`: Reference filters as in `pbdb_references`.
+  - `order`: Sort order (see PBDB docs).
+  - `vocab`: Field naming vocabulary.
+
+# Returns
+A `DataFrame` listing references associated with the selected collections.
+
+# Examples
+```julia
+pbdb_ref_collections(base_name="Canidae", interval="Quaternary", cc="ASI")
+```
+"""
 function pbdb_ref_collections(; kwargs...)
     return pbdb_query("colls/refs"; kwargs...)
 end
 
-""" Get references for taxonomic names. """
+"""
+    pbdb_ref_taxa(; kwargs...)
+
+Get bibliographic references associated with taxonomic names.
+
+This mirrors `pbdb_taxa` filters but returns reference records instead of taxa.
+
+# Arguments
+- `kwargs...`: Accepts the same taxon selectors as `pbdb_taxa`, e.g.:
+  - `name` or `id`: Base taxon.
+  - `rel`: Relationship (e.g. "synonyms", "children", "all_children", "all_parents").
+  - `extant`: Logical; restrict to extant/non-extant taxa.
+  - `show`: Extra blocks (e.g. "both", "comments").
+  - `vocab`: Field naming vocabulary.
+
+# Returns
+A `DataFrame` with references linked to the selected taxa.
+
+# Examples
+```julia
+pbdb_ref_taxa(name="Canidae"; vocab="pbdb", show=["both","comments"])
+```
+"""
 function pbdb_ref_taxa(; kwargs...)
     return pbdb_query("taxa/refs"; kwargs...)
 end
 
-# Specimens & measurements -----------------------------------------------------
+# # Specimens & measurements -----------------------------------------------------
 
-""" Get information about a single fossil specimen. """
-function pbdb_specimen(id; kwargs...)
-    return pbdb_query("specs/single"; id=id, kwargs...)
-end
+# """ Get information about a single fossil specimen. """
+# function pbdb_specimen(id; kwargs...)
+#     return pbdb_query("specs/single"; id=id, kwargs...)
+# end
 
-""" Get information about multiple fossil specimens. """
-function pbdb_specimens(; kwargs...)
-    return pbdb_query("specs/list"; kwargs...)
-end
+# """ Get information about multiple fossil specimens. """
+# function pbdb_specimens(; kwargs...)
+#     return pbdb_query("specs/list"; kwargs...)
+# end
 
-""" Get references for fossil specimens. """
-function pbdb_ref_specimens(; kwargs...)
-    return pbdb_query("specs/refs"; kwargs...)
-end
+# """ Get references for fossil specimens. """
+# function pbdb_ref_specimens(; kwargs...)
+#     return pbdb_query("specs/refs"; kwargs...)
+# end
 
-""" Get information about specimen measurements. """
-function pbdb_measurements(; kwargs...)
-    return pbdb_query("specs/measurements"; kwargs...)
-end
+# """ Get information about specimen measurements. """
+# function pbdb_measurements(; kwargs...)
+#     return pbdb_query("specs/measurements"; kwargs...)
+# end
 
-# Opinions --------------------------------------------------------------------
+# # Opinions --------------------------------------------------------------------
 
-""" Get information about a single taxonomic opinion. """
-function pbdb_opinion(id; kwargs...)
-    return pbdb_query("opinions/single"; id=id, kwargs...)
-end
+# """ Get information about a single taxonomic opinion. """
+# function pbdb_opinion(id; kwargs...)
+#     return pbdb_query("opinions/single"; id=id, kwargs...)
+# end
 
-""" Get information about multiple taxonomic opinions. """
-function pbdb_opinions(; kwargs...)
-    return pbdb_query("opinions/list"; kwargs...)
-end
+# """ Get information about multiple taxonomic opinions. """
+# function pbdb_opinions(; kwargs...)
+#     return pbdb_query("opinions/list"; kwargs...)
+# end
 
-""" Get taxonomic opinions about taxa. """
-function pbdb_opinions_taxa(; kwargs...)
-    return pbdb_query("taxa/opinions"; kwargs...)
-end
+# """ Get taxonomic opinions about taxa. """
+# function pbdb_opinions_taxa(; kwargs...)
+#     return pbdb_query("taxa/opinions"; kwargs...)
+# end
 
 # --- Examples (commented) ----------------------------------------------------
 
 # using .PaleobiologyDB
 # df = pbdb_occurrences(base_name="Canidae", interval="Quaternary", show=["coords","classext","ident"], limit="all")
 # first(df, 5)
+
+# Specimens & measurements -----------------------------------------------------
+
+"""
+    pbdb_specimen(id; kwargs...)
+
+Get information about a single fossil specimen.
+
+# Arguments
+- `id`: Identifier of the specimen (required).
+- `kwargs...`: Additional query parameters. Common options include:
+  - `vocab`: Set to `"pbdb"` to use full field names.
+  - `show`: Extra blocks (`"loc"`, `"stratext"`, `"lithext"`, `"refattr"`).
+
+# Returns
+A `DataFrame` describing the specified specimen.
+
+# Examples
+```julia
+pbdb_specimen(30050; show=["class","loc","refattr"])
+```
+"""
+function pbdb_specimen(id; kwargs...)
+    return pbdb_query("specs/single"; id=id, kwargs...)
+end
+
+"""
+    pbdb_specimens(; kwargs...)
+
+Get information about multiple fossil specimens.
+
+# Arguments
+- `kwargs...`: Filtering and output parameters. Common options include:
+  - `base_name`: Restrict to specimens of a given taxon (and descendants).
+  - `interval`: Restrict by geologic interval.
+  - `show`: Extra blocks (`"spec"`, `"class"`, `"loc"`, `"stratext"`, `"lithext"`).
+  - `vocab`: Set to `"pbdb"` to return full field names.
+
+# Returns
+A `DataFrame` with specimen records matching the query.
+
+# Examples
+```julia
+pbdb_specimens(base_name="Cetacea", interval="Miocene"; vocab="pbdb")
+```
+"""
+function pbdb_specimens(; kwargs...)
+    return pbdb_query("specs/list"; kwargs...)
+end
+
+"""
+    pbdb_ref_specimens(; kwargs...)
+
+Get bibliographic references associated with fossil specimens.
+
+# Arguments
+- `kwargs...`: Filtering options. Common parameters include:
+  - `spec_id`: One or more specimen identifiers.
+  - `base_name`: Taxonomic filter (taxon and descendants).
+  - `ref_author`: Filter by author name.
+  - `ref_pubyr`: Filter by publication year.
+  - `pub_title`: Filter by publication title.
+
+# Returns
+A `DataFrame` with references linked to the selected specimens.
+
+# Examples
+```julia
+pbdb_ref_specimens(spec_id=[1505, 30050])
+```
+"""
+function pbdb_ref_specimens(; kwargs...)
+    return pbdb_query("specs/refs"; kwargs...)
+end
+
+"""
+    pbdb_measurements(; kwargs...)
+
+Get information about specimen measurements.
+
+# Arguments
+- `kwargs...`: Filtering and output parameters. Common options include:
+  - `spec_id`: Vector of specimen identifiers.
+  - `occ_id`: Vector of occurrence identifiers.
+  - `coll_id`: Vector of collection identifiers.
+  - `show`: Extra blocks (e.g. `"spec"`, `"methods"`).
+  - `vocab`: Field naming vocabulary.
+
+# Returns
+A `DataFrame` of measurement records.
+
+# Examples
+```julia
+pbdb_measurements(spec_id=[1505,30050]; show=["spec","class","methods"], vocab="pbdb")
+```
+"""
+function pbdb_measurements(; kwargs...)
+    return pbdb_query("specs/measurements"; kwargs...)
+end
+
+# Opinions --------------------------------------------------------------------
+
+"""
+    pbdb_opinion(id; kwargs...)
+
+Get information about a single taxonomic opinion.
+
+# Arguments
+- `id`: Identifier of the opinion (required).
+- `kwargs...`: Additional parameters, for example:
+  - `vocab`: Set to `"pbdb"` to return full field names.
+  - `show`: Extra information blocks (e.g. `"basis"`, `"entname"`, `"refattr"`).
+
+# Returns
+A `DataFrame` with the requested opinion.
+
+# Examples
+```julia
+pbdb_opinion(1000; vocab="pbdb", show="full")
+```
+"""
+function pbdb_opinion(id; kwargs...)
+    return pbdb_query("opinions/single"; id=id, kwargs...)
+end
+
+"""
+    pbdb_opinions(; kwargs...)
+
+Get information about multiple taxonomic opinions.
+
+# Arguments
+- `kwargs...`: Filtering options. Common parameters include:
+  - `id`: One or more opinion identifiers.
+  - `op_author`: Filter by opinion author name(s).
+  - `ops_created_before`, `ops_created_after`: Date/time filters.
+  - `op_type`: Opinion type filter (`"all"`, `"class"`, `"valid"`, `"accepted"`, `"junior"`, `"invalid"`).
+  - `vocab`: Vocabulary for field names.
+
+# Returns
+A `DataFrame` with opinions matching the query.
+
+# Examples
+```julia
+pbdb_opinions(op_pubyr=1818)
+```
+"""
+function pbdb_opinions(; kwargs...)
+    return pbdb_query("opinions/list"; kwargs...)
+end
+
+"""
+    pbdb_opinions_taxa(; kwargs...)
+
+Get taxonomic opinions about taxa, used to build the PBDB taxonomic hierarchy.
+
+# Arguments
+- `kwargs...`: Filtering options, e.g.:
+  - `base_name`: Taxon (and descendants).
+  - `name` or `id`: Base taxon selector.
+  - `rel`: Relationship filter (e.g. `"synonyms"`, `"children"`).
+  - `vocab`: Vocabulary for field names.
+
+# Returns
+A `DataFrame` with taxonomic opinions for the selected taxa.
+
+# Examples
+```julia
+pbdb_opinions_taxa(base_name="Canis")
+```
+"""
+function pbdb_opinions_taxa(; kwargs...)
+    return pbdb_query("taxa/opinions"; kwargs...)
+end
 
 end # module
