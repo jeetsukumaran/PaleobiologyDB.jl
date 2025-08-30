@@ -315,8 +315,6 @@ end
 #     return pbdb_query("taxa/auto"; format=:json, kwargs...)
 # end
 
-
-
 """
     pbdb_collection(id; kwargs...)
 
@@ -325,11 +323,12 @@ Get information about a single fossil collection record from the Paleobiology Da
 # Arguments
 - `id`: Identifier of the collection (required).
 - `kwargs...`: Additional query parameters. Common options include:
-  - `vocab`: `"pbdb"` to use full field names instead of compact 3-letter codes.
-  - `show`: Extra information blocks (`"loc"`, `"stratext"`, `"lithext"`).
+  - `vocab`: Set to `"pbdb"` to use full field names instead of compact 3-letter codes.
+  - `show`: Extra information blocks to include (e.g. `"loc"`, `"stratext"`, `"lithext"`).
+  - Geographic filters accepted by PBDB (e.g. `lngmin`, `lngmax`, `latmin`, `latmax`).
 
 # Returns
-A `DataFrame` with information about the specified collection.
+A `DataFrame` describing the specified collection.
 
 # Examples
 ```julia
@@ -348,18 +347,21 @@ Get information about multiple fossil collections.
 
 # Arguments
 - `kwargs...`: Filtering and output parameters. Common options include:
-  - `base_name`: Restrict to collections including the specified taxon and descendants.
+  - `base_name`: Restrict to collections containing occurrences of the named taxon (including descendants).
   - `interval`: Geologic time interval (e.g. `"Miocene"`).
+  - `min_ma`, `max_ma`: Minimum and maximum age in millions of years.
   - `lngmin`, `lngmax`, `latmin`, `latmax`: Geographic bounding box.
-  - `show`: Extra blocks (`"loc"`, `"stratext"`, `"lithext"`).
-  - `vocab`: Vocabulary for field names (`"pbdb"` for full names, `"com"` for compact codes`).
+  - `cc`: Country/continent codes (ISO-3166 two-letter; three-letter continent codes).
+  - `show`: Extra blocks (`"ref"`, `"loc"`, `"stratext"`, `"lithext"`).
+  - `limit`: Limit the number of records (`Int` or `"all"`).
+  - `vocab`: Vocabulary for field names (`"pbdb"` for full names, `"com"` for compact codes).
 
 # Returns
-A `DataFrame` with the collections matching the query.
+A `DataFrame` of collections matching the query.
 
 # Examples
 ```julia
-pbdb_collections(base_name="Cetacea", interval="Miocene")
+pbdb_collections(base_name="Cetacea", interval="Miocene"; show=["ref","loc","stratext"])
 ```
 """
 function pbdb_collections(; kwargs...)
@@ -369,21 +371,50 @@ end
 """
     pbdb_collections_geo(level; kwargs...)
 
-Get information about geographic clusters (summaries) of fossil collections.
+Geographic clusters (summary) of collections. `level` is required.
+
+Use this method when you prefer a positional `level` per Julia convention.
+All other parameters are passed as keywords and accept the same filters as `pbdb_collections`.
 
 # Arguments
-- `level`: Cluster level (required). Use the PBDB config endpoint to list available levels.
-- `kwargs...`: Filtering parameters. Accepts the same filters as `pbdb_collections`.
+- `level`: Cluster level (required). See PBDB config `config.txt?show=clusters` for available levels.
+- `kwargs...`: Any `colls/summary` filters (e.g., `lngmin`, `lngmax`, `latmin`, `latmax`, `base_name`, `interval`, `vocab`).
 
 # Returns
-A `DataFrame` summarizing collections by geographic clusters.
+A `DataFrame` summarizing the selected collections by geographic clusters.
 
 # Examples
 ```julia
-pbdb_collections_geo(2; vocab="pbdb", lngmin=0.0, lngmax=15.0, latmin=0.0, latmax=15.0)
+pbdb_collections_geo(2; lngmin=0.0, lngmax=15.0, latmin=0.0, latmax=15.0, vocab="pbdb")
 ```
 """
 function pbdb_collections_geo(level; kwargs...)
+    isnothing(level) && error("Parameter `level` is required (see PBDB config clusters)")
+    return pbdb_query("colls/summary"; level=level, kwargs...)
+end
+
+"""
+    pbdb_collections_geo(; level, kwargs...)
+
+Geographic clusters (summary) of collections. `level` is required.
+
+This keyword-only form is provided for compatibility with existing code
+that prefers `level` as a keyword. All other filters are identical to
+`pbdb_collections_geo(level; ...)`.
+
+# Arguments
+- `level`: Cluster level (required). See PBDB config `config.txt?show=clusters`.
+- `kwargs...`: Any `colls/summary` filters (e.g., `lngmin`, `lngmax`, `latmin`, `latmax`, `base_name`, `interval`, `vocab`).
+
+# Returns
+A `DataFrame` summarizing the selected collections by geographic clusters.
+
+# Examples
+```julia
+pbdb_collections_geo(level=2; lngmin=0.0, lngmax=15.0, latmin=0.0, latmax=15.0)
+```
+"""
+function pbdb_collections_geo(; level, kwargs...)
     isnothing(level) && error("Parameter `level` is required (see PBDB config clusters)")
     return pbdb_query("colls/summary"; level=level, kwargs...)
 end
@@ -393,18 +424,18 @@ end
 """
     pbdb_taxon(; kwargs...)
 
-Get information about a single taxonomic name, by name or identifier.
+Get information about a single taxonomic name (by `name` or `id`).
 
 # Arguments
-- `kwargs...`: Must include either:
-  - `name`: Taxonomic name (supports wildcards `%` and `_`).
-  - `id`: PBDB identifier.
+- `kwargs...`: One of the following must be provided (but not both):
+  - `name`: Taxonomic name string; `%` and `_` may be used as wildcards.
+  - `id`: PBDB identifier (integer or extended identifier).
   Additional options:
-  - `vocab`: Vocabulary for field names (`"pbdb"` for full names).
-  - `show`: Extra blocks (`"attr"`, `"app"`, `"size"`).
+  - `show`: Extra blocks (e.g. `"attr"` attribution, `"app"` first/last appearance, `"size"` number of subtaxa).
+  - `vocab`: Vocabulary for field names (`"pbdb"` for full names, `"com"` for compact).
 
 # Returns
-A `DataFrame` with information for a single taxon.
+A `DataFrame` with information about the selected taxon.
 
 # Examples
 ```julia
@@ -422,15 +453,15 @@ Get information about multiple taxonomic names.
 
 # Arguments
 - `kwargs...`: Filtering and output parameters. Common options include:
-  - `name`: Taxonomic name (wildcards allowed).
-  - `id`: PBDB identifier (vector allowed).
-  - `rel`: Relationship filter (e.g. `"synonyms"`, `"children"`, `"common"`).
+  - `name`: Name string (wildcards allowed).
+  - `id`: Identifier (vector allowed).
+  - `rel`: Relationship selector (e.g. `"synonyms"`, `"children"`, `"all_children"`, `"all_parents"`, `"common"`).
+  - `extant`: Logical, select only extant or non-extant taxa.
   - `show`: Extra blocks (`"attr"`, `"app"`, `"size"`, `"class"`).
-  - `extant`: Logical, whether to select only extant or non-extant taxa.
   - `vocab`: Vocabulary for field names.
 
 # Returns
-A `DataFrame` with information about the requested taxa.
+A `DataFrame` of taxa matching the query.
 
 # Examples
 ```julia
@@ -444,15 +475,16 @@ end
 """
     pbdb_taxa_auto(; kwargs...)
 
-Autocomplete: get a list of taxonomic names matching a prefix or partial name.
+Autocomplete: list of taxonomic names matching a prefix or partial name.
 
 # Arguments
-- `kwargs...`: Filtering parameters. Common options include:
-  - `name`: Prefix or partial name (at least 3 characters).
-  - `limit`: Maximum number of matches.
+- `kwargs...`: Common options include:
+  - `name`: A partial name or prefix (at least 3 significant characters).
+  - `limit`: Maximum number of matches to return.
 
 # Returns
-A `DataFrame` with candidate taxonomic names, ranks, and counts.
+A `DataFrame` of candidate taxonomic names, including rank and occurrence counts.
+This endpoint returns JSON in PBDB; the wrapper converts to a `DataFrame`.
 
 # Examples
 ```julia
@@ -462,6 +494,7 @@ pbdb_taxa_auto(name="Cani"; limit=10)
 function pbdb_taxa_auto(; kwargs...)
     return pbdb_query("taxa/auto"; format=:json, kwargs...)
 end
+
 
 # Intervals & scales ----------------------------------------------------------
 
