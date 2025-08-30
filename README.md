@@ -120,7 +120,7 @@ whale_specimens = pbdb_specimens(
 )
 
 measurements = pbdb_measurements(
-    spec_id=["spm:1505, "spm:30050"],
+    spec_id=["spm:1505", "spm:30050"],
     show=["spec", "methods"],
     vocab="pbdb"
 )
