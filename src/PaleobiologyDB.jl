@@ -22,8 +22,13 @@ coll = pbdb_collection(id=1003, show=["loc", "stratext"])
 ```
 
 # Acknowledgements
-This package API design is based on the
-[paleobioDB](https://github.com/ropensci/paleobioDB)
+
+## PBDB data service interface
+
+The [Paleobiology Database](https://paleobiodb.org/) for curating
+and providing the data and API.
+This package data server endpoint API naming convention
+is based on the [paleobioDB](https://github.com/ropensci/paleobioDB)
 R package.
 
 """
