@@ -48,7 +48,8 @@ using CSV
 using DataFrames
 
 export pbdb_occurrence, pbdb_occurrences, pbdb_ref_occurrences,
-       pbdb_collection, pbdb_collections, pbdb_collections_geo, pbdb_ref_collections,
+       pbdb_collection, pbdb_collections, pbdb_collections_geo,
+       pbdb_ref_collections, pbdb_config,
        pbdb_taxon, pbdb_taxa, pbdb_taxa_auto, pbdb_ref_taxa, pbdb_opinions_taxa,
        pbdb_interval, pbdb_intervals, pbdb_scale, pbdb_scales,
        pbdb_strata, pbdb_strata_auto,
@@ -857,6 +858,42 @@ pbdb_opinions_taxa(base_name="Canis")
 """
 function pbdb_opinions_taxa(; kwargs...)
     return pbdb_query("taxa/opinions"; kwargs...)
+end
+
+"""
+    pbdb_config(; kwargs...)
+
+Query the PBDB configuration endpoint.
+
+The configuration endpoint provides metadata tables that describe
+available cluster levels, continents, vocabularies, and other
+reference information needed for interpreting and filtering PBDB data.
+
+# Arguments
+- `kwargs...`: Commonly used parameters include:
+  - `show`: Which configuration table to return. Examples:
+    - `"clusters"`: Available geographic cluster levels (for use with `pbdb_collections_geo`).
+    - `"continents"`: Continent codes recognized by PBDB.
+    - `"vocabularies"`: Available vocabularies for field names.
+    - `"ecologies"`, `"lithologies"`, etc. (see PBDB documentation for a full list).
+
+# Returns
+A `DataFrame` with the requested configuration information.
+
+# Examples
+```julia
+# List available geographic cluster levels
+pbdb_config(show="clusters")
+
+# List continent codes
+pbdb_config(show="continents")
+
+# List vocabularies
+pbdb_config(show="vocabularies")
+```
+"""
+function pbdb_config(; kwargs...)
+    return pbdb_query("config"; kwargs...)
 end
 
 end # module
