@@ -207,6 +207,20 @@ By default, only offline tests run. Enable live API tests by setting:
 PBDB_LIVE=1 julia --project -e 'using Pkg; Pkg.test()'
 ```
 
+## Useful guides, references, and documentation
+
+### The PBDB data service
+
+-	[PBDB Data Service: Documentation](https://paleobiodb.org/data1.2/)
+-	[PBDB Data Service: Usage documentation](https://paleobiodb.org/data1.2/general_doc.html)
+	-	[PBDB Data Service: Record identifiers and record numbers](https://paleobiodb.org/data1.2/general/identifiers_doc.html)
+	-	[PBDB Data Service: Specifying taxonomic names](https://paleobiodb.org/data1.2/general/taxon_names_doc.html)
+	-	[PBDB Data Service: Ecological and taphonomic vocabulary](https://paleobiodb.org/data1.2/general/ecotaph_doc.html)
+	-	[PBDB Data Service: Specifying dates and times](https://paleobiodb.org/data1.2/general/datetime_doc.html)
+	-	[PBDB Data Service: Bibliographic references](https://paleobiodb.org/data1.2/general/references_doc.html)
+	-	[PBDB Data Service: Output formats and Vocabularies](https://paleobiodb.org/data1.2/formats_doc.html)
+	-	[PBDB Data Service: Special parameters](https://paleobiodb.org/data1.2/special_doc.html)
+
 ## Contributing
 
 Contributions are welcome. Please fork the repository, add tests for new functionality, and submit a pull request.
@@ -237,7 +251,7 @@ If you use PaleobiologyDB.jl in your research, please cite both this package and
 
 ## Acknowledgments
 
-- API endpoint design following the [paleobioDB R package](https://cran.r-project.org/web/packages/paleobioDB/index.html).
 - The [Paleobiology Database](https://paleobiodb.org/) for providing the data and API
+- API endpoint names following the [paleobioDB R package](https://cran.r-project.org/web/packages/paleobioDB/index.html) convention.
 - Julia community packages: JSON3.jl, HTTP.jl, DataFrames.jl, CSV.jl, URIs.jl
 - The [Julia Community](https://julialang.org/community/)!
