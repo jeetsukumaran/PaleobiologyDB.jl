@@ -180,20 +180,98 @@ end
 
 # Occurrences -----------------------------------------------------------------
 
-""" Get information about a single occurrence record. """
+# """ Get information about a single occurrence record. """
+# function pbdb_occurrence(id; kwargs...)
+#     return pbdb_query("occs/single"; id=id, kwargs...)
+# end
+
+# """ Get information about fossil occurrence records. """
+# function pbdb_occurrences(ids::AbstractVector{Int}; kwargs...)
+#     return pbdb_occurrence.(ids; kwargs...)
+# end
+# function pbdb_occurrences(; kwargs...)
+#     return pbdb_query("occs/list"; kwargs...)
+# end
+
+# """ Get references associated with fossil occurrences. """
+# function pbdb_ref_occurrences(; kwargs...)
+#     return pbdb_query("occs/refs"; kwargs...)
+# end
+
+
+"""
+    pbdb_occurrence(id; kwargs...)
+
+Get information about a single fossil occurrence record from the Paleobiology Database.
+
+# Arguments
+- `id`: Identifier of the occurrence (required).
+- `kwargs...`: Additional query parameters. Common options include:
+  - `vocab`: `"pbdb"` to use full field names instead of compact 3-letter codes.
+  - `show`: Extra information blocks to return (e.g. `"class"`, `"coords"`, `"loc"`, `"stratext"`, `"lithext"`).
+
+# Returns
+A `DataFrame` with information about the specified occurrence.
+
+# Examples
+```julia
+pbdb_occurrence(1001)
+pbdb_occurrence(1001; vocab="pbdb", show=["class","coords"])
+```
+"""
 function pbdb_occurrence(id; kwargs...)
     return pbdb_query("occs/single"; id=id, kwargs...)
 end
 
-""" Get information about fossil occurrence records. """
-function pbdb_occurrences(ids::AbstractVector{Int}; kwargs...)
-    return pbdb_occurrence.(ids; kwargs...)
-end
+"""
+    pbdb_occurrences(; kwargs...)
+
+Get information about fossil occurrence records stored in the Paleobiology Database.
+
+# Arguments
+- `kwargs...`: Filtering and output parameters. Common options include:
+  - `limit`: Maximum number of records to return (`Int` or `"all"`).
+  - `taxon_name`: Return only records with the specified taxonomic name(s).
+  - `base_name`: Return records for the specified name(s) and all descendant taxa.
+  - `lngmin`, `lngmax`, `latmin`, `latmax`: Geographic bounding box.
+  - `min_ma`, `max_ma`: Minimum and maximum age in millions of years.
+  - `interval`: Named geologic interval (e.g. `"Miocene"`).
+  - `cc`: Country/continent codes (ISO two-letter or three-letter).
+  - `show`: Extra information blocks (`"coords"`, `"classext"`, `"ident"`, etc.).
+  - `vocab`: Vocabulary for field names (`"pbdb"` for full names, `"com"` for short codes).
+
+# Returns
+A `DataFrame` with fossil occurrence records matching the query.
+
+# Examples
+```julia
+pbdb_occurrences(base_name="Canis"; limit=100, show=["coords","classext"])
+```
+"""
 function pbdb_occurrences(; kwargs...)
     return pbdb_query("occs/list"; kwargs...)
 end
 
-""" Get references associated with fossil occurrences. """
+"""
+    pbdb_ref_occurrences(; kwargs...)
+
+Get bibliographic references associated with fossil occurrence records.
+
+# Arguments
+- `kwargs...`: Filtering parameters. Common options include:
+  - `base_name`: Restrict references to occurrences of a given taxon and descendants.
+  - `ref_author`: Filter by author name.
+  - `ref_pubyr`: Filter by publication year.
+  - `pub_title`: Filter by publication title.
+
+# Returns
+A `DataFrame` with references linked to occurrence records.
+
+# Examples
+```julia
+pbdb_ref_occurrences(base_name="Canis"; ref_pubyr=2000, vocab="pbdb")
+```
+"""
 function pbdb_ref_occurrences(; kwargs...)
     return pbdb_query("occs/refs"; kwargs...)
 end
