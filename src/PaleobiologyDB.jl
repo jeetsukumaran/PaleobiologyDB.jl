@@ -186,6 +186,9 @@ function pbdb_occurrence(id; kwargs...)
 end
 
 """ Get information about fossil occurrence records. """
+function pbdb_occurrences(ids::AbstractVector{Int}; kwargs...)
+    return pbdb_occurrence.(ids; kwargs...)
+end
 function pbdb_occurrences(; kwargs...)
     return pbdb_query("occs/list"; kwargs...)
 end
