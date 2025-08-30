@@ -31,5 +31,6 @@ R package.
 module PaleobiologyDB
 
 include("dbapi.jl")
+include("userapi.jl")
 
 end # module
