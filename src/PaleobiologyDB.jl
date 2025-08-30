@@ -320,7 +320,7 @@ Use this method when you prefer a positional `level` per Julia convention.
 All other parameters are passed as keywords and accept the same filters as `pbdb_collections`.
 
 # Arguments
-- `level`: Cluster level (required). See PBDB config `config.txt?show=clusters` for available levels.
+- `level`: Cluster level (required). See `pbdb_config(show = "clusters")` for available levels.
 - `kwargs...`: Any `colls/summary` filters (e.g., `lngmin`, `lngmax`, `latmin`, `latmax`, `base_name`, `interval`, `vocab`).
 
 # Returns
@@ -332,7 +332,7 @@ pbdb_collections_geo(2; lngmin=0.0, lngmax=15.0, latmin=0.0, latmax=15.0, vocab=
 ```
 """
 function pbdb_collections_geo(level; kwargs...)
-    isnothing(level) && error("Parameter `level` is required (see PBDB config clusters)")
+    isnothing(level) && error("Parameter `level` is required (see `pbdb_config(show = \"clusters\")`)")
     return pbdb_query("colls/summary"; level=level, kwargs...)
 end
 
@@ -346,7 +346,7 @@ that prefers `level` as a keyword. All other filters are identical to
 `pbdb_collections_geo(level; ...)`.
 
 # Arguments
-- `level`: Cluster level (required). See PBDB config `config.txt?show=clusters`.
+- `level`: Cluster level (required). See `pbdb_config(show = "clusters")` for available levels.
 - `kwargs...`: Any `colls/summary` filters (e.g., `lngmin`, `lngmax`, `latmin`, `latmax`, `base_name`, `interval`, `vocab`).
 
 # Returns
@@ -358,7 +358,7 @@ pbdb_collections_geo(level=2; lngmin=0.0, lngmax=15.0, latmin=0.0, latmax=15.0)
 ```
 """
 function pbdb_collections_geo(; level, kwargs...)
-    isnothing(level) && error("Parameter `level` is required (see PBDB config clusters)")
+    isnothing(level) && error("Parameter `level` is required (see `pbdb_config(show = \"clusters\")`)")
     return pbdb_query("colls/summary"; level=level, kwargs...)
 end
 
@@ -876,6 +876,32 @@ reference information needed for interpreting and filtering PBDB data.
     - `"continents"`: Continent codes recognized by PBDB.
     - `"vocabularies"`: Available vocabularies for field names.
     - `"ecologies"`, `"lithologies"`, etc. (see PBDB documentation for a full list).
+    - Full list:
+        - 'clusters',
+        - 'ranks',
+        - 'continents',
+        - 'countries',
+        - 'collblock',
+        - 'lithblock',
+        - 'lithologies',
+        - 'minorliths',
+        - 'lithification',
+        - 'lithadj',
+        - 'envs',
+        - 'envtypes',
+        - 'tecs',
+        - 'collmet',
+        - 'datemet',
+        - 'colltype',
+        - 'collcov',
+        - 'presmodes',
+        - 'resgroups',
+        - 'museums',
+        - 'abundance',
+        - 'plant',
+        - 'pgmodels',
+        - 'prefs',
+        - 'all'
 
 # Returns
 A `DataFrame` with the requested configuration information.
@@ -888,8 +914,9 @@ pbdb_config(show="clusters")
 # List continent codes
 pbdb_config(show="continents")
 
-# List vocabularies
-pbdb_config(show="vocabularies")
+# List taxonomic ranks
+pbdb_config(show="ranks")
+
 ```
 """
 function pbdb_config(; kwargs...)
