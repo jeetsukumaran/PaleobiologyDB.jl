@@ -6,6 +6,7 @@ function collection_occurrences(coll_id; kwargs...)
         coll_id = coll_id,
         show = "full",
         vocab = "pbdb",
+        extids = true,
         kwargs ...
     )
 end

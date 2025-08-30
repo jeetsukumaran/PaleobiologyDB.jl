@@ -22,9 +22,6 @@ coll = pbdb_collection(id=1003, show=["loc", "stratext"])
 ```
 
 # Acknowledgements
-
-## PBDB data service interface
-
 The [Paleobiology Database](https://paleobiodb.org/) for curating
 and providing the data and API.
 This package data server endpoint API naming convention

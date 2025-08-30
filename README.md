@@ -27,6 +27,7 @@ canids = pbdb_occurrences(
     interval="Miocene",
     show=["coords", "class"],
     vocab="pbdb",
+    extids=true,
     limit=100
 )
 
@@ -34,14 +35,23 @@ canids = pbdb_occurrences(
 canis_info = pbdb_taxon(
     name="Canis",
     vocab="pbdb",
+    extids=true,
     show=["attr", "app", "size"]
 )
 
 # Get a specific collection
 collection = pbdb_collection(
+    "col:1003",
+    show=["loc", "stratext"],
+    vocab="pbdb",
+    extids=true,
+)
+# old-style numeric-only id
+collection = pbdb_collection(
     1003,
     show=["loc", "stratext"],
     vocab="pbdb"
+    # extids=false,
 )
 ```
 
@@ -54,6 +64,8 @@ collection = pbdb_collection(
 occs = pbdb_occurrences(base_name="Mammalia", limit=10)
 
 # Specific occurrence
+single_occ = pbdb_occurrence("occ:1001", vocab="pbdb", show=["coords", "class"])
+# old-style numeric-only id
 single_occ = pbdb_occurrence(1001, vocab="pbdb", show=["coords", "class"])
 
 # Geographic and temporal filtering
@@ -107,6 +119,11 @@ whale_specimens = pbdb_specimens(
     vocab="pbdb"
 )
 
+measurements = pbdb_measurements(
+    spec_id=["spm:1505, "spm:30050"],
+    show=["spec", "methods"],
+    vocab="pbdb"
+)
 measurements = pbdb_measurements(
     spec_id=[1505, 30050],
     show=["spec", "methods"],
