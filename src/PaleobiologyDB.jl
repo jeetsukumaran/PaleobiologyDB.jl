@@ -178,27 +178,6 @@ end
 
 # --- Thin, idiomatic wrappers (keywords mirror PBDB) ------------------------
 
-# Occurrences -----------------------------------------------------------------
-
-# """ Get information about a single occurrence record. """
-# function pbdb_occurrence(id; kwargs...)
-#     return pbdb_query("occs/single"; id=id, kwargs...)
-# end
-
-# """ Get information about fossil occurrence records. """
-# function pbdb_occurrences(ids::AbstractVector{Int}; kwargs...)
-#     return pbdb_occurrence.(ids; kwargs...)
-# end
-# function pbdb_occurrences(; kwargs...)
-#     return pbdb_query("occs/list"; kwargs...)
-# end
-
-# """ Get references associated with fossil occurrences. """
-# function pbdb_ref_occurrences(; kwargs...)
-#     return pbdb_query("occs/refs"; kwargs...)
-# end
-
-
 """
     pbdb_occurrence(id; kwargs...)
 
@@ -277,43 +256,6 @@ function pbdb_ref_occurrences(; kwargs...)
 end
 
 # # Collections -----------------------------------------------------------------
-
-# """ Get information about a single collection record. """
-# function pbdb_collection(id; kwargs...)
-#     return pbdb_query("colls/single"; id=id, kwargs...)
-# end
-
-# """ Get information about multiple collections. """
-# function pbdb_collections(; kwargs...)
-#     return pbdb_query("colls/list"; kwargs...)
-# end
-
-# """ Geographic clusters (summary) of collections. `level` is required. """
-# function pbdb_collections_geo(level; kwargs...)
-#     isnothing(level) && error("Parameter `level` is required (see PBDB config clusters)")
-#     return pbdb_query("colls/summary"; level=level, kwargs...)
-# end
-# function pbdb_collections_geo(; level, kwargs...)
-#     isnothing(level) && error("Parameter `level` is required (see PBDB config clusters)")
-#     return pbdb_query("colls/summary"; level=level, kwargs...)
-# end
-
-# # Taxa ------------------------------------------------------------------------
-
-# """ Get information about a single taxonomic name (by `name` or `id`). """
-# function pbdb_taxon(; kwargs...)
-#     return pbdb_query("taxa/single"; kwargs...)
-# end
-
-# """ Get information about multiple taxonomic names. """
-# function pbdb_taxa(; kwargs...)
-#     return pbdb_query("taxa/list"; kwargs...)
-# end
-
-# """ Autocomplete: list of taxonomic names matching a prefix/partial name. """
-# function pbdb_taxa_auto(; kwargs...)
-#     return pbdb_query("taxa/auto"; format=:json, kwargs...)
-# end
 
 """
     pbdb_collection(id; kwargs...)
@@ -494,64 +436,6 @@ pbdb_taxa_auto(name="Cani"; limit=10)
 function pbdb_taxa_auto(; kwargs...)
     return pbdb_query("taxa/auto"; format=:json, kwargs...)
 end
-
-
-# # Intervals & scales ----------------------------------------------------------
-
-# """ Get information about a single interval (by `name` or `id`). """
-# function pbdb_interval(; kwargs...)
-#     return pbdb_query("intervals/single"; kwargs...)
-# end
-
-# """ Get information about multiple intervals. """
-# function pbdb_intervals(; kwargs...)
-#     return pbdb_query("intervals/list"; kwargs...)
-# end
-
-# """ Get information about a single time scale. """
-# function pbdb_scale(id; kwargs...)
-#     return pbdb_query("scales/single"; id=id, kwargs...)
-# end
-
-# """ Get information about multiple time scales. """
-# function pbdb_scales(; kwargs...)
-#     return pbdb_query("scales/list"; kwargs...)
-# end
-
-# # Strata ----------------------------------------------------------------------
-
-# """ Get information about geological strata. """
-# function pbdb_strata(; kwargs...)
-#     return pbdb_query("strata/list"; kwargs...)
-# end
-
-# """ Autocomplete: list of strata matching a prefix/partial name. """
-# function pbdb_strata_auto(; kwargs...)
-#     return pbdb_query("strata/auto"; format=:json, kwargs...)
-# end
-
-# # References ------------------------------------------------------------------
-
-# """ Get information about a single reference. """
-# function pbdb_reference(id; kwargs...)
-#     return pbdb_query("refs/single"; id=id, kwargs...)
-# end
-
-# """ Get information about multiple references. """
-# function pbdb_references(; kwargs...)
-#     return pbdb_query("refs/list"; kwargs...)
-# end
-
-# """ Get references from which collection data were entered. """
-# function pbdb_ref_collections(; kwargs...)
-#     return pbdb_query("colls/refs"; kwargs...)
-# end
-
-# """ Get references for taxonomic names. """
-# function pbdb_ref_taxa(; kwargs...)
-#     return pbdb_query("taxa/refs"; kwargs...)
-# end
-
 
 # Intervals & scales ----------------------------------------------------------
 
@@ -801,51 +685,6 @@ pbdb_ref_taxa(name="Canidae"; vocab="pbdb", show=["both","comments"])
 function pbdb_ref_taxa(; kwargs...)
     return pbdb_query("taxa/refs"; kwargs...)
 end
-
-# # Specimens & measurements -----------------------------------------------------
-
-# """ Get information about a single fossil specimen. """
-# function pbdb_specimen(id; kwargs...)
-#     return pbdb_query("specs/single"; id=id, kwargs...)
-# end
-
-# """ Get information about multiple fossil specimens. """
-# function pbdb_specimens(; kwargs...)
-#     return pbdb_query("specs/list"; kwargs...)
-# end
-
-# """ Get references for fossil specimens. """
-# function pbdb_ref_specimens(; kwargs...)
-#     return pbdb_query("specs/refs"; kwargs...)
-# end
-
-# """ Get information about specimen measurements. """
-# function pbdb_measurements(; kwargs...)
-#     return pbdb_query("specs/measurements"; kwargs...)
-# end
-
-# # Opinions --------------------------------------------------------------------
-
-# """ Get information about a single taxonomic opinion. """
-# function pbdb_opinion(id; kwargs...)
-#     return pbdb_query("opinions/single"; id=id, kwargs...)
-# end
-
-# """ Get information about multiple taxonomic opinions. """
-# function pbdb_opinions(; kwargs...)
-#     return pbdb_query("opinions/list"; kwargs...)
-# end
-
-# """ Get taxonomic opinions about taxa. """
-# function pbdb_opinions_taxa(; kwargs...)
-#     return pbdb_query("taxa/opinions"; kwargs...)
-# end
-
-# --- Examples (commented) ----------------------------------------------------
-
-# using .PaleobiologyDB
-# df = pbdb_occurrences(base_name="Canidae", interval="Quaternary", show=["coords","classext","ident"], limit="all")
-# first(df, 5)
 
 # Specimens & measurements -----------------------------------------------------
 
