@@ -32,50 +32,6 @@ foreach(println, names(PaleobiologyDB))
 # directly by:
 @doc pbdb_occurrences
 
-# > help?> pbdb_occurrences
-# > search: pbdb_occurrences pbdb_occurrence pbdb_ref_occurrences pbdb_references pbdb_reference collection_occurrences pbdb_measurements pbdb_specimens pbdb_scales pbdb_opinions
-# >
-# >   pbdb_occurrences(; kwargs...)
-# >
-# >   Get information about fossil occurrence records stored in the Paleobiology Database.
-# >
-# >   Arguments
-# >   ≡≡≡≡≡≡≡≡≡
-# >
-# >     •  kwargs...: Filtering and output parameters. Common options include:
-# >        • limit: Maximum number of records to return (Int or "all").
-# >        • taxon_name: Return only records with the specified taxonomic name(s).
-# >        • base_name: Return records for the specified name(s) and all descendant taxa.
-# >        • lngmin, lngmax, latmin, latmax: Geographic bounding box.
-# >        • min_ma, max_ma: Minimum and maximum age in millions of years.
-# >        • interval: Named geologic interval (e.g. "Miocene").
-# >        • cc: Country/continent codes (ISO two-letter or three-letter).
-# >        • show: Extra information blocks ("coords", "classext", "ident", etc.).
-# >        • vocab: Vocabulary for field names ("pbdb" for full names, "com" for short codes).
-# >
-# >   Returns
-# >   ≡≡≡≡≡≡≡
-# >
-# >   A DataFrame with fossil occurrence records matching the query.
-# >
-# >   Examples
-# >   ≡≡≡≡≡≡≡≡
-# >
-# >  # `taxon_name` retrieves *only* units of this rank
-# >  occs = pbdb_occurrences(;
-# >      taxon_name="Canis",
-# >      show="full", # all columns
-# >      limit=100,
-# >  )
-# >
-# >  # `base_name` retrieves units of this and nested rank
-# >  occs = pbdb_occurrences(;
-# >      base_name="Canis",
-# >      show=["coords","classext"],
-# >      limit=100,
-# >  )
-
-
 # Get all carnivore occurrence data
 # using the PaleobiologDB function
 # `pbdb_occurences`.
@@ -99,26 +55,13 @@ foreach(println,
 # rank
 combine(groupby(occs, :accepted_rank), nrow)
 
-# > 13×2 DataFrame
-# >  Row │ accepted_rank   nrow
-# >      │ String15        Int64
-# > ─────┼───────────────────────
-# >    1 │ species          8350
-# >    2 │ genus            2922
-# >    3 │ subfamily         337
-# >    4 │ family           1020
-# >    5 │ order             188
-# >    6 │ suborder            8
-# >    7 │ infraorder          1
-# >    8 │ tribe              24
-# >    9 │ superfamily        14
-# >   10 │ subspecies        100
-# >   11 │ subgenus            5
-# >   12 │ unranked clade     36
-# >   13 │ subtribe
-
-
 # ## Data quality
+# Auditing the data involves more than
+# ensuring it is present (thought that's
+# a start), it also means making sure the
+# data that is present meets our standards.
+# And for that, we need to decide our
+# standards.
 #
 # We need to decide the threshold of data
 # quality that we will accept.
@@ -128,24 +71,17 @@ combine(groupby(occs, :accepted_rank), nrow)
 # (b) the timing of the occurrence,
 # and (c) spatial location.
 #
-# Auditing the data involves more than
-# ensuring it is present (thought that's
-# a start), it also means making sure the
-# data that is present meets our standards.
-# And for that, we need to decide our
-# standards.
-#
 # We shall set a definitive species
 # identity as our minimum data standard
 # for taxonomic resolution to start with,
 # and a `accepted_rank` field with a value
-# of (exactly) "species" will be considered
+# of "species" or subspecies will be considered
 # good enough to meet this, again, to start
 # with.
 
 # Let's create a function that implements
 # this now, to make it easy to change later.
-clean_taxonomy_flt = row -> row.accepted_rank == "species"
+clean_taxonomy_flt = row -> row.accepted_rank == "species" || row.accepted_rank == "subspecies"
 
 # Quick review of column/row selection:
 #
@@ -170,6 +106,19 @@ clean_taxonomy_flt = row -> row.accepted_rank == "species"
 # occs_accepted_rank = occs[occs.accepted_rank .== focal_rank, :]
 occs_accepted_rank = filter(clean_taxonomy_flt, occs)
 
+# Knowing what we know now, we might just query for this
+# resolution direction from the very beginning
+occs_accepted_rank = pbdb_occurrences(
+    ; # the ';' indicated end of positional arguments
+    base_name = "Carnivora",
+    show = "full",
+    vocab = "pbdb",
+    extids = true,
+    idreso = "species",
+)
+
+
+
 # Have a look at the first row
 occs[1, :]
 # Sometimes, a vertical layout is nice
@@ -183,13 +132,27 @@ foreach(println, pairs(occs[1, :]))
 # selection of these might have different impact
 # on the structure of both the data as well as
 # errors we might be dealing.
+
+# Let us start with seeing the types of
+# chronological information available.
+# As all the PBDB columns with dates have a
+# "_ma" in their names, we can use a
+# regular expression based column selector
+# to view them.
+occs_accepted_rank[:, r".*_ma.*"]
+
+# There is a *lot* of missing data!
 #
+# We are looking at trade-offs here in multiple
+# dimensions: precision, accuracy,
+# data coverage, etc.
+
 # We could accept dates based on the geological
 # layer in which they are found, which means
 # we have to deal with the imprecision of
 # ranges of values, on top of any inherent
 # measurement uncertainty.
-#
+
 # We could accept dates based on more precise
 # methods, but then, in addition to losing
 # a lot of data due to greater effort, difficulty,
@@ -198,21 +161,76 @@ foreach(println, pairs(occs[1, :]))
 # measurement impacting accuracy, even as we are
 # increasing the precision.
 
-# Here we opt for the latter to start with,
-# and decide that our standards are having a
+# In all cases, increasing the data quality
+# threshold reduces the amount of data available,
+# which leads to weaker inference, which itself
+# may be a problem, and, depending on method, maybe
+# a *worse* problem.
+#
+# For parametric approaches, e.g. probabilistic
+# modeling, my *PERSONAL* preference is to have
+# higher quality data even if that means less data.
+# The methods I prefer to use, e.g Bayesian approaches,
+# are more easily misled by data that violates the
+# models than less data (up to a point, either way).
+#
+# On the other hand, for non-parameteric, machine
+# learning, simulations based, fuzzy matching,
+# correlative methods---they can handle a lot
+# of wonky data and noise and measurement error
+# a lot better due to the inherent nature of the
+# "squinting at the world through vaseline-smeared
+# sunglasses" perspective they take of the world.
+
+# Here we opt for having a
 # valid direct age `:direct_ma_value`,
 # alomg with minumum and maximum
-# of quantification of the error range of the
-# estimate, as well as `:min_ma` and `:max_ma``.
-#
+# of quantification of the precision of range of the
+# estimate, `:min_ma` and `:max_ma``, is a
+# standard to start with.
+
 occs_with_ages = dropmissing(occs_accepted_rank, [
     :direct_ma_value,
-    :direct_ma_error,
+    # :direct_ma_error,
     :max_ma,
-    :max_ma_error,
+    # :max_ma_error,
     :min_ma,
-    :min_ma_error,
+    # :min_ma_error,
 ])
+
+# We *could* also demand that we have errors
+# on each of these values, `direct_ma_error`,
+# `min_ma_error`, and `max_ma_error`, but this might
+# leave us with not enough data for some unrealistic
+# idealized version of data quality.
+
+nrow(dropmissing(occs_accepted_rank, r".*direct_ma.*"))
+# 269
+
+nrow(dropmissing(occs_accepted_rank, r".*max_ma.*"))
+# 198
+
+nrow(dropmissing(occs_accepted_rank, r".*min_ma.*"))
+# 200
+
+nrow(dropmissing(occs_accepted_rank, r".*_ma.*"))
+# 0
+
+nrow(dropmissing(occs_accepted_rank, r".*direct_ma_error*"))
+# 272
+
+nrow(dropmissing(occs_accepted_rank, r".*max_ma_error*"))
+# 199
+
+nrow(dropmissing(occs_accepted_rank, r".*min_ma_error*"))
+# 201
+
+nrow(dropmissing(occs_accepted_rank, r".*ma_error*"))
+# 0
+
+# Let's have a look at how much taxonomic variation
+# is remaining that meets our taxonomic and chronological
+# data standards.
 
 
 
