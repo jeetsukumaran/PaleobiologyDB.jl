@@ -165,6 +165,8 @@ A `DataFrame` with information about the specified occurrence.
 
 # Examples
 ```julia
+pbdb_occurrence("occ:1001")
+pbdb_occurrence("occ:1001"; vocab="pbdb", show="full")
 pbdb_occurrence(1001)
 pbdb_occurrence(1001; vocab="pbdb", show=["class","coords"])
 ```
@@ -187,7 +189,8 @@ Get information about fossil occurrence records stored in the Paleobiology Datab
   - `min_ma`, `max_ma`: Minimum and maximum age in millions of years.
   - `interval`: Named geologic interval (e.g. `"Miocene"`).
   - `cc`: Country/continent codes (ISO two-letter or three-letter).
-  - `show`: Extra information blocks (`"coords"`, `"classext"`, `"ident"`, etc.).
+  - `show`: Extra information blocks (`"coords"`, `"classext"`, `"ident"`, etc.). `show = "full"` for everything.
+  - `extids`: Set `extids = true` to show the newer string identifiers.
   - `vocab`: Vocabulary for field names (`"pbdb"` for full names, `"com"` for short codes).
 
 # Returns
@@ -195,7 +198,20 @@ A `DataFrame` with fossil occurrence records matching the query.
 
 # Examples
 ```julia
-pbdb_occurrences(base_name="Canis"; limit=100, show=["coords","classext"])
+
+# `taxon_name` retrieves *only* units of this rank
+occs = pbdb_occurrences(
+    taxon_name="Canis",
+    show="full", # all columns
+    limit=100,
+)
+
+# `base_name` retrieves units of this and nested rank
+occs = pbdb_occurrences(
+    base_name="Canis",
+    show=["coords","classext"],
+    limit=100,
+)
 ```
 """
 function pbdb_occurrences(; kwargs...)
