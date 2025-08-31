@@ -12,13 +12,31 @@ taxonomic information, collections, specimens, and other paleobiological data.
 using PaleobiologyDB
 
 # Get occurrences for Canidae
-occs = pbdb_occurrences(base_name="Canidae", show=["coords", "classext"])
+occs = pbdb_occurrences(
+    base_name="Canidae",
+    vocab="pbdb",
+    extids=true,
+    show="full",
+)
+occs = pbdb_occurrences(
+    base_name="Canidae",
+    show=["coords", "classext"],
+)
 
 # Get taxonomic information
 taxa = pbdb_taxa(name="Canis", vocab="pbdb")
 
 # Get a single collection
-coll = pbdb_collection(id=1003, show=["loc", "stratext"])
+coll = pbdb_collection(
+    "col:1003",
+    show=["coords", "loc", "stratext"],
+    vocab="pbdb",
+    extids=true,
+)
+coll = pbdb_collection(
+    1003,
+    show=["loc", "stratext"],
+)
 ```
 
 # Acknowledgements
@@ -29,7 +47,6 @@ is based on the [paleobioDB](https://github.com/ropensci/paleobioDB)
 R package.
 
 """
-
 module PaleobiologyDB
 
 include("dbapi.jl")

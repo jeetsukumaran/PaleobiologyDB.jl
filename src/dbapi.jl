@@ -245,8 +245,14 @@ A `DataFrame` describing the specified collection.
 
 # Examples
 ```julia
+pbdb_collection("col:1003")
 pbdb_collection(1003)
-pbdb_collection(1003; vocab="pbdb", show=["loc","stratext"])
+pbdb_collection(
+    "col:1003";
+    vocab="pbdb",
+    show=["loc","stratext"],
+    extids=true
+)
 ```
 """
 function pbdb_collection(id; kwargs...)
@@ -358,6 +364,9 @@ pbdb_taxon(name="Canis"; vocab="pbdb", show=["attr","app","size"])
 function pbdb_taxon(; kwargs...)
     return pbdb_query("taxa/single"; kwargs...)
 end
+function pbdb_taxon(id; kwargs...)
+    return pbdb_taxon(; id = id, kwargs...)
+end
 
 """
     pbdb_taxa(; kwargs...)
@@ -434,6 +443,9 @@ pbdb_interval(id=1; vocab="pbdb")
 """
 function pbdb_interval(; kwargs...)
     return pbdb_query("intervals/single"; kwargs...)
+end
+function pbdb_interval(id; kwargs...)
+    return pbdb_interval(; id = id, kwargs...)
 end
 
 """
