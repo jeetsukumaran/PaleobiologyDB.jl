@@ -276,12 +276,16 @@ nrow(combine(groupby(occs_with_ages_and_locs, :family), nrow))
 #15
 
 
-occ_age_summaries = combine(
-    groupby(occs_with_ages_and_locs, :accepted_name),
-    :direct_ma_value .=> [length, maximum, minimum, mean]
-)
-occs_multiages = occ_age_summaries[occ_age_summaries.direct_ma_value_length .>= 2, :]
-occs_durations = occs_multiages.direct_ma_value_maximum - occs_multiages.direct_ma_value_minimum
+occs_grouped = groupby(occs_with_ages_and_locs, :accepted_name)
+occs_ages = combine(occs_grouped,
+                            :direct_ma_value .=> [length, maximum, minimum, mean])
+occs_durations = occs_ages.direct_ma_value_maximum - occs_ages.direct_ma_value_minimum
+occs_lats = combine(occs_grouped,
+                                :paleolat .=> [length, maximum, minimum, mean])
+occs_lat_spans = occs_lats.paleolat_maximum - occs_lats.paleolat_minimum
+occs_lngs = combine(occs_grouped,
+                                :paleolng .=> [length, maximum, minimum, mean])
+occs_lng_spans = occs_lngs.paleolng_maximum - occs_lngs.paleolng_minimum
 
 
 
