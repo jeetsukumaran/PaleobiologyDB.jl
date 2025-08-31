@@ -39,6 +39,10 @@ coll = pbdb_collection(
 )
 ```
 
+See "`names(PaleobiologyDB)`" for full list of functions, and
+the help for each function (e.g., "`?pbdb_collections`",
+"`?pbdb_occurrence`" for more examples and details.
+
 # Acknowledgements
 The [Paleobiology Database](https://paleobiodb.org/) for curating
 and providing the data and API.
