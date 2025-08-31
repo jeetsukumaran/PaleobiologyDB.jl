@@ -3,8 +3,9 @@
 # serving as "commands" in the REPL to work
 # with `DataFrame`'s, the fundamental
 # organization unit of data in our
-# ecosystem.
+# ecosystem, as well as statistics.
 using DataFrames
+using Statistics
 
 # This brings in a suite of functions
 # to work with the Paleobiology Database
@@ -205,33 +206,82 @@ occs_with_ages = dropmissing(occs_accepted_rank, [
 # idealized version of data quality.
 
 nrow(dropmissing(occs_accepted_rank, r".*direct_ma.*"))
-# 269
+#269
 
 nrow(dropmissing(occs_accepted_rank, r".*max_ma.*"))
-# 198
+#198
 
 nrow(dropmissing(occs_accepted_rank, r".*min_ma.*"))
-# 200
+#200
 
 nrow(dropmissing(occs_accepted_rank, r".*_ma.*"))
-# 0
+#0
 
 nrow(dropmissing(occs_accepted_rank, r".*direct_ma_error*"))
-# 272
+#272
 
 nrow(dropmissing(occs_accepted_rank, r".*max_ma_error*"))
-# 199
+#199
 
 nrow(dropmissing(occs_accepted_rank, r".*min_ma_error*"))
-# 201
+#201
 
 nrow(dropmissing(occs_accepted_rank, r".*ma_error*"))
-# 0
+#0
+
+# Again, knowing what we know now, we can query for this
+# directly:
+# occs_accepted_rank = pbdb_occurrences(
+#     ; # the ';' indicated end of positional arguments
+#     base_name = "Carnivora",
+#     show = "full",
+#     vocab = "pbdb",
+#     extids = true,
+#     idreso = "species",
+#     hasage = "direct",
+# )
 
 # Let's have a look at how much taxonomic variation
 # is remaining that meets our taxonomic and chronological
 # data standards.
 
+# number of species
+nrow(combine(groupby(occs_with_ages, :accepted_name), nrow))
+#171
+
+# number of genera
+nrow(combine(groupby(occs_with_ages, :genus), nrow))
+#110
+
+# number of families
+nrow(combine(groupby(occs_with_ages, :family), nrow))
+#16
+
+# Now for spatial data standards.
+nrow(dropmissing(occs_with_ages, [:lng, :lat]))
+#411
+nrow(dropmissing(occs_with_ages, [:paleolng, :paleolat]))
+#127
+nrow(dropmissing(occs_with_ages, [:lng, :lat, :paleolng, :paleolat]))
+#127
+
+# We will go with the strictest again, and again
+# the take hit in data
+occs_with_ages_and_locs = dropmissing(occs_with_ages, [:lng, :lat, :paleolng, :paleolat])
+nrow(combine(groupby(occs_with_ages_and_locs, :accepted_name), nrow))
+#112
+nrow(combine(groupby(occs_with_ages_and_locs, :genus), nrow))
+#84
+nrow(combine(groupby(occs_with_ages_and_locs, :family), nrow))
+#15
+
+
+occ_age_summaries = combine(
+    groupby(occs_with_ages_and_locs, :accepted_name),
+    :direct_ma_value .=> [length, maximum, minimum, mean]
+)
+occs_multiages = occ_age_summaries[occ_age_summaries.direct_ma_value_length .>= 2, :]
+occs_durations = occs_multiages.direct_ma_value_maximum - occs_multiages.direct_ma_value_minimum
 
 
 
