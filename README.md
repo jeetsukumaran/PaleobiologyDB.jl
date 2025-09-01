@@ -59,10 +59,7 @@ collection = pbdb_collection(
 
 ### Understanding the data service and schema
 
-The [Paleonbiology Database](https://paleobiodb.org) database is rich and complexly structured, with multiple tables relatedd by multiple different keys.
-The PBDB data service API adds another layer of richness and complexity to this, by providing only different ways to query the data, but different ways to have the results composed, normalized, or dereferenced.
-
-This package includes and makes available for searching, grepping, and displaying, the API documentation of the database in an `ApiHelp` submodule.
+This package includes and makes available for searching, grepping, and displaying, the API documentation of the PBDB data service in an `ApiHelp` submodule.
 
 This module itself, like the rest of the `PaleobiologyDB` package, is richly documented with help docstrings to facilitate learning and self-discovery:
 
