@@ -55,5 +55,6 @@ module PaleobiologyDB
 
 include("dbapi.jl")
 include("userapi.jl")
+include("pbdbdocs.jl")
 
 end # module

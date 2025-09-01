@@ -57,6 +57,22 @@ collection = pbdb_collection(
 
 ## Basic usage
 
+### Understanding the data service and schema
+
+```julia
+using PaleobiologyDB
+using PaleobiologyDB.ApiHelp
+
+# Help on how to find help!
+names(ApiHelp)
+> 6-element Vector{Symbol}:
+>  :ApiHelp
+>  :pbdb_api_search
+>  :pbdb_endpoints
+>  :pbdb_fields
+>  :pbdb_help
+>  :pbdb_parameters
+
 ### Fossil occurrences
 
 ```julia
