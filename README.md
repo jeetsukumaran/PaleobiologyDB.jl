@@ -57,19 +57,9 @@ collection = pbdb_collection(
 
 ## Basic usage
 
-### Understanding the PaleobiologyDB.jl interface
+### The PBDB/PaleobiologyDB.jl interface
 
 Every "endpoint" of the PBDB data service API corresponds to a function in the PaleobiologyDB.jl package: calling this function with the API endpoint parameters returns a `DataFrame` with the response.
-
-The PaleobiologyDB.jl package is follows the PBDB service interface endpoints exactly:
-
-
-```julia
-using PaleobiologyDB
-
-names(PaleogbiologyDB)
-foreach(println, names(PaleobiologyDB))
-```
 
 As with the interface, the entire package is richly documented, from the module:
 
@@ -337,6 +327,10 @@ PBDB_LIVE=1 julia --project -e 'using Pkg; Pkg.test()'
 	-	[PBDB Data Service: Bibliographic references](https://paleobiodb.org/data1.2/general/references_doc.html)
 	-	[PBDB Data Service: Output formats and Vocabularies](https://paleobiodb.org/data1.2/formats_doc.html)
 	-	[PBDB Data Service: Special parameters](https://paleobiodb.org/data1.2/special_doc.html)
+
+### Processing Paleobiology Database data
+
+- [1 Managing and Processing Data From the Paleobiology Database | Analytical Paleobiology](https://psmits.github.io/paleo_book/managing-and-processing-data-from-the-paleobiology-database.html)
 
 ## Contributing
 
