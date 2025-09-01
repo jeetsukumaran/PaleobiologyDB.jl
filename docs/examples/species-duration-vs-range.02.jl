@@ -16,28 +16,32 @@ function fetch_occurrences_pbdb(filter_kwargs)
 end
 
 """
-    occurrences_df(; kwargs...)
-
-Return a occurrences dataset queried by `kwargs`, cleaned to minimum
-taxonomic, temporal, and spatial data resolutions.
+Returns a occurrences dataset queried by `filter_kwargs`, cleaned to minimum
+taxonomic resolutions.
 """
 function occurrences_df(
-        taxonomic_resolution::Symbol = :species, # :species | :genus | :family
-        time_source::Symbol = :direct_ma_value,
+        taxonomic_quality::Symbol = :species, # :species | :genus | :family
         ;
         filter_kwargs...,
 )
-    filter_kwargs = (idreso = taxonomic_resolution, filter_kwargs...)
-    label_field = if taxonomic_resolution == :species
-            :accepted_name
-        else
-            taxonomic_resolution
-        end
+    filter_kwargs = (idreso = taxonomic_quality, filter_kwargs...)
+    fetch_occurrences_pbdb(filter_kwargs)
+end
+
+function spatiotemporal_spans_df(df;
+        taxonomy_field::Symbol = :accepted_name,
+        time_field::Symbol = :direct_ma_value,
+        spatial_fields::Tuple{Symbol, Symbol} = (:paleolng, :paleolat),
+)
+    df = dropmissing(df, [taxonomy_field, time_field, spatial_fields...])
     span_fn = vals -> maximum(vals) - minimum(vals)
-    return (
-        filter_kwargs
-            |> fetch_occurrences_pbdb
-            |> df -> dropmissing(df, [:accepted_rank, time_source, label_field])
-            # |> df -> filter(row -> minimum_taxonomy_fn(row) && minimum_chronology_fn(row), df)
+    spans = combine(groupby(df, taxonomy_field),
+        [time_field, spatial_fields...] .=> span_fn .=> [:time_span, :lat_span, :lng_span]
     )
+    rename!(spans, taxonomy_field => :taxon)
+    filter!(r -> (r.time_span != 0) &&
+                      (r.lat_span != 0) &&
+                      (r.lng_span != 0), spans)
+
+    sort!(spans, [:lat_span, :lng_span, :time_span])
 end
