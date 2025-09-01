@@ -14,7 +14,7 @@ Until the package is registered, install directly from the repository:
 ```julia
 using Pkg
 Pkg.add(url="https://github.com/jeetsukumaran/PaleobiologyDB.jl")
-````
+```
 
 ## Quick start
 
@@ -55,9 +55,7 @@ collection = pbdb_collection(
 )
 ```
 
-## Basic usage
-
-### The PBDB/PaleobiologyDB.jl interface
+## The PBDB/PaleobiologyDB.jl interface
 
 Every "endpoint" of the PBDB data service API corresponds to a function in the PaleobiologyDB.jl package: calling this function with the API endpoint parameters returns a `DataFrame` with the response.
 
@@ -94,58 +92,53 @@ search: PaleobiologyDB
 down to the functions:
 
 ```
-help?> pbdb_taxon
-search: pbdb_taxon pbdb_taxa pbdb_opinion pbdb_taxa_auto pbdb_scales pbdb_strata pbdb_ref_taxa pbdb_opinions pbdb_help pbdb_scale pbdb_endpoints
+help?> pbdb_occurrences
+search: pbdb_occurrences pbdb_occurrence pbdb_ref_occurrences pbdb_references pbdb_reference fetch_occurrences_pbdb collection_occurrences pbdb_measurements pbdb_specimens pbdb_scales occurrences_df pbdb_opinions
 
-  pbdb_taxon(; kwargs...)
+  pbdb_occurrences(; kwargs...)
 
-  Get information about a single taxonomic name (by name or id).
+  Get information about fossil occurrence records stored in the Paleobiology Database.
 
   Arguments
   ≡≡≡≡≡≡≡≡≡
 
-    •  kwargs...: One of the following must be provided (but not both):
-       • name: Taxonomic name string; % and _ may be used as wildcards.
-       • id: PBDB identifier (integer or extended identifier).
-       Additional options:
-       • show: Extra blocks (e.g. "attr" attribution, "app" first/last appearance, "size" number of subtaxa).
-       • vocab: Vocabulary for field names ("pbdb" for full names, "com" for compact).
+    •  kwargs...: Filtering and output parameters. Common options include:
+       • limit: Maximum number of records to return (Int or "all").
+       • taxon_name: Return only records with the specified taxonomic name(s).
+       • base_name: Return records for the specified name(s) and all descendant taxa.
+       • lngmin, lngmax, latmin, latmax: Geographic bounding box.
+       • min_ma, max_ma: Minimum and maximum age in millions of years.
+       • interval: Named geologic interval (e.g. "Miocene").
+       • cc: Country/continent codes (ISO two-letter or three-letter).
+       • show: Extra information blocks ("coords", "classext", "ident", etc.). show = "full" for everything.
+       • extids: Set extids = true to show the newer string identifiers.
+       • vocab: Vocabulary for field names ("pbdb" for full names, "com" for short codes).
 
   Returns
   ≡≡≡≡≡≡≡
 
-  A DataFrame with information about the selected taxon.
+  A DataFrame with fossil occurrence records matching the query.
 
   Examples
   ≡≡≡≡≡≡≡≡
 
-  pbdb_taxon(name="Canis"; vocab="pbdb", show=["attr","app","size"])
+
+  # `taxon_name` retrieves *only* units of this rank
+  occs = pbdb_occurrences(
+      taxon_name="Canis",
+      show=["full", "ident"], # all columns
+      limit=100,
+  )
+
+  # `base_name` retrieves units of this and nested rank
+  occs = pbdb_occurrences(
+      base_name="Canis",
+      show=["coords","classext"],
+      limit=100,
+  )
 ```
 
-### Understanding the data service and schema
-
-This package includes and makes available for searching, grepping, and displaying, the API documentation of the PBDB data service in an `ApiHelp` submodule.
-This module itself, like the rest of the `PaleobiologyDB` package, is richly documented with help docstrings to facilitate learning and self-discovery:
-
-```
-julia> using PaleobiologyDB.ApiHelp
-help?> ApiHelp
-search: ApiHelp
-
-  ApiHelp
-
-  Provides interactive help and documentation for the Paleobiology Database (PBDB) API.
-
-  Available Functions
-  ===================
-    •  pbdb_help() - Show available API endpoints or detailed help for a specific endpoint
-    •  pbdb_endpoints() - List all available PBDB API endpoints
-    •  pbdb_parameters(endpoint) - Show parameters for an endpoint
-    •  pbdb_fields(endpoint) - Show response fields for an endpoint
-    •  pbdb_api_search(pattern) - Search documentation for patterns
-```
-
-
+## Basic endpoint querying examples
 
 ### Fossil occurrences
 
@@ -298,6 +291,88 @@ try
 catch e
     @warn "PBDB request failed" exception=e
 end
+```
+
+## Built-in data service API reference
+
+This package includes and makes available for searching, grepping, and displaying, the API documentation of the PBDB data service in an `ApiHelp` submodule.
+This module itself, like the rest of the `PaleobiologyDB` package, is richly documented with help docstrings to facilitate learning and self-discovery:
+
+```
+julia> using PaleobiologyDB.ApiHelp
+help?> ApiHelp
+search: ApiHelp
+
+  ApiHelp
+
+  Provides interactive help and documentation for the Paleobiology Database (PBDB) API.
+
+  Available Functions
+  ===================
+    •  pbdb_help() - Show available API endpoints or detailed help for a specific endpoint
+    •  pbdb_endpoints() - List all available PBDB API endpoints
+    •  pbdb_parameters(endpoint) - Show parameters for an endpoint
+    •  pbdb_fields(endpoint) - Show response fields for an endpoint
+    •  pbdb_api_search(pattern) - Search documentation for patterns
+.
+.
+.
+julia> PaleobiologyDB.ApiHelp.pbdb_parameters("occurrences")
+SELECTION PARAMETERS:
+  all_records
+    Select all occurrences entered in the database
+  occ_id
+    Comma-separated list of occurrence identifiers
+  coll_id
+    Comma-separated list of collection identifiers
+  base_name
+    Taxonomic name(s), including all subtaxa and synonyms
+  taxon_name
+    Taxonomic name(s), including synonyms
+  taxon_id
+    Taxa identifiers, not including subtaxa or synonyms
+
+GEOGRAPHIC PARAMETERS:
+  lngmin
+    Minimum longitude bound
+  lngmax
+    Maximum longitude bound
+  latmin
+    Minimum latitude bound
+  latmax
+    Maximum latitude bound
+  cc
+    Country codes (e.g., 'US,CA') or continent codes
+  country_name
+    Full country names, may include wildcards
+  state
+    State or province names
+
+TEMPORAL PARAMETERS:
+  interval
+    Named geologic time intervals (e.g., 'Miocene')
+  min_ma
+    Minimum age in millions of years
+  max_ma
+    Maximum age in millions of years
+  timerule [contain|major|overlap]
+    Temporal locality rule
+
+TAXONOMIC PARAMETERS:
+  idreso [species|genus|family]
+    Taxonomic resolution
+  taxon_status [valid|accepted|invalid]
+    Taxonomic status
+  extant [yes|no]
+    Extant status
+
+OUTPUT PARAMETERS:
+  show [class|coords|loc|time|strat|env]
+    Additional info blocks
+  order [id|max_ma|identification]
+    Result ordering
+  limit
+    Maximum number of records to return
 ```
 
 ## Testing
