@@ -49,26 +49,6 @@ module ApiHelp
 
 using JSON3
 
-# --- helpers ---------------------------------------------------------------
-
-# Normalize something that might be a Symbol into a String for display
-_to_string(x) = x isa Symbol ? String(x) : String(x)
-
-# Lookup that accepts string keys for JSON3.Object with Symbol keys
-# Returns the value or throws a clear error if not present
-function _getkey(d, k::AbstractString)
-    if haskey(d, k)
-        return d[k]
-    elseif haskey(d, Symbol(k))
-        return d[Symbol(k)]
-    else
-        throw(KeyError(k))
-    end
-end
-
-# Safe haskey that accepts String for JSON3.Object with Symbol keys
-_haskey(d, k::AbstractString) = haskey(d, k) || haskey(d, Symbol(k))
-
 # PBDB API Documentation as JSON strings
 const API_DOCS = Dict{String, String}(
     "occurrences" => """{
@@ -148,17 +128,23 @@ const API_DOCS = Dict{String, String}(
     }"""
 )
 
-# Main exports (add pbdb_* aliases you advertised)
-export help, endpoints, parameters, fields, search,
-       pbdb_help, pbdb_endpoints, pbdb_parameters, pbdb_fields, pbdb_api_search
+# Main exports
+export pbdb_help, pbdb_endpoints, pbdb_parameters, pbdb_fields, pbdb_api_search
 
 """
-    help()
-    help(endpoint)
+    pbdb_help()
+    pbdb_help(endpoint)
 
 Show available PBDB API endpoints or detailed help for a specific endpoint.
+
+Examples:
+
+```julia
+pbdb_help()              # List all available endpoints
+pbdb_help("occurrences") # Show detailed help for occurrences endpoint
+```
 """
-function help(endpoint::AbstractString = "")
+function pbdb_help(endpoint="")
     if isempty(endpoint)
         list_endpoints()
     else
@@ -166,89 +152,103 @@ function help(endpoint::AbstractString = "")
     end
 end
 
-# Aliases with pbdb_* names
-pbdb_help(args...; kwargs...) = help(args...; kwargs...)
-
 """
-    endpoints()
+    pbdb_endpoints()
 
 List all available PBDB API endpoints.
 """
-endpoints() = list_endpoints()
-pbdb_endpoints() = endpoints()
+function pbdb_endpoints()
+    list_endpoints()
+end
 
 """
-    parameters(endpoint; category="")
+    pbdb_parameters(endpoint; category="")
 
 Show parameters for an endpoint, optionally filtered by category.
+
+Examples:
+
+```julia
+pbdb_parameters("occurrences")                    # All parameters
+pbdb_parameters("occurrences", category="temporal") # Just temporal parameters
+```
 """
-function parameters(endpoint::AbstractString; category::AbstractString = "")
+function pbdb_parameters(endpoint; category="")
     doc_data = get_doc_data(endpoint)
     params = doc_data["parameters"]
 
     if isempty(category)
         for (cat_name, cat_params) in params
-            # fix: cat_name may be a Symbol
-            println("$(uppercase(_to_string(cat_name))) PARAMETERS:")
+            println("$(uppercase(string(cat_name))) PARAMETERS:")
             for param in cat_params
                 show_parameter(param)
             end
             println()
         end
     else
-        if _haskey(params, category)
+        if haskey(params, category)
             println("$(uppercase(category)) PARAMETERS:")
-            for param in _getkey(params, category)
+            for param in params[category]
                 show_parameter(param)
             end
         else
             println("Category '$category' not found.")
-            # show available categories normalized
-            cats = [ _to_string(k) for (k, _) in params ]
-            println("Available categories: ", join(cats, ", "))
+            println("Available categories: ", join(string.(keys(params)), ", "))
         end
     end
 end
-pbdb_parameters(args...; kwargs...) = parameters(args...; kwargs...)
 
 """
-    fields(endpoint; block="")
+    pbdb_fields(endpoint; block="")
 
 Show response fields for an endpoint, optionally filtered by block.
+
+Examples:
+
+```julia
+pbdb_fields("occurrences")              # All fields
+pbdb_fields("occurrences", block="basic") # Just basic fields
+```
 """
-function fields(endpoint::AbstractString; block::AbstractString = "")
+function pbdb_fields(endpoint; block="")
     doc_data = get_doc_data(endpoint)
     field_blocks = doc_data["response_fields"]
 
     if isempty(block)
         for (block_name, block_fields) in field_blocks
-            println("$(uppercase(_to_string(block_name))) FIELDS:")
+            println("$(uppercase(string(block_name))) FIELDS:")
             for field in block_fields
                 show_field(field)
             end
             println()
         end
     else
-        if _haskey(field_blocks, block)
+        if haskey(field_blocks, block)
             println("$(uppercase(block)) FIELDS:")
-            for field in _getkey(field_blocks, block)
+            for field in field_blocks[block]
                 show_field(field)
             end
         else
             println("Block '$block' not found.")
-            blks = [ _to_string(k) for (k, _) in field_blocks ]
-            println("Available blocks: ", join(blks, ", "))
+            println("Available blocks: ", join(string.(keys(field_blocks)), ", "))
         end
     end
 end
-pbdb_fields(args...; kwargs...) = fields(args...; kwargs...)
 
 """
-    search(pattern; scope="all", endpoint="occurrences")
+    pbdb_api_search(pattern; scope="all", endpoint="occurrences")
 
 Search documentation for a pattern.
+
+Examples:
+
+```julia
+pbdb_api_search("latitude")                     # Search everywhere
+pbdb_api_search("age", scope="parameters")      # Search only parameters
+pbdb_api_search("temporal", scope="fields")     # Search only fields
+```
 """
-function search(pattern; scope::AbstractString = "all", endpoint::AbstractString = "occurrences")
+function pbdb_api_search(pattern; scope="all", endpoint="occurrences")
     doc_data = get_doc_data(endpoint)
     results = find_matches(doc_data, pattern, scope)
 
@@ -265,7 +265,6 @@ function search(pattern; scope::AbstractString = "all", endpoint::AbstractString
         println()
     end
 end
-pbdb_api_search(args...; kwargs...) = search(args...; kwargs...)
 
 # Internal functions
 function list_endpoints()
@@ -274,24 +273,24 @@ function list_endpoints()
 
     for (key, doc_json) in API_DOCS
         doc_data = JSON3.read(doc_json)
-        println(key)
-        println("  ", doc_data["endpoint"])
-        println("  ", doc_data["title"])
+        println("$key")
+        println("  $(doc_data["endpoint"])")
+        println("  $(doc_data["title"])")
         println()
     end
 
     println("Usage:")
-    println("  help(\"endpoint_name\")     - Detailed endpoint help")
-    println("  parameters(\"endpoint\")    - Show parameters")
-    println("  fields(\"endpoint\")        - Show response fields")
-    println("  search(\"pattern\")         - Search documentation")
+    println("  pbdb_help(\"endpoint_name\")     - Detailed endpoint help")
+    println("  pbdb_parameters(\"endpoint\")    - Show parameters")
+    println("  pbdb_fields(\"endpoint\")        - Show response fields")
+    println("  pbdb_api_search(\"pattern\")     - Search documentation")
 end
 
-function show_endpoint(endpoint::AbstractString)
+function show_endpoint(endpoint)
     doc_data = get_doc_data(endpoint)
 
-    println("ENDPOINT: ", doc_data["endpoint"])
-    println("TITLE: ", doc_data["title"])
+    println("ENDPOINT: $(doc_data["endpoint"])")
+    println("TITLE: $(doc_data["title"])")
     println()
     println("DESCRIPTION:")
     println(doc_data["description"])
@@ -299,28 +298,28 @@ function show_endpoint(endpoint::AbstractString)
 
     println("USAGE EXAMPLES:")
     for example in doc_data["usage_examples"]
-        println("  ", example)
+        println("  $example")
     end
     println()
 
     println("AVAILABLE FORMATS:")
     for fmt in doc_data["formats"]
-        println("  ", fmt["suffix"], " - ", fmt["type"])
+        println("  $(fmt["suffix"]) - $(fmt["type"])")
     end
     println()
 
     println("Next steps:")
-    println("  parameters(\"$endpoint\")  - View all parameters")
-    println("  fields(\"$endpoint\")      - View response fields")
-    println("  search(\"keyword\")        - Search this endpoint")
+    println("  pbdb_parameters(\"$endpoint\")  - View all parameters")
+    println("  pbdb_fields(\"$endpoint\")      - View response fields")
+    println("  pbdb_api_search(\"keyword\")    - Search this endpoint")
 end
 
-function get_doc_data(endpoint::AbstractString)
+function get_doc_data(endpoint)
     if !haskey(API_DOCS, endpoint)
         println("Unknown endpoint '$endpoint'")
         println("Available endpoints:")
         for key in keys(API_DOCS)
-            println("  ", key)
+            println("  $key")
         end
         throw(ArgumentError("Invalid endpoint"))
     end
@@ -328,54 +327,52 @@ function get_doc_data(endpoint::AbstractString)
 end
 
 function show_parameter(param)
-    print("  ", param["name"])
+    print("  $(param["name"])")
     if haskey(param, "values")
-        print(" [", join(param["values"], "|"), "]")
+        print(" [$(join(param["values"], "|"))]")
     end
     println()
-    println("    ", param["description"])
+    println("    $(param["description"])")
 end
 
 function show_field(field)
-    println("  ", field["pbdb"], " (", field["com"], ")")
-    println("    ", field["description"])
+    println("  $(field["pbdb"]) ($(field["com"]))")
+    println("    $(field["description"])")
 end
 
-function find_matches(doc_data, pattern, scope::AbstractString)
-    results = Vector{Tuple{String,String,String}}()
-    search_regex = pattern isa Regex ? pattern : Regex(String(pattern), "i")
+function find_matches(doc_data, pattern, scope)
+    results = []
+    search_regex = pattern isa Regex ? pattern : Regex(pattern, "i")
 
     # Search description
-    if scope in ("all", "description")
+    if scope in ["all", "description"]
         if occursin(search_regex, doc_data["description"])
             push!(results, ("Description", "Endpoint description", doc_data["description"]))
         end
     end
 
     # Search parameters
-    if scope in ("all", "parameters")
+    if scope in ["all", "parameters"]
         for (category, params) in doc_data["parameters"]
-            cat = _to_string(category)
             for param in params
                 searchtext = "$(param["name"]) $(param["description"])"
                 if haskey(param, "values")
                     searchtext *= " " * join(param["values"], " ")
                 end
                 if occursin(search_regex, searchtext)
-                    push!(results, ("Parameter", "$cat/$(param["name"])", param["description"]))
+                    push!(results, ("Parameter", "$(category)/$(param["name"])", param["description"]))
                 end
             end
         end
     end
 
     # Search fields
-    if scope in ("all", "fields")
+    if scope in ["all", "fields"]
         for (block, fields_list) in doc_data["response_fields"]
-            blk = _to_string(block)
             for field in fields_list
                 searchtext = "$(field["pbdb"]) $(field["description"])"
                 if occursin(search_regex, searchtext)
-                    push!(results, ("Field", "$blk/$(field["pbdb"])", field["description"]))
+                    push!(results, ("Field", "$(block)/$(field["pbdb"])", field["description"]))
                 end
             end
         end
@@ -384,4 +381,4 @@ function find_matches(doc_data, pattern, scope::AbstractString)
     return results
 end
 
-end # module Help
+end # module ApiHelp
