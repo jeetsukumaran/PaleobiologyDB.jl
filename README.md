@@ -57,30 +57,6 @@ collection = pbdb_collection(
 
 ## Basic usage
 
-### Understanding the data service and schema
-
-This package includes and makes available for searching, grepping, and displaying, the API documentation of the PBDB data service in an `ApiHelp` submodule.
-
-This module itself, like the rest of the `PaleobiologyDB` package, is richly documented with help docstrings to facilitate learning and self-discovery:
-
-```
-julia> using PaleobiologyDB.ApiHelp
-help?> ApiHelp
-search: ApiHelp
-
-  ApiHelp
-
-  Provides interactive help and documentation for the Paleobiology Database (PBDB) API.
-
-  Available Functions
-  ===================
-    •  pbdb_help() - Show available API endpoints or detailed help for a specific endpoint
-    •  pbdb_endpoints() - List all available PBDB API endpoints
-    •  pbdb_parameters(endpoint) - Show parameters for an endpoint
-    •  pbdb_fields(endpoint) - Show response fields for an endpoint
-    •  pbdb_api_search(pattern) - Search documentation for patterns
-```
-
 ### Understanding the PaleobiologyDB.jl interface
 
 Every "endpoint" of the PBDB data service API corresponds to a function in the PaleobiologyDB.jl package: calling this function with the API endpoint parameters returns a `DataFrame` with the response.
@@ -155,6 +131,30 @@ search: pbdb_taxon pbdb_taxa pbdb_opinion pbdb_taxa_auto pbdb_scales pbdb_strata
 
   pbdb_taxon(name="Canis"; vocab="pbdb", show=["attr","app","size"])
 ```
+
+### Understanding the data service and schema
+
+This package includes and makes available for searching, grepping, and displaying, the API documentation of the PBDB data service in an `ApiHelp` submodule.
+This module itself, like the rest of the `PaleobiologyDB` package, is richly documented with help docstrings to facilitate learning and self-discovery:
+
+```
+julia> using PaleobiologyDB.ApiHelp
+help?> ApiHelp
+search: ApiHelp
+
+  ApiHelp
+
+  Provides interactive help and documentation for the Paleobiology Database (PBDB) API.
+
+  Available Functions
+  ===================
+    •  pbdb_help() - Show available API endpoints or detailed help for a specific endpoint
+    •  pbdb_endpoints() - List all available PBDB API endpoints
+    •  pbdb_parameters(endpoint) - Show parameters for an endpoint
+    •  pbdb_fields(endpoint) - Show response fields for an endpoint
+    •  pbdb_api_search(pattern) - Search documentation for patterns
+```
+
 
 
 ### Fossil occurrences
