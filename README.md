@@ -59,19 +59,106 @@ collection = pbdb_collection(
 
 ### Understanding the data service and schema
 
+The [Paleonbiology Database](https://paleobiodb.org) database is rich and complexly structured, with multiple tables relatedd by multiple different keys.
+The PBDB data service API adds another layer of richness and complexity to this, by providing only different ways to query the data, but different ways to have the results composed, normalized, or dereferenced.
+
+This package includes and makes available for searching, grepping, and displaying, the API documentation of the database in an `ApiHelp` submodule.
+
+This module itself, like the rest of the `PaleobiologyDB` package, is richly documented with help docstrings to facilitate learning and self-discovery:
+
+```
+julia> using PaleobiologyDB.ApiHelp
+help?> ApiHelp
+search: ApiHelp
+
+  ApiHelp
+
+  Provides interactive help and documentation for the Paleobiology Database (PBDB) API.
+
+  Available Functions
+  ===================
+    •  pbdb_help() - Show available API endpoints or detailed help for a specific endpoint
+    •  pbdb_endpoints() - List all available PBDB API endpoints
+    •  pbdb_parameters(endpoint) - Show parameters for an endpoint
+    •  pbdb_fields(endpoint) - Show response fields for an endpoint
+    •  pbdb_api_search(pattern) - Search documentation for patterns
+```
+
+### Understanding the PaleobiologyDB.jl interface
+
+Every "endpoint" of the PBDB data service API corresponds to a function in the PaleobiologyDB.jl package: calling this function with the API endpoint parameters returns a `DataFrame` with the response.
+
+The PaleobiologyDB.jl package is follows the PBDB service interface endpoints exactly:
+
+
 ```julia
 using PaleobiologyDB
-using PaleobiologyDB.ApiHelp
 
-# Help on how to find help!
-names(ApiHelp)
-> 6-element Vector{Symbol}:
->  :ApiHelp
->  :pbdb_api_search
->  :pbdb_endpoints
->  :pbdb_fields
->  :pbdb_help
->  :pbdb_parameters
+names(PaleogbiologyDB)
+foreach(println, names(PaleobiologyDB))
+```
+
+As with the interface, the entire package is richly documented, from the module:
+
+```
+help?> PaleobiologyDB
+search: PaleobiologyDB
+
+  PaleobiologyDB
+
+  A Julia interface to the Paleobiology Database (PBDB) Web API.
+
+  This package provides functions to query the PBDB API for fossil occurrences, taxonomic information, collections, specimens, and other paleobiological data.
+
+  Examples
+  ≡≡≡≡≡≡≡≡
+
+  using PaleobiologyDB
+
+  # Get occurrences for Canidae
+  occs = pbdb_occurrences(
+      base_name="Canidae",
+      vocab="pbdb",
+      extids=true,
+      show="full",
+  )
+  occs = pbdb_occurrences(
+      base_name="Canidae",
+      show=["coords", "classext"],
+  )
+```
+
+down to the functions:
+
+```
+help?> pbdb_taxon
+search: pbdb_taxon pbdb_taxa pbdb_opinion pbdb_taxa_auto pbdb_scales pbdb_strata pbdb_ref_taxa pbdb_opinions pbdb_help pbdb_scale pbdb_endpoints
+
+  pbdb_taxon(; kwargs...)
+
+  Get information about a single taxonomic name (by name or id).
+
+  Arguments
+  ≡≡≡≡≡≡≡≡≡
+
+    •  kwargs...: One of the following must be provided (but not both):
+       • name: Taxonomic name string; % and _ may be used as wildcards.
+       • id: PBDB identifier (integer or extended identifier).
+       Additional options:
+       • show: Extra blocks (e.g. "attr" attribution, "app" first/last appearance, "size" number of subtaxa).
+       • vocab: Vocabulary for field names ("pbdb" for full names, "com" for compact).
+
+  Returns
+  ≡≡≡≡≡≡≡
+
+  A DataFrame with information about the selected taxon.
+
+  Examples
+  ≡≡≡≡≡≡≡≡
+
+  pbdb_taxon(name="Canis"; vocab="pbdb", show=["attr","app","size"])
+```
+
 
 ### Fossil occurrences
 
