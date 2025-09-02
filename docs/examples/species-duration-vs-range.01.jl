@@ -28,7 +28,8 @@ using PaleobiologyDB
 names(PaleobiologyDB) # truncated view
 foreach(println, names(PaleobiologyDB))
 
-# `pbdb_occurrences` seems like what we want.
+# The "`pbdb_occurrences` seems like what we want.
+#
 # The PaleobiologDB library interface is richly
 # documented at several levels, including at the
 # source code level, which makes self-learning
@@ -40,6 +41,95 @@ foreach(println, names(PaleobiologyDB))
 # the help for the PaleobiologyDB module function
 # directly by:
 @doc pbdb_occurrences
+
+# ::: {.callout-tip title = "PBDB data service API help'}
+#
+# MUCH more thorough documentation of the
+# upstream endpoints (parameters and response
+# fields are also available,
+#
+# ```
+# julia> using PaleobiologyDB.ApiHelp
+# julia> names(ApiHelp)
+# ```
+#
+# There's even help on using this help!
+#
+# ```
+# julia> ?ApiHelp
+# julia> ?pbdb_help()
+# julia> ?pbdb_endpoints()
+# julia> ?pbdb_parameters()
+# julia> ?pbdb_fields()
+# julia> ?pbdb_search()
+# ```
+#
+# To review the parameters for querying
+# the "occurrences" endpoint, for example,
+# you can:
+#
+# ```
+# julia> pbdb_parameters("occurrences")
+# SELECTION PARAMETERS:
+#   all_records
+#     Select all occurrences entered in the database
+#   occ_id
+#     Comma-separated list of occurrence identifiers
+#   coll_id
+#     Comma-separated list of collection identifiers
+#   base_name
+#     Taxonomic name(s), including all subtaxa and synonyms
+#   taxon_name
+# .
+# .
+# .
+# ```
+# julia> pbdb_fields("occurrences")
+# BASIC FIELDS:
+#   occurrence_no (oid)
+#     Unique occurrence identifier
+#   collection_no (cid)
+#     Associated collection identifier
+#   identified_name (idn)
+#     Taxonomic name as identified
+#   accepted_name (tna)
+#     Accepted taxonomic name
+#   accepted_rank (rnk)
+#     Taxonomic rank
+#   early_interval (oei)
+#     Early geologic time interval
+#   late_interval (oli)
+#     Late geologic time interval
+#   max_ma (eag)
+#     Early age bound (Ma)
+#   min_ma (lag)
+#     Late age bound (Ma)
+#
+# COORDS FIELDS:
+#   lng (lng)
+#     Longitude (degrees)
+#   lat (lat)
+#     Latitude (degrees)
+#
+# CLASS FIELDS:
+#   phylum (phl)
+#     Phylum name
+#   class (cll)
+#     Class name
+#   order (odl)
+#     Order name
+#   family (fml)
+#     Family name
+#   genus (gnl)
+#     Genus name
+#
+#```
+#
+# :::
+
+# Having reviewed the database query parameter
+# and response field, let us begin to explore
+# the data.
 
 # Get all carnivore occurrence data
 # using the PaleobiologDB function
@@ -103,6 +193,7 @@ clean_taxonomy_flt = row -> row.accepted_rank == "species" || row.accepted_rank 
 # "give me all the rows that have
 # `accepted_rank == focal_rank`
 #
+# ```julia
 # occs_accepted_rank = occs[occs.accepted_rank .== focal_rank, :]
 # occs_accepted_rank = filter(r -> r.accepted_rank == focal_rank, occs)
 # occs_accepted_rank = subset(occs, :accepted_rank => rank_rows -> rank_rows .== focal_rank)
@@ -111,7 +202,8 @@ clean_taxonomy_flt = row -> row.accepted_rank == "species" || row.accepted_rank 
 # occs_accepted_rank = subset(occs, :accepted_rank => ByRow(r -> r == focal_rank))
 # occs_accepted_rank = subset(occs, :accepted_rank => rows -> rows .== focal_rank)
 # occs_accepted_rank = occs |> df -> subset(df, :accepted_rank => rows -> rows .== focal_rank)
-#
+# ```
+
 # occs_accepted_rank = occs[occs.accepted_rank .== focal_rank, :]
 occs_accepted_rank = filter(clean_taxonomy_flt, occs)
 
@@ -320,39 +412,11 @@ rename!(spans, :accepted_name => :taxon)
 spans_nz = filter(r -> (r.time_span != 0) &&
                     (r.lat_span != 0) &&
                     (r.lng_span != 0), spans)
-
 spans_nz
 sort!(spans_nz, :lat_span, :lng_span, :time_span)
 
-
-
-
-
-# ## Putting it altogether
-#
-# This is a pipeline or chaining syntax.
-# The is one of the ways Julia provides for
-# constructing stacks of functions applied
-# one after the other.
-#
-# In chaining, the flow is from left to
-# right, that is the functions are applied in
-# left to right order as they appear in
-# the code (as opposed to left to right
-# as in function composition), so it makes
-# it easy to build up computations as
-# we step through the process in our head.
-#
-# We use the pipe operator and so sometimes
-# we say we are pipelining instead of
-# chaining.
-#
-#
-# occs_accepted_rank = occs |>
-#     df -> subset(df, :accepted_rank => rows -> rows .== "species")
-
-# In contrast to function composition, another
-# approach where the order of function
-# application is from "inside-out", which
-# follows classical mathematical convention.
-
+# This is nowhere near a complete analysis, let alone a valid one.
+# But as a pilot data discovery session, it has served its purpose, allowing us to understand
+# the data model, availability, quality and qualityt/scope trade-offs, as well as the
+# feasibility of the analysis and the type of functions, logic, transformations etc.
+# required for a general "pipeline" for this study.
