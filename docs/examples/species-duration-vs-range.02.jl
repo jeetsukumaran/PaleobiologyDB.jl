@@ -66,7 +66,9 @@ end
 function transform_data(gdf::GroupedDataFrame)::DataFrame
     combine(gdf, [
             :taxon => unique => :taxon,
+            :taxon => length => :n_samples,
             :age   => (ages -> maximum(ages) - minimum(ages)) => :age_span,
+            [:lon, :lat] => ( (lon, lat) -> geospatial_distance_summary(lon, lat) ) => AsTable,
         ]
     )
 end
@@ -86,6 +88,6 @@ da = occurrence_data_adapter(
     # :paleolat,
 )
 adapted_df = adapt_data(occurs_df, da)
-grouped_data = aggregate_data(adapted_df, 2)
-result_df = transform_data(grouped_data)
+grouped_df = aggregate_data(adapted_df, 2)
+result_df = transform_data(grouped_df)
 result_df

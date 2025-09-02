@@ -1,4 +1,4 @@
-export distance_stats, haversine_deg
+export geospatial_distance, haversine_deg
 
 # -- Great-circle (haversine) distance on a sphere with inputs in degrees --
 """
@@ -51,7 +51,7 @@ end
 
 # -- API 1: Lon/Lat specialization with pluggable distance function --
 """
-    distance_stats(lon::AbstractVector{<:Real}, lat::AbstractVector{<:Real};
+    geospatial_distance_summary(lon::AbstractVector{<:Real}, lat::AbstractVector{<:Real};
                    dist=:haversine_deg, radius_km::Float64=6371.0088)
 
 Compute pairwise distance summary statistics (min, max, mean, median) for geographic points.
@@ -66,7 +66,7 @@ Arguments
 Returns a `NamedTuple`:
 `(min = …, max = …, mean = …, median = …, n_points = …, n_pairs = …)`
 """
-function distance_stats(lon::AbstractVector{<:Real}, lat::AbstractVector{<:Real};
+function geospatial_distance_summary(lon::AbstractVector{<:Real}, lat::AbstractVector{<:Real};
                         dist=:haversine_deg, radius_km::Float64=6371.0088)
     length(lon) == length(lat) || throw(ArgumentError("lon and lat must have the same length"))
     n = length(lon)
@@ -107,7 +107,7 @@ end
 
 # -- API 2: Generic coordinates with arbitrary metrics (e.g., Distances.jl) --
 """
-    distance_stats(X::AbstractMatrix{<:Real}; metric)
+    geospatial_distance_summary(X::AbstractMatrix{<:Real}; metric)
 
 Compute summary statistics of pairwise distances between rows of `X` using `metric`.
 
@@ -120,7 +120,7 @@ Compute summary statistics of pairwise distances between rows of `X` using `metr
 Returns a `NamedTuple`:
 `(min = …, max = …, mean = …, median = …, n_points = …, n_pairs = …)`
 """
-function distance_stats(X::AbstractMatrix{<:Real}; metric)
+function geospatial_distance_summary(X::AbstractMatrix{<:Real}; metric)
     n, d = size(X)
     n < 2 && throw(ArgumentError("need at least 2 points"))
     # Keep rows without NaN
@@ -144,7 +144,7 @@ function distance_stats(X::AbstractMatrix{<:Real}; metric)
     (metric isa Function) || throw(ArgumentError("`metric` must be a callable (a, b)->distance"))
 
     # Pairwise distances
-    npairs = nvalid * (nvalid - 1) ÷ 2
+    npairs = nvalid * (nvalid - 1) ÷ 2gg
     dists = Vector{Float64}(undef, npairs)
     k = 1
     @inbounds for i in 1:(nvalid-1)
@@ -164,9 +164,9 @@ end
 # Example usage:
 # lon = [170.0, -170.0, 0.0, 45.0]
 # lat = [ 10.0,  -10.0, 0.0, 30.0]
-# distance_stats(lon, lat)  # default haversine (km)
+# geospatial_distance(lon, lat)  # default haversine (km)
 #
 # using Distances
 # X = randn(5, 3)
-# distance_stats(X; metric=Distances.Euclidean())
+# geospatial_distance(X; metric=Distances.Euclidean())
 # ---------------------------------------------------------------------------
