@@ -58,9 +58,9 @@ function adapt_data(
     rename!(select!(dropmissing(df, original_names), original_names), data_adapter)
 end
 
-function aggregate_data(adapted_df::DataFrame, minimum_nrows::Int = 2)::GroupedDataFrame
-    gdf = groupby(df, :taxon)
-    filter(sdf -> nrow(sdf) >= minimum_nrows, gdf)
+function aggregate_data(adapted_df::DataFrame, minimum_group_size::Int = 2)::GroupedDataFrame
+    gdf = groupby(adapted_df, :taxon)
+    filter(sdf -> nrow(sdf) >= minimum_group_size, gdf)
 end
 
 function transform_data(gdf::GroupedDataFrame)::DataFrame
@@ -71,21 +71,21 @@ function transform_data(gdf::GroupedDataFrame)::DataFrame
     )
 end
 
-## -----
+## -- In the REPL --
+
 using DataFrames
 using CSV
 
 # live_df = taxon_resolved_occurrences(; base_name = "Mammalia", extant = "no")
 cached_df = CSV.read(".cache/_paleobiologydb/mammalia_species-directma-paleocoords.tsv", DataFrame)
-df = cached_df
-da = occurrence_data_adapter()
-adapted_df = adapt_data(df, da)
-grouped_data = aggregate_data(
-
-gdf = groupby(df, :taxon)
-sort(combine(gdf, nrow), :nrow)
-
-
-
-result_df = transform_data(adapted_df)
+occurs_df = cached_df
+da = occurrence_data_adapter(
+    # :accepted_name,
+    # :direct_ma_value,
+    # :paleolng,
+    # :paleolat,
+)
+adapted_df = adapt_data(occurs_df, da)
+grouped_data = aggregate_data(adapted_df, 2)
+result_df = transform_data(grouped_data)
 result_df
