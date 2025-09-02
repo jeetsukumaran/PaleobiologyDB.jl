@@ -58,9 +58,13 @@ function adapt_data(
     rename!(select!(dropmissing(df, original_names), original_names), data_adapter)
 end
 
+function aggregate_data(adapted_df::DataFrame, minimum_nrows::Int = 2)::GroupedDataFrame
+    gdf = groupby(df, :taxon)
+    filter(sdf -> nrow(sdf) >= minimum_nrows, gdf)
+end
 
-function transform_data(df::DataFrame)::DataFrame
-    combine(groupby(df, :taxon), [
+function transform_data(gdf::GroupedDataFrame)::DataFrame
+    combine(gdf, [
             :taxon => unique => :taxon,
             :age   => (ages -> maximum(ages) - minimum(ages)) => :age_span,
         ]
@@ -76,6 +80,12 @@ cached_df = CSV.read(".cache/_paleobiologydb/mammalia_species-directma-paleocoor
 df = cached_df
 da = occurrence_data_adapter()
 adapted_df = adapt_data(df, da)
-# test_df = adapted_df[rand(1:nrow(adapted_df), 30), :]
+grouped_data = aggregate_data(
+
+gdf = groupby(df, :taxon)
+sort(combine(gdf, nrow), :nrow)
+
+
+
 result_df = transform_data(adapted_df)
 result_df
