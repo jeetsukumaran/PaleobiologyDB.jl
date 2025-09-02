@@ -1,54 +1,94 @@
 using DataFrames
+using DataFrames: DataFrame
 using Statistics
 using PaleobiologyDB
 
-@kwargs struct FieldSelection
-    taxonomy_field::Symbol = :accepted_name
-    time_field::Symbol = :direct_ma_value
-    spatial_fields::Tuple{Symbol, Symbol} = (:paleolng, :paleolat)
-    taxonomic_quality::Symbol = :species # :species | :genus | :family
-end
+include("geocalcs.jl")
 
-function fetch_occurrences_pbdb(filter_kwargs)
+function query_occurrences(query_kwargs)::DataFrame
     pbdb_occurrences(
         ;
         show = [
-            "full", # coords, paleocoord
-            "ident", # 'species_name' and other classifications
+            # Adds most extra fields: coords, paleocoord
+            "full",
+            # Required to also add: 'species_name'
+            "ident",
         ],
+        # Use the expanded field names
         vocab = "pbdb",
+        # Use the modern "occ:####" id style
         extids = true,
-        filter_kwargs...,
+        # Rest of query
+        query_kwargs...,
     )
 end
 
 """
-Returns a occurrences dataset queried by `filter_kwargs`, cleaned to minimum
+Returns a occurrences dataset queried by `query_kwargs`, cleaned to minimum
 taxonomic resolutions.
 """
-function occurrences_df(
-        taxonomic_quality::Symbol = :species, # :species | :genus | :family
+function taxon_resolved_occurrences(
+        taxonomic_resolution::Symbol = :species, # :species | :genus | :family
         ;
-        filter_kwargs...,
-)
-    filter_kwargs = (idreso = taxonomic_quality, filter_kwargs...)
-    fetch_occurrences_pbdb(filter_kwargs)
+        query_kwargs...,
+)::DataFrame
+    query_kwargs = (idreso = taxonomic_resolution, query_kwargs...)
+    query_occurrences(query_kwargs)
 end
 
-function spatiotemporal_spans_df(df;
-        taxonomy_field::Symbol = :accepted_name,
-        time_field::Symbol = :direct_ma_value,
-        spatial_fields::Tuple{Symbol, Symbol} = (:paleolng, :paleolat),
-)
-    df = dropmissing(df, [taxonomy_field, time_field, spatial_fields...])
-    span_fn = vals -> maximum(vals) - minimum(vals)
-    spans = combine(groupby(df, taxonomy_field),
-        [time_field, spatial_fields...] .=> span_fn .=> [:time_span, :lat_span, :lng_span]
+function occurrence_data_adapter(
+    taxon::Symbol = :accepted_name,
+    time::Symbol = :direct_ma_value,
+    lon::Symbol = :paleolng,
+    lat::Symbol = :paleolat,
+)::Dict{Symbol, Symbol}
+    Dict(
+        taxon => :taxon,
+        time => :time,
+        lon => :lon,
+        lat => :lat,
     )
-    rename!(spans, taxonomy_field => :taxon)
-    filter!(r -> (r.time_span != 0) &&
-                      (r.lat_span != 0) &&
-                      (r.lng_span != 0), spans)
+end
 
-    sort!(spans, [:lat_span, :lng_span, :time_span])
+function adapt_data(
+    df::DataFrame,
+    data_adapter::Dict{Symbol, Symbol}
+)::DataFrame
+    original_names = sort!(collect(keys(data_adapter)))
+    rename!(select!(dropmissing(df, original_names), original_names), data_adapter)
+end
+
+
+# tdf = adapted_df[rand(1:759, 10), :]
+# function spatial_data_aggregator(
+#     df::DataFrame,
+#     data_adapter::Dict{Symbol, Symbol},
+#     minimum_r
+# )::DataFrame
+#     df_ = dropmissing(df, keys(data_adapter))
+#     rename!(df_, da.taxon => :taxon)
+#     df_
+# end
+
+function spatiotemporal_spans(
+    df::DataFrame,
+    data_adapter::Dict{Symbol, Symbol}
+)::DataFrame
+    df = dropmissing(df, original_names)
+    spans = combine(groupby(df, taxonomy_field),
+        da_keys .=> transform_fn .=> da_values
+    )
+    rename!(spans, da.taxon => :taxon)
+    sort!(spans, [:lat_span, :lon_span, :time_span])
+end
+
+
+
+function run()
+    occs = taxon_resolved_occurrences(
+        :species ; # minimal taxonomic data quality
+        base_name = "Mammalia",
+        extant = "no",
+    )
+    # 62180×141 DataFrame
 end
