@@ -1,10 +1,10 @@
 # # Objective
 #
-# Plot species durations vs spatial
-# or geographical ranges to see
-# if there is a positive spatial extent
-# correlation between them.
-#
+# Plot species temporal spans
+# vs spatial spans (e.g. latitudinal
+# or longitudinal ranges) to see
+# if there is a positive correlation between
+# them.
 
 # This brings in a suite of useful functions
 # serving as "commands" in the REPL to work
