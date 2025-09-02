@@ -38,13 +38,13 @@ end
 
 function occurrence_data_adapter(
     taxon::Symbol = :accepted_name,
-    time::Symbol = :direct_ma_value,
+    age::Symbol = :direct_ma_value,
     lon::Symbol = :paleolng,
     lat::Symbol = :paleolat,
 )::Dict{Symbol, Symbol}
     Dict(
         taxon => :taxon,
-        time => :time,
+        age => :age,
         lon => :lon,
         lat => :lat,
     )
@@ -59,36 +59,23 @@ function adapt_data(
 end
 
 
-# tdf = adapted_df[rand(1:759, 10), :]
-# function spatial_data_aggregator(
-#     df::DataFrame,
-#     data_adapter::Dict{Symbol, Symbol},
-#     minimum_r
-# )::DataFrame
-#     df_ = dropmissing(df, keys(data_adapter))
-#     rename!(df_, da.taxon => :taxon)
-#     df_
-# end
-
-function spatiotemporal_spans(
-    df::DataFrame,
-    data_adapter::Dict{Symbol, Symbol}
-)::DataFrame
-    df = dropmissing(df, original_names)
-    spans = combine(groupby(df, taxonomy_field),
-        da_keys .=> transform_fn .=> da_values
+function transform_data(df::DataFrame)::DataFrame
+    combine(groupby(df, :taxon), [
+            :taxon => unique => :taxon,
+            :age   => (ages -> maximum(ages) - minimum(ages)) => :age_span,
+        ]
     )
-    rename!(spans, da.taxon => :taxon)
-    sort!(spans, [:lat_span, :lon_span, :time_span])
 end
 
+## -----
+using DataFrames
+using CSV
 
-
-function run()
-    occs = taxon_resolved_occurrences(
-        :species ; # minimal taxonomic data quality
-        base_name = "Mammalia",
-        extant = "no",
-    )
-    # 62180×141 DataFrame
-end
+# live_df = taxon_resolved_occurrences(; base_name = "Mammalia", extant = "no")
+cached_df = CSV.read(".cache/_paleobiologydb/mammalia_species-directma-paleocoords.tsv", DataFrame)
+df = cached_df
+da = occurrence_data_adapter()
+adapted_df = adapt_data(df, da)
+# test_df = adapted_df[rand(1:nrow(adapted_df), 30), :]
+result_df = transform_data(adapted_df)
+result_df
