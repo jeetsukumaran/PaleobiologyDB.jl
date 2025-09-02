@@ -64,9 +64,23 @@ Arguments
 - `radius_km`: sphere radius for `:haversine_deg` (ignored otherwise).
 
 Returns a `NamedTuple`:
-`(min = …, max = …, mean = …, median = …, n_points = …, n_pairs = …)`
+`(min = …, max = …, mean = …, median = …,)`
 """
-function geospatial_distance_summary(lon::AbstractVector{<:Real}, lat::AbstractVector{<:Real};
+function pairwise_geospatial_distance_summary(lon::AbstractVector{<:Real}, lat::AbstractVector{<:Real};
+                        dist=:haversine_deg, radius_km::Float64=6371.0088)
+    dists = pairwise_geospatial_distances(lon, lat; dist = dist, radius_km = radius_km)
+    mn, mx, meanv, medianv, _ = _summarize(dists)
+    return (
+        min = mn,
+        max = mx,
+        mean = meanv,
+        median = medianv,
+        # n_points = nvalid,
+        # n_pairs = npairs
+    )
+end
+
+function pairwise_geospatial_distances(lon::AbstractVector{<:Real}, lat::AbstractVector{<:Real};
                         dist=:haversine_deg, radius_km::Float64=6371.0088)
     length(lon) == length(lat) || throw(ArgumentError("lon and lat must have the same length"))
     n = length(lon)
@@ -100,9 +114,7 @@ function geospatial_distance_summary(lon::AbstractVector{<:Real}, lat::AbstractV
         end
     end
 
-    mn, mx, meanv, medianv, _ = _summarize(dists)
-    return (min = mn, max = mx, mean = meanv, median = medianv,
-            n_points = nvalid, n_pairs = npairs)
+    return dists
 end
 
 # -- API 2: Generic coordinates with arbitrary metrics (e.g., Distances.jl) --
@@ -118,9 +130,22 @@ Compute summary statistics of pairwise distances between rows of `X` using `metr
   (e.g., `Distances.Euclidean()`), which are callable.
 
 Returns a `NamedTuple`:
-`(min = …, max = …, mean = …, median = …, n_points = …, n_pairs = …)`
+`(min = …, max = …, mean = …, median = …,)`
 """
-function geospatial_distance_summary(X::AbstractMatrix{<:Real}; metric)
+function pairwise_geospatial_distance_summary(X::AbstractMatrix{<:Real}; metric)
+    dists = pairwise_geospatial_distances(X; metric)
+    mn, mx, meanv, medianv, _ = _summarize(dists)
+    return (
+        min = mn,
+        max = mx,
+        mean = meanv,
+        median = medianv,
+        # n_points = nvalid,
+        # n_pairs = npairs
+    )
+end
+
+function pairwise_geospatial_distances(X::AbstractMatrix{<:Real}; metric)
     n, d = size(X)
     n < 2 && throw(ArgumentError("need at least 2 points"))
     # Keep rows without NaN
@@ -155,9 +180,7 @@ function geospatial_distance_summary(X::AbstractMatrix{<:Real}; metric)
         end
     end
 
-    mn, mx, meanv, medianv, _ = _summarize(dists)
-    return (min = mn, max = mx, mean = meanv, median = medianv,
-            n_points = nvalid, n_pairs = npairs)
+    return dists
 end
 
 # ---------------------------------------------------------------------------

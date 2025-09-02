@@ -54,7 +54,7 @@ function adapt_data(
     df::DataFrame,
     data_adapter::Dict{Symbol, Symbol}
 )::DataFrame
-    original_names = sort!(collect(keys(data_adapter)))
+    original_names = collect(keys(data_adapter))
     rename!(select!(dropmissing(df, original_names), original_names), data_adapter)
 end
 
@@ -68,7 +68,18 @@ function transform_data(gdf::GroupedDataFrame)::DataFrame
             :taxon => unique => :taxon,
             :taxon => length => :n_samples,
             :age   => (ages -> maximum(ages) - minimum(ages)) => :age_span,
-            [:lon, :lat] => ( (lon, lat) -> geospatial_distance_summary(lon, lat) ) => AsTable,
+            [:lon, :lat] => ((lon, lat) -> begin
+                    # dists = geospatial_distance_summary(lon, lat)
+                    gdists = pairwise_geospatial_distance_summary(lon, lat)
+                    return (
+                        geo_dist_min = gdists.min,
+                        geo_dist_max = gdists.min,
+                        geo_dist_mean = gdists.mean,
+                        geo_dist_median = gdists.median,
+                    )
+            end) => AsTable,
+            # [:lon, :lat] => ( (lon, lat) -> geospatial_distance_summary(lon, lat) ) => AsTable,
+            # AsTable([:lon, :lat]) => ( coords -> geospatial_distance_summary(coords.lon, coords.lat) ) => AsTable,
         ]
     )
 end
