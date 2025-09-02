@@ -2,12 +2,19 @@ using DataFrames
 using Statistics
 using PaleobiologyDB
 
+@kwargs struct FieldSelection
+    taxonomy_field::Symbol = :accepted_name
+    time_field::Symbol = :direct_ma_value
+    spatial_fields::Tuple{Symbol, Symbol} = (:paleolng, :paleolat)
+    taxonomic_quality::Symbol = :species # :species | :genus | :family
+end
+
 function fetch_occurrences_pbdb(filter_kwargs)
     pbdb_occurrences(
         ;
         show = [
-            "full", # coords, paleocoords
-            "ident", # 'species_name'
+            "full", # coords, paleocoord
+            "ident", # 'species_name' and other classifications
         ],
         vocab = "pbdb",
         extids = true,
