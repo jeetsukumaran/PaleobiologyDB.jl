@@ -1,7 +1,7 @@
 
 
 """
-    pbdb_version() -> String
+	pbdb_version() -> String
 
 Return the target PBDB data service version.
 """
@@ -18,28 +18,28 @@ using CSV
 using DataFrames
 
 export pbdb_occurrence, pbdb_occurrences, pbdb_ref_occurrences,
-       pbdb_collection, pbdb_collections, pbdb_collections_geo,
-       pbdb_ref_collections, pbdb_config,
-       pbdb_taxon, pbdb_taxa, pbdb_taxa_auto, pbdb_ref_taxa, pbdb_opinions_taxa,
-       pbdb_interval, pbdb_intervals, pbdb_scale, pbdb_scales,
-       pbdb_strata, pbdb_strata_auto,
-       pbdb_reference, pbdb_references,
-       pbdb_specimen, pbdb_specimens, pbdb_ref_specimens, pbdb_measurements,
-       pbdb_opinion, pbdb_opinions
+	pbdb_collection, pbdb_collections, pbdb_collections_geo,
+	pbdb_ref_collections, pbdb_config,
+	pbdb_taxon, pbdb_taxa, pbdb_taxa_auto, pbdb_ref_taxa, pbdb_opinions_taxa,
+	pbdb_interval, pbdb_intervals, pbdb_scale, pbdb_scales,
+	pbdb_strata, pbdb_strata_auto,
+	pbdb_reference, pbdb_references,
+	pbdb_specimen, pbdb_specimens, pbdb_ref_specimens, pbdb_measurements,
+	pbdb_opinion, pbdb_opinions
 
 # --- Internal helpers -------------------------------------------------------
 
 const _FORMAT_SUFFIX = Dict(
-    :json => ".json",
-    :csv  => ".csv",
-    :tsv  => ".tsv",
-    :txt  => ".txt",
+	:json => ".json",
+	:csv => ".csv",
+	:tsv => ".tsv",
+	:txt => ".txt",
 )
 
 const _TEXT_DELIM = Dict(
-    :csv => ',',
-    :tsv => '	',
-    :txt => ',', # PBDB's .txt is comma-separated
+	:csv => ',',
+	:tsv => '	',
+	:txt => ',', # PBDB's .txt is comma-separated
 )
 
 pbdb_version() = _PBDB_VERSION
@@ -48,83 +48,87 @@ pbdb_version() = _PBDB_VERSION
 _joinvals(v) = v isa AbstractVector ? join(string.(v), ",") : v isa Bool ? (v ? "true" : "false") : string(v)
 
 # Build full URL for an endpoint with query parameters and chosen format
-function _build_url(endpoint::AbstractString; base_url::AbstractString=DEFAULT_BASE_URL,
-                    format::Symbol=:csv, query::Dict{String,<:Any}=Dict{String,Any}())
-    suffix = get(_FORMAT_SUFFIX, format) do
-        error("Unsupported format: $format. Use one of $(collect(keys(_FORMAT_SUFFIX))).")
-    end
+function _build_url(endpoint::AbstractString; base_url::AbstractString = DEFAULT_BASE_URL,
+	format::Symbol = :csv, query::Dict{String, <:Any} = Dict{String, Any}())
+	suffix = get(_FORMAT_SUFFIX, format) do
+		error("Unsupported format: $format. Use one of $(collect(keys(_FORMAT_SUFFIX))).")
+	end
 
-    # Merge-in default vocabulary for text responses if user didn't provide one
-    if format in (:csv, :tsv, :txt) && !haskey(query, "vocab")
-        query = copy(query)
-        query["vocab"] = "pbdb"
-    end
+	# Merge-in default vocabulary for text responses if user didn't provide one
+	if format in (:csv, :tsv, :txt) && !haskey(query, "vocab")
+		query = copy(query)
+		query["vocab"] = "pbdb"
+	end
 
-    # Assemble query string
-    pairs = String[]
-    for (k, v) in query
-        push!(pairs, string(HTTP.escapeuri(k), '=', HTTP.escapeuri(_joinvals(v))))
-    end
-    qs = isempty(pairs) ? "" : '?' * join(pairs, '&')
+	# Assemble query string
+	pairs = String[]
+	for (k, v) in query
+		push!(pairs, string(HTTP.escapeuri(k), '=', HTTP.escapeuri(_joinvals(v))))
+	end
+	qs = isempty(pairs) ? "" : '?' * join(pairs, '&')
 
-    return string(base_url, endpoint, suffix, qs)
+	return string(base_url, endpoint, suffix, qs)
 end
 
 # Parse PBDB JSON (records array) into a DataFrame
 function _json_to_df(body::Vector{UInt8})
-    obj = JSON3.read(body)
-    if hasproperty(obj, :error)
-        msg = try
-            String(obj.error)
-        catch
-            "PBDB returned an error"
-        end
-        error(msg)
-    end
-    if hasproperty(obj, :records)
-        recs = obj.records
-        return DataFrame(recs)  # handles missing fields automatically
-    else
-        return DataFrame([obj])
-    end
+	obj = JSON3.read(body)
+	if hasproperty(obj, :error)
+		msg = try
+			String(obj.error)
+		catch
+			"PBDB returned an error"
+		end
+		error(msg)
+	end
+	if hasproperty(obj, :records)
+		recs = obj.records
+		return DataFrame(recs)  # handles missing fields automatically
+	else
+		return DataFrame([obj])
+	end
 end
 
 # GET with simple retries
-function _get(url::AbstractString; headers=Dict{String,String}(), readtimeout::Integer=60, retries::Int=3)
-    last_err = nothing
-    for attempt in 1:retries
-        try
-            return HTTP.get(url; headers=headers, readtimeout=Int(readtimeout))
-        catch err
-            last_err = err
-            if attempt == retries
-                rethrow(err)
-            else
-                sleep(0.5 * attempt)
-            end
-        end
-    end
-    throw(last_err)
+function _get(
+    url::AbstractString; headers = Dict{String, String}(),
+    readtimeout::Integer = 300,
+    retries::Int = 3
+)
+	last_err = nothing
+	for attempt in 1:retries
+		try
+			return HTTP.get(url; headers = headers, readtimeout = Int(readtimeout))
+		catch err
+			last_err = err
+			if attempt == retries
+				rethrow(err)
+			else
+				sleep(0.5 * attempt)
+			end
+		end
+	end
+	throw(last_err)
 end
 
 # Core request -> DataFrame
-function _fetch_df(url::AbstractString; format::Symbol=:csv)
-    if format == :json
-        resp = _get(url; headers=Dict("Accept" => "application/json"))
-        return _json_to_df(resp.body)
-    elseif format in keys(_TEXT_DELIM)
-        resp = _get(url; headers=Dict("Accept" => "text/plain, text/csv"))
-        io = IOBuffer(resp.body)
-        return DataFrame(CSV.File(io; normalizenames=true, ignorerepeated=true, delim=_TEXT_DELIM[format]))
-    else
-        error("Unsupported format: $format")
-    end
+function _fetch_df(url::AbstractString; format::Symbol = :csv, readtimeout::Integer = 300, retries::Int = 3)
+	if format == :json
+		resp = _get(url; headers = Dict("Accept" => "application/json"), readtimeout, retries)
+		return _json_to_df(resp.body)
+	elseif format in keys(_TEXT_DELIM)
+		resp = _get(url; headers = Dict("Accept" => "text/plain, text/csv"), readtimeout, retries)
+		io = IOBuffer(resp.body)
+		return DataFrame(CSV.File(io; normalizenames = true, ignorerepeated = true, delim = _TEXT_DELIM[format]))
+	else
+		error("Unsupported format: $format")
+	end
 end
 
 # Public: central query function ---------------------------------------------
 
 """
-    pbdb_query(endpoint::AbstractString; format::Symbol=:csv, base_url::AbstractString=DEFAULT_BASE_URL, kwargs...)
+	pbdb_query(endpoint::AbstractString; format::Symbol=:csv, base_url::AbstractString=DEFAULT_BASE_URL, kwargs...)
 
 Low-level function that sends a request to a PBDB endpoint and returns a `DataFrame`.
 
@@ -138,19 +142,27 @@ Notes:
 - For text formats, `vocab="pbdb"` is added by default if not provided.
 - JSON responses use PBDB's JSON schema and are converted from the `records` array.
 """
-function pbdb_query(endpoint::AbstractString; format::Symbol=:csv, base_url::AbstractString=DEFAULT_BASE_URL, kwargs...)
-    q = Dict{String,Any}()
-    for (k,v) in pairs(kwargs)
-        q[string(k)] = v
-    end
-    url = _build_url(endpoint; base_url=base_url, format=format, query=q)
-    return _fetch_df(url; format=format)
+function pbdb_query(
+    endpoint::AbstractString
+    ;
+    format::Symbol = :csv,
+    base_url::AbstractString = DEFAULT_BASE_URL,
+    readtimeout::Integer = 300,
+    retries::Int = 3,
+    kwargs...
+)
+	q = Dict{String, Any}()
+	for (k, v) in pairs(kwargs)
+		q[string(k)] = v
+	end
+	url = _build_url(endpoint; base_url = base_url, format = format, query = q)
+	return _fetch_df(url; format = format, readtimeout, retries)
 end
 
 # --- Thin, idiomatic wrappers (keywords mirror PBDB) ------------------------
 
 """
-    pbdb_occurrence(id; kwargs...)
+	pbdb_occurrence(id; kwargs...)
 
 Get information about a single fossil occurrence record from the Paleobiology Database.
 
@@ -172,11 +184,11 @@ pbdb_occurrence(1001; vocab="pbdb", show=["class","coords"])
 ```
 """
 function pbdb_occurrence(id; kwargs...)
-    return pbdb_query("occs/single"; id=id, kwargs...)
+	return pbdb_query("occs/single"; id = id, kwargs...)
 end
 
 """
-    pbdb_occurrences(; kwargs...)
+	pbdb_occurrences(; kwargs...)
 
 Get information about fossil occurrence records stored in the Paleobiology Database.
 
@@ -201,25 +213,25 @@ A `DataFrame` with fossil occurrence records matching the query.
 
 # `taxon_name` retrieves *only* units of this rank
 occs = pbdb_occurrences(
-    taxon_name="Canis",
-    show="full", # all columns
-    limit=100,
+	taxon_name="Canis",
+	show="full", # all columns
+	limit=100,
 )
 
 # `base_name` retrieves units of this and nested rank
 occs = pbdb_occurrences(
-    base_name="Canis",
-    show=["coords","classext"],
-    limit=100,
+	base_name="Canis",
+	show=["coords","classext"],
+	limit=100,
 )
 ```
 """
 function pbdb_occurrences(; kwargs...)
-    return pbdb_query("occs/list"; kwargs...)
+	return pbdb_query("occs/list"; kwargs...)
 end
 
 """
-    pbdb_ref_occurrences(; kwargs...)
+	pbdb_ref_occurrences(; kwargs...)
 
 Get bibliographic references associated with fossil occurrence records.
 
@@ -239,13 +251,13 @@ pbdb_ref_occurrences(base_name="Canis"; ref_pubyr=2000, vocab="pbdb")
 ```
 """
 function pbdb_ref_occurrences(; kwargs...)
-    return pbdb_query("occs/refs"; kwargs...)
+	return pbdb_query("occs/refs"; kwargs...)
 end
 
 # # Collections -----------------------------------------------------------------
 
 """
-    pbdb_collection(id; kwargs...)
+	pbdb_collection(id; kwargs...)
 
 Get information about a single fossil collection record from the Paleobiology Database.
 
@@ -264,19 +276,19 @@ A `DataFrame` describing the specified collection.
 pbdb_collection("col:1003")
 pbdb_collection(1003)
 pbdb_collection(
-    "col:1003";
-    vocab="pbdb",
-    show=["loc","stratext"],
-    extids=true
+	"col:1003";
+	vocab="pbdb",
+	show=["loc","stratext"],
+	extids=true
 )
 ```
 """
 function pbdb_collection(id; kwargs...)
-    return pbdb_query("colls/single"; id=id, kwargs...)
+	return pbdb_query("colls/single"; id = id, kwargs...)
 end
 
 """
-    pbdb_collections(; kwargs...)
+	pbdb_collections(; kwargs...)
 
 Get information about multiple fossil collections.
 
@@ -300,11 +312,11 @@ pbdb_collections(base_name="Cetacea", interval="Miocene"; show=["ref","loc","str
 ```
 """
 function pbdb_collections(; kwargs...)
-    return pbdb_query("colls/list"; kwargs...)
+	return pbdb_query("colls/list"; kwargs...)
 end
 
 """
-    pbdb_collections_geo(level; kwargs...)
+	pbdb_collections_geo(level; kwargs...)
 
 Geographic clusters (summary) of collections. `level` is required.
 
@@ -324,12 +336,12 @@ pbdb_collections_geo(2; lngmin=0.0, lngmax=15.0, latmin=0.0, latmax=15.0, vocab=
 ```
 """
 function pbdb_collections_geo(level; kwargs...)
-    isnothing(level) && error("Parameter `level` is required (see `pbdb_config(show = \"clusters\")`)")
-    return pbdb_query("colls/summary"; level=level, kwargs...)
+	isnothing(level) && error("Parameter `level` is required (see `pbdb_config(show = \"clusters\")`)")
+	return pbdb_query("colls/summary"; level = level, kwargs...)
 end
 
 """
-    pbdb_collections_geo(; level, kwargs...)
+	pbdb_collections_geo(; level, kwargs...)
 
 Geographic clusters (summary) of collections. `level` is required.
 
@@ -350,14 +362,14 @@ pbdb_collections_geo(level=2; lngmin=0.0, lngmax=15.0, latmin=0.0, latmax=15.0)
 ```
 """
 function pbdb_collections_geo(; level, kwargs...)
-    isnothing(level) && error("Parameter `level` is required (see `pbdb_config(show = \"clusters\")`)")
-    return pbdb_query("colls/summary"; level=level, kwargs...)
+	isnothing(level) && error("Parameter `level` is required (see `pbdb_config(show = \"clusters\")`)")
+	return pbdb_query("colls/summary"; level = level, kwargs...)
 end
 
 # Taxa ------------------------------------------------------------------------
 
 """
-    pbdb_taxon(; kwargs...)
+	pbdb_taxon(; kwargs...)
 
 Get information about a single taxonomic name (by `name` or `id`).
 
@@ -378,14 +390,14 @@ pbdb_taxon(name="Canis"; vocab="pbdb", show=["attr","app","size"])
 ```
 """
 function pbdb_taxon(; kwargs...)
-    return pbdb_query("taxa/single"; kwargs...)
+	return pbdb_query("taxa/single"; kwargs...)
 end
 function pbdb_taxon(id; kwargs...)
-    return pbdb_taxon(; id = id, kwargs...)
+	return pbdb_taxon(; id = id, kwargs...)
 end
 
 """
-    pbdb_taxa(; kwargs...)
+	pbdb_taxa(; kwargs...)
 
 Get information about multiple taxonomic names.
 
@@ -407,11 +419,11 @@ pbdb_taxa(name="Canidae"; rel="all_parents", vocab="pbdb", show=["attr","app","s
 ```
 """
 function pbdb_taxa(; kwargs...)
-    return pbdb_query("taxa/list"; kwargs...)
+	return pbdb_query("taxa/list"; kwargs...)
 end
 
 """
-    pbdb_taxa_auto(; kwargs...)
+	pbdb_taxa_auto(; kwargs...)
 
 Autocomplete: list of taxonomic names matching a prefix or partial name.
 
@@ -430,13 +442,13 @@ pbdb_taxa_auto(name="Cani"; limit=10)
 ```
 """
 function pbdb_taxa_auto(; kwargs...)
-    return pbdb_query("taxa/auto"; format=:json, kwargs...)
+	return pbdb_query("taxa/auto"; format = :json, kwargs...)
 end
 
 # Intervals & scales ----------------------------------------------------------
 
 """
-    pbdb_interval(; kwargs...)
+	pbdb_interval(; kwargs...)
 
 Get information about a single geologic time interval, selected by `name` or `id`.
 
@@ -458,14 +470,14 @@ pbdb_interval(id=1; vocab="pbdb")
 ```
 """
 function pbdb_interval(; kwargs...)
-    return pbdb_query("intervals/single"; kwargs...)
+	return pbdb_query("intervals/single"; kwargs...)
 end
 function pbdb_interval(id; kwargs...)
-    return pbdb_interval(; id = id, kwargs...)
+	return pbdb_interval(; id = id, kwargs...)
 end
 
 """
-    pbdb_intervals(; kwargs...)
+	pbdb_intervals(; kwargs...)
 
 Get information about multiple geologic time intervals.
 
@@ -485,11 +497,11 @@ pbdb_intervals(min_ma=0, max_ma=5; vocab="pbdb")
 ```
 """
 function pbdb_intervals(; kwargs...)
-    return pbdb_query("intervals/list"; kwargs...)
+	return pbdb_query("intervals/list"; kwargs...)
 end
 
 """
-    pbdb_scale(id; kwargs...)
+	pbdb_scale(id; kwargs...)
 
 Get information about a single time scale, selected by identifier.
 
@@ -508,11 +520,11 @@ pbdb_scale(1; vocab="pbdb")
 ```
 """
 function pbdb_scale(id; kwargs...)
-    return pbdb_query("scales/single"; id=id, kwargs...)
+	return pbdb_query("scales/single"; id = id, kwargs...)
 end
 
 """
-    pbdb_scales(; kwargs...)
+	pbdb_scales(; kwargs...)
 
 Get information about multiple time scales.
 
@@ -529,13 +541,13 @@ pbdb_scales()
 ```
 """
 function pbdb_scales(; kwargs...)
-    return pbdb_query("scales/list"; kwargs...)
+	return pbdb_query("scales/list"; kwargs...)
 end
 
 # Strata ----------------------------------------------------------------------
 
 """
-    pbdb_strata(; kwargs...)
+	pbdb_strata(; kwargs...)
 
 Get information about geological strata, selected by name, rank, and/or geography.
 
@@ -556,11 +568,11 @@ pbdb_strata(rank="formation", lngmin=-120, lngmax=-100, latmin=30, latmax=50)
 ```
 """
 function pbdb_strata(; kwargs...)
-    return pbdb_query("strata/list"; kwargs...)
+	return pbdb_query("strata/list"; kwargs...)
 end
 
 """
-    pbdb_strata_auto(; kwargs...)
+	pbdb_strata_auto(; kwargs...)
 
 Autocomplete: list of strata matching a given prefix or partial name.
 
@@ -580,13 +592,13 @@ pbdb_strata_auto(name="Pin"; vocab="pbdb")
 ```
 """
 function pbdb_strata_auto(; kwargs...)
-    return pbdb_query("strata/auto"; format=:json, kwargs...)
+	return pbdb_query("strata/auto"; format = :json, kwargs...)
 end
 
 # References ------------------------------------------------------------------
 
 """
-    pbdb_reference(id; kwargs...)
+	pbdb_reference(id; kwargs...)
 
 Get information about a single bibliographic reference.
 
@@ -605,11 +617,11 @@ pbdb_reference(1003; vocab="pbdb", show="both")
 ```
 """
 function pbdb_reference(id; kwargs...)
-    return pbdb_query("refs/single"; id=id, kwargs...)
+	return pbdb_query("refs/single"; id = id, kwargs...)
 end
 
 """
-    pbdb_references(; kwargs...)
+	pbdb_references(; kwargs...)
 
 Get information about multiple bibliographic references.
 
@@ -630,11 +642,11 @@ pbdb_references(ref_author="Polly")
 ```
 """
 function pbdb_references(; kwargs...)
-    return pbdb_query("refs/list"; kwargs...)
+	return pbdb_query("refs/list"; kwargs...)
 end
 
 """
-    pbdb_ref_collections(; kwargs...)
+	pbdb_ref_collections(; kwargs...)
 
 Get bibliographic references from which collection data were entered.
 
@@ -655,11 +667,11 @@ pbdb_ref_collections(base_name="Canidae", interval="Quaternary", cc="ASI")
 ```
 """
 function pbdb_ref_collections(; kwargs...)
-    return pbdb_query("colls/refs"; kwargs...)
+	return pbdb_query("colls/refs"; kwargs...)
 end
 
 """
-    pbdb_ref_taxa(; kwargs...)
+	pbdb_ref_taxa(; kwargs...)
 
 Get bibliographic references associated with taxonomic names.
 
@@ -682,13 +694,13 @@ pbdb_ref_taxa(name="Canidae"; vocab="pbdb", show=["both","comments"])
 ```
 """
 function pbdb_ref_taxa(; kwargs...)
-    return pbdb_query("taxa/refs"; kwargs...)
+	return pbdb_query("taxa/refs"; kwargs...)
 end
 
 # Specimens & measurements -----------------------------------------------------
 
 """
-    pbdb_specimen(id; kwargs...)
+	pbdb_specimen(id; kwargs...)
 
 Get information about a single fossil specimen.
 
@@ -707,11 +719,11 @@ pbdb_specimen(30050; show=["class","loc","refattr"])
 ```
 """
 function pbdb_specimen(id; kwargs...)
-    return pbdb_query("specs/single"; id=id, kwargs...)
+	return pbdb_query("specs/single"; id = id, kwargs...)
 end
 
 """
-    pbdb_specimens(; kwargs...)
+	pbdb_specimens(; kwargs...)
 
 Get information about multiple fossil specimens.
 
@@ -731,11 +743,11 @@ pbdb_specimens(base_name="Cetacea", interval="Miocene"; vocab="pbdb")
 ```
 """
 function pbdb_specimens(; kwargs...)
-    return pbdb_query("specs/list"; kwargs...)
+	return pbdb_query("specs/list"; kwargs...)
 end
 
 """
-    pbdb_ref_specimens(; kwargs...)
+	pbdb_ref_specimens(; kwargs...)
 
 Get bibliographic references associated with fossil specimens.
 
@@ -756,11 +768,11 @@ pbdb_ref_specimens(spec_id=[1505, 30050])
 ```
 """
 function pbdb_ref_specimens(; kwargs...)
-    return pbdb_query("specs/refs"; kwargs...)
+	return pbdb_query("specs/refs"; kwargs...)
 end
 
 """
-    pbdb_measurements(; kwargs...)
+	pbdb_measurements(; kwargs...)
 
 Get information about specimen measurements.
 
@@ -781,13 +793,13 @@ pbdb_measurements(spec_id=[1505,30050]; show=["spec","class","methods"], vocab="
 ```
 """
 function pbdb_measurements(; kwargs...)
-    return pbdb_query("specs/measurements"; kwargs...)
+	return pbdb_query("specs/measurements"; kwargs...)
 end
 
 # Opinions --------------------------------------------------------------------
 
 """
-    pbdb_opinion(id; kwargs...)
+	pbdb_opinion(id; kwargs...)
 
 Get information about a single taxonomic opinion.
 
@@ -806,11 +818,11 @@ pbdb_opinion(1000; vocab="pbdb", show="full")
 ```
 """
 function pbdb_opinion(id; kwargs...)
-    return pbdb_query("opinions/single"; id=id, kwargs...)
+	return pbdb_query("opinions/single"; id = id, kwargs...)
 end
 
 """
-    pbdb_opinions(; kwargs...)
+	pbdb_opinions(; kwargs...)
 
 Get information about multiple taxonomic opinions.
 
@@ -831,11 +843,11 @@ pbdb_opinions(op_pubyr=1818)
 ```
 """
 function pbdb_opinions(; kwargs...)
-    return pbdb_query("opinions/list"; kwargs...)
+	return pbdb_query("opinions/list"; kwargs...)
 end
 
 """
-    pbdb_opinions_taxa(; kwargs...)
+	pbdb_opinions_taxa(; kwargs...)
 
 Get taxonomic opinions about taxa, used to build the PBDB taxonomic hierarchy.
 
@@ -855,11 +867,11 @@ pbdb_opinions_taxa(base_name="Canis")
 ```
 """
 function pbdb_opinions_taxa(; kwargs...)
-    return pbdb_query("taxa/opinions"; kwargs...)
+	return pbdb_query("taxa/opinions"; kwargs...)
 end
 
 """
-    pbdb_config(; kwargs...)
+	pbdb_config(; kwargs...)
 
 Query the PBDB configuration endpoint.
 
@@ -870,36 +882,36 @@ reference information needed for interpreting and filtering PBDB data.
 # Arguments
 - `kwargs...`: Commonly used parameters include:
   - `show`: Which configuration table to return. Examples:
-    - `"clusters"`: Available geographic cluster levels (for use with `pbdb_collections_geo`).
-    - `"continents"`: Continent codes recognized by PBDB.
-    - `"vocabularies"`: Available vocabularies for field names.
-    - `"ecologies"`, `"lithologies"`, etc. (see PBDB documentation for a full list).
-    - Full list:
-        - 'clusters',
-        - 'ranks',
-        - 'continents',
-        - 'countries',
-        - 'collblock',
-        - 'lithblock',
-        - 'lithologies',
-        - 'minorliths',
-        - 'lithification',
-        - 'lithadj',
-        - 'envs',
-        - 'envtypes',
-        - 'tecs',
-        - 'collmet',
-        - 'datemet',
-        - 'colltype',
-        - 'collcov',
-        - 'presmodes',
-        - 'resgroups',
-        - 'museums',
-        - 'abundance',
-        - 'plant',
-        - 'pgmodels',
-        - 'prefs',
-        - 'all'
+	- `"clusters"`: Available geographic cluster levels (for use with `pbdb_collections_geo`).
+	- `"continents"`: Continent codes recognized by PBDB.
+	- `"vocabularies"`: Available vocabularies for field names.
+	- `"ecologies"`, `"lithologies"`, etc. (see PBDB documentation for a full list).
+	- Full list:
+		- 'clusters',
+		- 'ranks',
+		- 'continents',
+		- 'countries',
+		- 'collblock',
+		- 'lithblock',
+		- 'lithologies',
+		- 'minorliths',
+		- 'lithification',
+		- 'lithadj',
+		- 'envs',
+		- 'envtypes',
+		- 'tecs',
+		- 'collmet',
+		- 'datemet',
+		- 'colltype',
+		- 'collcov',
+		- 'presmodes',
+		- 'resgroups',
+		- 'museums',
+		- 'abundance',
+		- 'plant',
+		- 'pgmodels',
+		- 'prefs',
+		- 'all'
 
 # Returns
 A `DataFrame` with the requested configuration information.
@@ -918,5 +930,5 @@ pbdb_config(show="ranks")
 ```
 """
 function pbdb_config(; kwargs...)
-    return pbdb_query("config"; kwargs...)
+	return pbdb_query("config"; kwargs...)
 end
