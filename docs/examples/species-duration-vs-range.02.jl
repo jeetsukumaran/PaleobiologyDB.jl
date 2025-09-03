@@ -31,15 +31,15 @@ Examples:
 
 ```julia
 
-carnivora = read_taxon_resolved_occurrences(;
+carnivora = acquire_data(;
 	base_name = "Carnivora",
 	extant = false,
 )
-mammals = read_taxon_resolved_occurrences(;
+mammals = acquire_data(;
 	base_name = "Mammalia",
 	extant = false,
 )
-brachs = read_taxon_resolved_occurrences(
+brachs = acquire_data(
 	:genus;
 	base_name = "Brachiopoda",
 	extant = false,
@@ -47,7 +47,7 @@ brachs = read_taxon_resolved_occurrences(
 ```
 
 """
-function read_taxon_resolved_occurrences(
+function acquire_data(
 	taxonomic_resolution::Symbol = :species, # :species | :genus | :family
 	;
 	query_kwargs...,
@@ -92,6 +92,10 @@ function transform_data(gdf::GroupedDataFrame)::DataFrame
 	)
 end
 
+function screen_results(rdf::DataFrame)::DataFrame
+	return rdf |> df -> filter(r -> r.age_span > 0, df)
+end
+
 function process_df(
 	occurs_df::DataFrame
 	;
@@ -111,8 +115,8 @@ function process_df(
 		occurs_df 
 			|> df -> adapt_data(occurs_df, data_adapter) 
 			|> df -> aggregate_data(df, min_occurs) 
-			|> df -> transform_data(df) 
-			|> df -> filter(r -> r.age_span > 0, df)
+			|> transform_data
+			|> screen_results
 	)
 end
 
@@ -122,7 +126,7 @@ using DataFrames
 using CSV
 using GLMakie
 
-# live_df = taxon_resolved_occurrences(; base_name = "Mammalia", extant = "no")
+# live_df = acquire_data(; base_name = "Mammalia", extant = "no")
 # cached_df = CSV.read(".cache/_paleobiologydb/mammalia_species-directma-paleocoords.tsv", DataFrame)
 cached_df = CSV.read(".cache/_paleobiologydb/brachipoda_genus.tsv", DataFrame)
 occurs_df = cached_df
@@ -132,17 +136,3 @@ rdf = process_df(occurs_df,
 	lon = :lng,
 	lat = :lat,
 )
-
-# function process_df(
-#     occurs_df::DataFrame,
-#     data_adapter::Dict{Symbol, Symbol},
-#     min_occurs::Int = 2,
-# )::DataFrame
-#     return (
-#         occurs_df
-#             |> df -> adapt_data(occurs_df, data_adapter)
-#             |> df -> aggregate_data(df, min_occurs)
-#             |> df -> transform_data(df)
-#             |> df -> filter(r.age_span > 0, df)
-#     )
-# end
