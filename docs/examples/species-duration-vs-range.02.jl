@@ -93,7 +93,14 @@ function transform_data(gdf::GroupedDataFrame)::DataFrame
 end
 
 function screen_results(rdf::DataFrame)::DataFrame
-	return rdf |> df -> filter(r -> r.age_span > 0, df)
+	gt0_fields = [
+		:age_span,
+		:geo_dist_min,
+		:geo_dist_max,
+		:geo_dist_mean,
+		:geo_dist_median
+	]
+	subset(rdf, gt0_fields .=> (r -> r .> 0))
 end
 
 function process_df(
@@ -126,12 +133,15 @@ using DataFrames
 using CSV
 using GLMakie
 
-# live_df = acquire_data(; base_name = "Mammalia", extant = "no")
-# cached_df = CSV.read(".cache/_paleobiologydb/mammalia_species-directma-paleocoords.tsv", DataFrame)
-cached_df = CSV.read(".cache/_paleobiologydb/brachipoda_genus.tsv", DataFrame)
-occurs_df = cached_df
+# mammals_df = acquire_data(:species; base_name = "Mammalia", extant = "no")
+# # CSV.write(".cache/_paleobiologydb/mammalia_species.tsv", mammals_df; delim = '\t')
+# brachs_df = acquire_data(:species; base_name = "Brachiopoda", extant = "no")
+# # CSV.write(".cache/_paleobiologydb/brachipoda_species.tsv", brachs_df; delim = '\t')
+# cached_df = CSV.read(".cache/_paleobiologydb/mammalia_species.tsv", DataFrame; delim = '\t')
+# cached_df = CSV.read(".cache/_paleobiologydb/brachipoda.tsv", DataFrame; delim = '\t')
+# occurs_df = cached_df
 rdf = process_df(occurs_df,
-	identifier = :genus,
+	identifier = :accepted_name,
 	age = :max_ma,
 	lon = :lng,
 	lat = :lat,

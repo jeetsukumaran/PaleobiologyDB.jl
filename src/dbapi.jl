@@ -156,7 +156,6 @@ function pbdb_query(
 		q[string(k)] = v
 	end
 	url = _build_url(endpoint; base_url = base_url, format = format, query = q)
-	@show url
 	return _fetch_df(url; format = format, readtimeout, retries)
 end
 
