@@ -1,0 +1,4 @@
+style = "sciml"
+whitespace_in_kwargs = true
+whitespace_typedefs = true
+whitespace_ops_in_indices = true
