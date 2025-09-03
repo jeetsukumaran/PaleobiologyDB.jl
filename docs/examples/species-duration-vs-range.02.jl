@@ -123,7 +123,7 @@ using GLMakie
 
 # live_df = taxon_resolved_occurrences(; base_name = "Mammalia", extant = "no")
 # cached_df = CSV.read(".cache/_paleobiologydb/mammalia_species-directma-paleocoords.tsv", DataFrame)
-cached_df = CSV.read(".cache/_paleobiologydb/brachioda_genus.tsv", DataFrame)
+cached_df = CSV.read(".cache/_paleobiologydb/brachipoda_genus.tsv", DataFrame)
 occurs_df = cached_df
 rdf = process_df(occurs_df,
 	identifier = :genus,
