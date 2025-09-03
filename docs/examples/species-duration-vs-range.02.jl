@@ -112,9 +112,10 @@ function process_df(
 			|> df -> adapt_data(occurs_df, data_adapter) 
 			|> df -> aggregate_data(df, min_occurs) 
 			|> df -> transform_data(df) 
-			|> df -> filter(r.age_span > 0, df)
+			|> df -> filter(r -> r.age_span > 0, df)
 	)
 end
+
 ## -- In the REPL --
 
 using DataFrames
