@@ -8,6 +8,15 @@ import HTTP
 const _build_url = PaleobiologyDB._build_url
 const _joinvals  = PaleobiologyDB._joinvals
 
+if isnothing(Base.find_package("Aqua")) 
+    println("Aqua package not available in this environment: skipping Aqua tests")
+    println("Re-run with 'using Pkg; Pkg.test()' or 'pkg> test' to run Aqua tests.")
+else
+    @testset "Aqua.jl" begin
+        include("runaqua.jl")
+    end
+end
+
 @testset "PaleobiologyDB — pure/internal" begin
     @test PaleobiologyDB.pbdb_version() == "data1.2"
 
