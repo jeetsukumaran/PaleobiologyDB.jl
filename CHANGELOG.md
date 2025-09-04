@@ -1,3 +1,9 @@
+## PaleobiologyDB.jl v1.1.1 — release notes (since v1.0.0)
+
+### Changed
+
+- Updated install instructions and DOI in README.
+
 ## PaleobiologyDB.jl v1.1.0 — release notes (since v1.0.0)
 
 ### Highlights
