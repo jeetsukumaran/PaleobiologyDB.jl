@@ -9,7 +9,20 @@ Results are returned as `DataFrame`s.
 
 ## Installation
 
-Until the package is registered, install directly from the repository:
+At the Julia REPL, type "`]`" to drop into Package manager mode and then type:
+
+```
+pkg> add PaleobiologyDB
+```
+
+Or, either in the Julia REPL or a script:
+
+```julia
+using Pkg
+Pkg.add(url="https://github.com/jeetsukumaran/PaleobiologyDB.jl")
+```
+
+Or, if you want the latest development version from the source repository:
 
 ```julia
 using Pkg
@@ -413,6 +426,8 @@ Contributions are welcome. Please fork the repository, add tests for new functio
 
 ## Citation
 
+![](https://zenodo.org/badge/1046851014.svg)
+
 If you use PaleobiologyDB.jl in your research, please cite both this package and the Paleobiology Database:
 
 ```bibtex
@@ -420,7 +435,8 @@ If you use PaleobiologyDB.jl in your research, please cite both this package and
   author = {Jeet Sukumaran},
   title = {PaleobiologyDB.jl: A Julia interface to the Paleobiology Database},
   url = {https://github.com/jeetsukumaran/PaleobiologyDB.jl},
-  year = {2025}
+  year = {2025},
+  doi = {10.5281/zenodo.17043157}
 }
 
 @article{Peters2016,
