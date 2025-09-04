@@ -426,7 +426,7 @@ Contributions are welcome. Please fork the repository, add tests for new functio
 
 ## Citation
 
-![](https://zenodo.org/badge/1046851014.svg)
+[![](https://zenodo.org/badge/1046851014.svg)](https://doi.org/10.5281/zenodo.16994488)
 
 If you use PaleobiologyDB.jl in your research, please cite both this package and the Paleobiology Database:
 
