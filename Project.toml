@@ -11,6 +11,7 @@ JSON3 = "0f8b85d8-7281-11e9-16c2-39a750bddbf1"
 URIs = "5c2747f8-b7ea-4ff2-ba2e-563bfd36b1d4"
 
 [compat]
+# using P; Base.pkgversion(P)
 Aqua = "0.8"
 CSV = "0.10.15"
 DataFrames = "1.7.1"
@@ -18,6 +19,7 @@ HTTP = "1.10.17"
 JSON3 = "1.14.3"
 URIs = "1.6.1"
 julia = "1.6.7"
+Test = "1"
 
 [extras]
 Aqua = "4c88cf16-eb10-579e-8560-4a9242c79595"

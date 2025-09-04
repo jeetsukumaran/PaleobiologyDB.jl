@@ -12,9 +12,7 @@ if isnothing(Base.find_package("Aqua"))
     println("Aqua package not available in this environment: skipping Aqua tests")
     println("Re-run with 'using Pkg; Pkg.test()' or 'pkg> test' to run Aqua tests.")
 else
-    @testset "Aqua.jl" begin
-        include("runaqua.jl")
-    end
+    include("runaqua.jl")
 end
 
 @testset "PaleobiologyDB — pure/internal" begin
