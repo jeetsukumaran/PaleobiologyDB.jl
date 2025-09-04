@@ -19,7 +19,7 @@ Or, either in the Julia REPL or a script:
 
 ```julia
 using Pkg
-Pkg.add(url="https://github.com/jeetsukumaran/PaleobiologyDB.jl")
+Pkg.add("PaleobiologyDB")
 ```
 
 Or, if you want the latest development version from the source repository:
