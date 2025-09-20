@@ -1,4 +1,5 @@
 
+include("dbcache.jl")
 
 """
 	pbdb_version() -> String
@@ -127,37 +128,83 @@ end
 
 # Public: central query function ---------------------------------------------
 
-"""
-	pbdb_query(endpoint::AbstractString; format::Symbol=:csv, base_url::AbstractString=DEFAULT_BASE_URL, kwargs...)
 
-Low-level function that sends a request to a PBDB endpoint and returns a `DataFrame`.
+
+
+
+
+# """
+# 	pbdb_query(endpoint::AbstractString; format::Symbol=:csv, base_url::AbstractString=DEFAULT_BASE_URL, kwargs...)
+
+# Low-level function that sends a request to a PBDB endpoint and returns a `DataFrame`.
+
+# - `endpoint`: path like `"occs/list"`, `"taxa/single"`, etc.
+# - `format`: one of `:csv` (default), `:tsv`, `:txt`, or `:json`.
+# - `base_url`: override host/version if needed.
+# - `kwargs...`: keyword arguments turned into query parameters. Values may be
+#   scalars or vectors (vectors become comma-separated lists). Bools become `true`/`false`.
+
+# Notes:
+# - For text formats, `vocab="pbdb"` is added by default if not provided.
+# - JSON responses use PBDB's JSON schema and are converted from the `records` array.
+# """
+# function pbdb_query(
+#     endpoint::AbstractString
+#     ;
+#     format::Symbol = :csv,
+#     base_url::AbstractString = DEFAULT_BASE_URL,
+#     readtimeout::Integer = 300,
+#     retries::Int = 3,
+#     kwargs...
+# )
+# 	q = Dict{String, Any}()
+# 	for (k, v) in pairs(kwargs)
+# 		q[string(k)] = v
+# 	end
+# 	url = _build_url(endpoint; base_url = base_url, format = format, query = q)
+# 	return _fetch_df(url; format = format, readtimeout, retries)
+# end
+
+"""
+	pbdb_query(endpoint::AbstractString; cache_path::Union{String, Nothing}=nothing, format::Symbol=:csv, base_url::AbstractString=DEFAULT_BASE_URL, kwargs...)
+
+Low-level function that sends a request to a PBDB endpoint and returns a `DataFrame` with optional caching.
 
 - `endpoint`: path like `"occs/list"`, `"taxa/single"`, etc.
+- `cache_path`: Optional path to cache file. If provided, will check for existing file first, otherwise execute query and save results.
 - `format`: one of `:csv` (default), `:tsv`, `:txt`, or `:json`.
 - `base_url`: override host/version if needed.
 - `kwargs...`: keyword arguments turned into query parameters. Values may be
   scalars or vectors (vectors become comma-separated lists). Bools become `true`/`false`.
 
 Notes:
+- Cache file format is determined by file extension (.csv, .tsv, or default to CSV).
+- Parent directories for cache path will be created if they don't exist.
 - For text formats, `vocab="pbdb"` is added by default if not provided.
 - JSON responses use PBDB's JSON schema and are converted from the `records` array.
 """
 function pbdb_query(
     endpoint::AbstractString
     ;
+    cache_path::Union{String, Nothing} = nothing,
     format::Symbol = :csv,
     base_url::AbstractString = DEFAULT_BASE_URL,
     readtimeout::Integer = 300,
     retries::Int = 3,
     kwargs...
 )
-	q = Dict{String, Any}()
-	for (k, v) in pairs(kwargs)
-		q[string(k)] = v
-	end
-	url = _build_url(endpoint; base_url = base_url, format = format, query = q)
-	return _fetch_df(url; format = format, readtimeout, retries)
+    # return _handle_cache(cache_path) do
+    return _handle_cache(cache_path, () -> begin
+        q = Dict{String, Any}()
+        for (k, v) in pairs(kwargs)
+            q[string(k)] = v  # Now only real PBDB parameters
+        end
+        url = _build_url(endpoint; query = q)
+        return _fetch_df(url)
+    end)
 end
+
+
 
 # --- Thin, idiomatic wrappers (keywords mirror PBDB) ------------------------
 
