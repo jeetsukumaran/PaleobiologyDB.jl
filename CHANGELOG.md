@@ -1,3 +1,15 @@
+## PaleobiologyDB.jl v1.2.0 (Upcoming)
+
+
+### Added
+
+- `cache_path` option on all queries to support local data caching.
+- `PyRate` utilities.
+
+### Changed
+
+- License changed from MIT to AGPL3.
+
 ## PaleobiologyDB.jl v1.1.2
 
 ### Added

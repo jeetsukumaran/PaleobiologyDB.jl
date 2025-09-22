@@ -1,4 +1,5 @@
 
+include("dbcache.jl")
 
 """
 	pbdb_version() -> String
@@ -128,9 +129,9 @@ end
 # Public: central query function ---------------------------------------------
 
 """
-	pbdb_query(endpoint::AbstractString; format::Symbol=:csv, base_url::AbstractString=DEFAULT_BASE_URL, kwargs...)
+	pbdb_query(endpoint::AbstractString; cache_path::Union{String, Nothing}=nothing, format::Symbol=:csv, base_url::AbstractString=DEFAULT_BASE_URL, kwargs...)
 
-Low-level function that sends a request to a PBDB endpoint and returns a `DataFrame`.
+Low-level function that sends a request to a PBDB endpoint and returns a `DataFrame` with optional caching.
 
 - `endpoint`: path like `"occs/list"`, `"taxa/single"`, etc.
 - `format`: one of `:csv` (default), `:tsv`, `:txt`, or `:json`.
@@ -138,26 +139,56 @@ Low-level function that sends a request to a PBDB endpoint and returns a `DataFr
 - `kwargs...`: keyword arguments turned into query parameters. Values may be
   scalars or vectors (vectors become comma-separated lists). Bools become `true`/`false`.
 
+Addtional cache handling arguments:
+
+- `cache_path`: Optional path to cache file. If provided, will check for existing file first, otherwise execute query and save results.
+- `is_force_refresh`: If `true`, refreshes the cached data with a new query.
+
 Notes:
+- Cache file format is determined by file extension (.csv, .tsv, or default to CSV).
+- Parent directories for cache path will be created if they don't exist.
 - For text formats, `vocab="pbdb"` is added by default if not provided.
 - JSON responses use PBDB's JSON schema and are converted from the `records` array.
 """
 function pbdb_query(
     endpoint::AbstractString
     ;
+    cache_path::Union{String, Nothing} = nothing,
+    is_force_refresh::Union{Bool, Nothing} = nothing,
     format::Symbol = :csv,
     base_url::AbstractString = DEFAULT_BASE_URL,
     readtimeout::Integer = 300,
     retries::Int = 3,
     kwargs...
 )
-	q = Dict{String, Any}()
-	for (k, v) in pairs(kwargs)
-		q[string(k)] = v
-	end
-	url = _build_url(endpoint; base_url = base_url, format = format, query = q)
-	return _fetch_df(url; format = format, readtimeout, retries)
+	# is_force_refresh = isnothing(nothing) ? (isnothing(nothing) ? true : false) : is_force_refresh
+	# is_force_refresh = something(is_force_refresh, isnothing(cache_path) || false)
+	is_force_refresh = coalesce(is_force_refresh, isnothing(cache_path) || false)
+    return _handle_cache(
+		cache_path, 
+		() -> begin
+			q = Dict{String, Any}()
+			for (k, v) in pairs(kwargs)
+				q[string(k)] = v  # Now only real PBDB parameters
+			end
+			url = _build_url(
+				endpoint;
+				base_url = base_url,
+				format = format,
+				query = q
+			)
+			return _fetch_df(
+				url;
+				format,
+				readtimeout,
+				retries,
+			)
+		end,
+		is_force_refresh = is_force_refresh,
+	)
 end
+
+
 
 # --- Thin, idiomatic wrappers (keywords mirror PBDB) ------------------------
 
@@ -171,6 +202,7 @@ Get information about a single fossil occurrence record from the Paleobiology Da
 - `kwargs...`: Additional query parameters. Common options include:
   - `vocab`: `"pbdb"` to use full field names instead of compact 3-letter codes.
   - `show`: Extra information blocks to return (e.g. `"class"`, `"coords"`, `"loc"`, `"stratext"`, `"lithext"`).
+  - `cache_path`: Optional path to cache file. If provided, will check for existing file first, otherwise execute query and save results.
 
 # Returns
 A `DataFrame` with information about the specified occurrence.
@@ -195,6 +227,7 @@ Get information about fossil occurrence records stored in the Paleobiology Datab
 # Arguments
 - `kwargs...`: Filtering and output parameters. Common options include:
   - `limit`: Maximum number of records to return (`Int` or `"all"`).
+  - `cache_path`: Optional path to cache file. If provided, will check for existing file first, otherwise execute query and save results.
   - `taxon_name`: Return only records with the specified taxonomic name(s).
   - `base_name`: Return records for the specified name(s) and all descendant taxa.
   - `lngmin`, `lngmax`, `latmin`, `latmax`: Geographic bounding box.
@@ -241,6 +274,7 @@ Get bibliographic references associated with fossil occurrence records.
   - `ref_author`: Filter by author name.
   - `ref_pubyr`: Filter by publication year.
   - `pub_title`: Filter by publication title.
+  - `cache_path`: Optional path to cache file. If provided, will check for existing file first, otherwise execute query and save results.
 
 # Returns
 A `DataFrame` with references linked to occurrence records.
@@ -266,6 +300,7 @@ Get information about a single fossil collection record from the Paleobiology Da
 - `kwargs...`: Additional query parameters. Common options include:
   - `vocab`: Set to `"pbdb"` to use full field names instead of compact 3-letter codes.
   - `show`: Extra information blocks to include (e.g. `"loc"`, `"stratext"`, `"lithext"`).
+  - `cache_path`: Optional path to cache file. If provided, will check for existing file first, otherwise execute query and save results.
   - Geographic filters accepted by PBDB (e.g. `lngmin`, `lngmax`, `latmin`, `latmax`).
 
 # Returns
@@ -302,6 +337,7 @@ Get information about multiple fossil collections.
   - `show`: Extra blocks (`"ref"`, `"loc"`, `"stratext"`, `"lithext"`).
   - `limit`: Limit the number of records (`Int` or `"all"`).
   - `vocab`: Vocabulary for field names (`"pbdb"` for full names, `"com"` for compact codes).
+  - `cache_path`: Optional path to cache file. If provided, will check for existing file first, otherwise execute query and save results.
 
 # Returns
 A `DataFrame` of collections matching the query.

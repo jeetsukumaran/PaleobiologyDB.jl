@@ -6,20 +6,21 @@ version = "1.1.2"
 [deps]
 CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
 DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
+Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
 HTTP = "cd3eb016-35fb-5094-929b-558a96fad6f3"
 JSON3 = "0f8b85d8-7281-11e9-16c2-39a750bddbf1"
 URIs = "5c2747f8-b7ea-4ff2-ba2e-563bfd36b1d4"
 
 [compat]
-# using P; Base.pkgversion(P)
 Aqua = "0.8"
 CSV = "0.10.15"
 DataFrames = "1.7.1"
+Distributions = "0.25.120"
 HTTP = "1.10.17"
 JSON3 = "1.14.3"
+Test = "1"
 URIs = "1.6.1"
 julia = "1.6.7"
-Test = "1"
 
 [extras]
 Aqua = "4c88cf16-eb10-579e-8560-4a9242c79595"
