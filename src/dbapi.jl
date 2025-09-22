@@ -163,7 +163,7 @@ function pbdb_query(
 )
 	# is_force_refresh = isnothing(nothing) ? (isnothing(nothing) ? true : false) : is_force_refresh
 	# is_force_refresh = something(is_force_refresh, isnothing(cache_path) || false)
-	is_force_refresh = coalesce(is_force_refresh, isnothing(cache_path) || false)
+	is_force_refresh = something(is_force_refresh, isnothing(cache_path) || false)
     return _handle_cache(
 		cache_path, 
 		() -> begin
