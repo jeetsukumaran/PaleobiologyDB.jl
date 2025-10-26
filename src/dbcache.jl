@@ -19,7 +19,8 @@ function _handle_cache(
         try
             # Determine format from file extension
             df = DataFrame(CSV.File(cache_path; delim = delim, normalizenames = true))
-            @debug "Read cache file $cache_path: DataFrame with size $(size(df))."
+            @debug "Read cache file '$cache_path': DataFrame with size $(size(df))."
+            @warn "Using cached results from: '$cache_path'"
             return df
         catch e
             @debug "Failed to read cache file $cache_path: $e. Executing fresh query."
