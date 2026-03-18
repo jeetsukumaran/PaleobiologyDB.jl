@@ -34,6 +34,17 @@ Pkg.add(url="https://github.com/jeetsukumaran/PaleobiologyDB.jl")
 ```julia
 using PaleobiologyDB
 
+canids = pbdb_occurrences(
+    base_name="Canidae",
+    interval="Miocene",
+    show="full",
+    vocab="pbdb",
+    extids=true,
+    limit=100
+)
+
+
+
 # Get fossil occurrences
 canids = pbdb_occurrences(
     base_name="Canidae",
@@ -41,7 +52,6 @@ canids = pbdb_occurrences(
     show=["coords", "class"],
     vocab="pbdb",
     extids=true,
-    limit=100
 )
 
 # Get taxonomic information
@@ -160,9 +170,9 @@ search: pbdb_occurrences pbdb_occurrence pbdb_ref_occurrences pbdb_references pb
 occs = pbdb_occurrences(base_name="Mammalia", limit=10)
 
 # Specific occurrence
-single_occ = pbdb_occurrence("occ:1001", vocab="pbdb", show=["coords", "class"])
+single_occ = pbdb_occurrence("occ:1001", vocab="pbdb", show="full")
 # old-style numeric-only id
-single_occ = pbdb_occurrence(1001, vocab="pbdb", show=["coords", "class"])
+single_occ = pbdb_occurrence(1001, vocab="pbdb", show="full")
 
 # Geographic and temporal filtering
 pliocene_mammals = pbdb_occurrences(

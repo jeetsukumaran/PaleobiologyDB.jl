@@ -8,7 +8,7 @@ using PaleobiologyDB
 canids = pbdb_occurrences(
     base_name = "Canidae",
     interval  = "Miocene",
-    show      = ["coords", "class"],
+    show      = "full",
     vocab     = "pbdb",
     limit     = 100
 )
@@ -38,7 +38,7 @@ occs = pbdb_occurrences(base_name = "Mammalia", limit = 10)
 @info " -> Success: Retrieved $(nrow(occs)) records"
 
 @info "Example: Specific occurrence (1001)"
-single_occ = pbdb_occurrence(1001, vocab = "pbdb", show = ["coords", "class"])
+single_occ = pbdb_occurrence(1001, vocab = "pbdb", show = "full")
 @info " -> Success: Retrieved $(nrow(single_occ)) records"
 
 @info "Example: Geographic and temporal filtering (Pliocene mammals, N. America)"
