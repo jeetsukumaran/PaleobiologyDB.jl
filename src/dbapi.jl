@@ -105,6 +105,16 @@ function _get(
 			return HTTP.get(url; headers = headers, readtimeout = Int(readtimeout))
 		catch err
 			last_err = err
+			if err isa HTTP.Exceptions.StatusError
+				body = String(err.response.body)
+				items = [m.match for m in eachmatch(r"<li>(.*?)</li>"s, body)]
+				if !isempty(items)
+					msg = "PBDB API error (HTTP $(err.status)):\n" * join("  • " .* strip.(items), "\n")
+				else
+					msg = "PBDB API error (HTTP $(err.status)): " * strip(replace(body, r"<[^>]+>" => ""))
+				end
+				error(msg)
+			end
 			if attempt == retries
 				rethrow(err)
 			else
@@ -115,6 +125,30 @@ function _get(
 	throw(last_err)
 end
 
+# Strip PBDB metadata/warning lines from the top of a CSV/TSV body.
+# Lines matching "Warning: ..." are emitted as @warn.
+# Lines matching "Records: ..." or blank lines are skipped.
+# Returns the body starting from the first real header/data line.
+function _preprocess_pbdb_text(body::AbstractString)
+	lines = split(body, '\n')
+	start_idx = length(lines) + 1
+	for (i, line) in enumerate(lines)
+		stripped = strip(line)
+		if isempty(stripped)
+			continue
+		elseif occursin(r"^\s*[Ww]arning\s*:"i, stripped)
+			msg = strip(replace(stripped, r"^\s*[Ww]arning\s*:\s*"i => ""))
+			@warn msg
+		elseif occursin(r"^\s*[Rr]ecords\s*:"i, stripped)
+			continue
+		else
+			start_idx = i
+			break
+		end
+	end
+	return join(lines[start_idx:end], '\n')
+end
+
 # Core request -> DataFrame
 function _fetch_df(url::AbstractString; format::Symbol = :csv, readtimeout::Integer = 300, retries::Int = 3)
 	if format == :json
@@ -122,7 +156,8 @@ function _fetch_df(url::AbstractString; format::Symbol = :csv, readtimeout::Inte
 		return _json_to_df(resp.body)
 	elseif format in keys(_TEXT_DELIM)
 		resp = _get(url; headers = Dict("Accept" => "text/plain, text/csv"), readtimeout, retries)
-		io = IOBuffer(resp.body)
+		cleaned = _preprocess_pbdb_text(String(resp.body))
+		io = IOBuffer(cleaned)
 		return DataFrame(CSV.File(io; normalizenames = true, ignorerepeated = true, delim = _TEXT_DELIM[format]))
 	else
 		error("Unsupported format: $format")
