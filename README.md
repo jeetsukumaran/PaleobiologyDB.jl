@@ -295,11 +295,11 @@ my_cache = DataCache("/data/pbdb_cache")
 taxa = @filecache my_cache pbdb_taxa(name="Carnivora", rel="children")
 
 # Inspect / manage the default cache
-list_cache(default_filecache())
-clear!(default_filecache())
+list_cache(PaleobiologDB.default_filecache())
+clear!(PaleobiologDB.default_filecache())
 
 # Point the default at a different cache
-set_default_filecache!(DataCache("/project/cache"))
+PaleobiologDB.set_default_filecache!(DataCache("/project/cache"))
 ```
 
 ### `@memcache` — in-memory session memoization
@@ -312,7 +312,7 @@ Useful for repeated calls within a script or interactive session.
 occs = @memcache pbdb_occurrences(base_name="Canidae", show="full")
 taxa = @memcache pbdb_taxa(name="Dinosauria")
 
-memcache_clear!()   # discard all in-memory cached results
+PaleobiologyDB.memcache_clear!()   # discard all in-memory cached results
 ```
 
 ### Legacy path-based caching

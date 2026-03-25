@@ -7,7 +7,7 @@ using UUIDs
 export DataCache, CacheKey
 export write!, keylabels, keypaths, clear!, list_cache, label, path
 export @filecache, @memcache
-export default_filecache, set_default_filecache!, memcache_clear!
+# export default_filecache, set_default_filecache!, memcache_clear!
 
 # =============================================================================
 # CacheKey
