@@ -26,7 +26,10 @@ export pbdb_occurrence, pbdb_occurrences, pbdb_ref_occurrences,
 	pbdb_strata, pbdb_strata_auto,
 	pbdb_reference, pbdb_references,
 	pbdb_specimen, pbdb_specimens, pbdb_ref_specimens, pbdb_measurements,
-	pbdb_opinion, pbdb_opinions
+	pbdb_opinion, pbdb_opinions,
+	pbdb_count,
+	pbdb_count_occurrences, pbdb_count_collections, pbdb_count_taxa,
+	pbdb_count_references, pbdb_count_specimens, pbdb_count_opinions
 
 # --- Internal helpers -------------------------------------------------------
 
@@ -905,6 +908,136 @@ pbdb_opinions_taxa(base_name="Canis")
 function pbdb_opinions_taxa(; kwargs...)
 	return pbdb_query("taxa/opinions"; kwargs...)
 end
+
+"""
+	pbdb_count(endpoint; kwargs...) -> Union{Int, Missing}
+
+Return the total number of records matching a query **without downloading the records themselves**.
+
+Internally issues the query with `limit=0` and `format=json`, then reads the
+`records_found` field from the PBDB JSON response envelope.  This is fast
+because no record data is transferred.
+
+# Arguments
+- `endpoint`: PBDB path such as `"occs/list"`, `"colls/list"`, etc.
+- `base_url`: Override the default base URL.
+- `readtimeout`: HTTP read timeout in seconds (default 300).
+- `retries`: Number of retries on failure (default 3).
+- `kwargs...`: Any PBDB filter parameters (same as `pbdb_query`).
+
+# Returns
+An `Int` with the total number of matching records, or `missing` if the API
+does not return a `records_found` field for the given endpoint.
+
+# Examples
+```julia
+pbdb_count("occs/list"; base_name="Canidae")
+pbdb_count("colls/list"; interval="Miocene", cc="ASI")
+```
+"""
+function pbdb_count(
+	endpoint::AbstractString;
+	base_url::AbstractString = DEFAULT_BASE_URL,
+	readtimeout::Integer = 300,
+	retries::Int = 3,
+	kwargs...,
+)
+	q = Dict{String, Any}("limit" => "0")
+	for (k, v) in pairs(kwargs)
+		q[string(k)] = v
+	end
+	url = _build_url(endpoint; base_url = base_url, format = :json, query = q)
+	resp = _get(url; headers = Dict("Accept" => "application/json"), readtimeout = readtimeout, retries = retries)
+	obj = JSON3.read(resp.body)
+	if hasproperty(obj, :error)
+		error(string(obj.error))
+	end
+	return hasproperty(obj, :records_found) ? Int(obj.records_found) : missing
+end
+
+"""
+	pbdb_count_occurrences(; kwargs...) -> Union{Int, Missing}
+
+Return the total number of fossil occurrence records matching the query,
+without downloading the records. Accepts the same filter parameters as
+`pbdb_occurrences`.
+
+# Examples
+```julia
+pbdb_count_occurrences(base_name="Canidae")
+pbdb_count_occurrences(interval="Miocene", cc="ASI")
+```
+"""
+pbdb_count_occurrences(; kwargs...) = pbdb_count("occs/list"; kwargs...)
+
+"""
+	pbdb_count_collections(; kwargs...) -> Union{Int, Missing}
+
+Return the total number of fossil collection records matching the query,
+without downloading the records. Accepts the same filter parameters as
+`pbdb_collections`.
+
+# Examples
+```julia
+pbdb_count_collections(base_name="Cetacea", interval="Miocene")
+```
+"""
+pbdb_count_collections(; kwargs...) = pbdb_count("colls/list"; kwargs...)
+
+"""
+	pbdb_count_taxa(; kwargs...) -> Union{Int, Missing}
+
+Return the total number of taxonomic names matching the query, without
+downloading the records. Accepts the same filter parameters as `pbdb_taxa`.
+
+# Examples
+```julia
+pbdb_count_taxa(base_name="Mammalia")
+```
+"""
+pbdb_count_taxa(; kwargs...) = pbdb_count("taxa/list"; kwargs...)
+
+"""
+	pbdb_count_references(; kwargs...) -> Union{Int, Missing}
+
+Return the total number of bibliographic references matching the query,
+without downloading the records. Accepts the same filter parameters as
+`pbdb_references`.
+
+# Examples
+```julia
+pbdb_count_references(ref_author="Polly")
+```
+"""
+pbdb_count_references(; kwargs...) = pbdb_count("refs/list"; kwargs...)
+
+"""
+	pbdb_count_specimens(; kwargs...) -> Union{Int, Missing}
+
+Return the total number of fossil specimen records matching the query,
+without downloading the records. Accepts the same filter parameters as
+`pbdb_specimens`.
+
+# Examples
+```julia
+pbdb_count_specimens(base_name="Cetacea")
+```
+"""
+pbdb_count_specimens(; kwargs...) = pbdb_count("specs/list"; kwargs...)
+
+"""
+	pbdb_count_opinions(; kwargs...) -> Union{Int, Missing}
+
+Return the total number of taxonomic opinion records matching the query,
+without downloading the records. Accepts the same filter parameters as
+`pbdb_opinions`.
+
+# Examples
+```julia
+pbdb_count_opinions(op_pubyr=1818)
+```
+"""
+pbdb_count_opinions(; kwargs...) = pbdb_count("opinions/list"; kwargs...)
 
 """
 	pbdb_config(; kwargs...)
