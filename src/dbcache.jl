@@ -1,23 +1,482 @@
-# using Dates
+using CSV
+using DataFrames
+import TOML
+using Serialization
+using UUIDs
+
+export DataCache, CacheKey
+export write!, keylabels, keypaths, clear!, list_cache, label, path
+export @fcache, @mcache
+export default_fcache, set_default_fcache!, mcache_clear!
+
+# =============================================================================
+# CacheKey
+# =============================================================================
 
 """
-Internal function to handle caching logic for PBDB queries.
+    CacheKey
+
+A reference to a cached dataset in a [`DataCache`](@ref).
+
+Fields are accessed directly:
+- `key.id     :: String`  — unique identifier (UUID)
+- `key.label  :: String`  — human-readable name (empty string if none was given)
+- `key.path   :: String`  — absolute path to the backing data file
 """
+struct CacheKey
+    id::String
+    label::String
+    path::String
+end
+
+function Base.show(io::IO, k::CacheKey)
+    lbl = isempty(k.label) ? k.id[1:8] * "…" : repr(k.label)
+    print(io, "CacheKey($lbl)")
+end
+
+# =============================================================================
+# DataCache
+# =============================================================================
+
+"""
+    DataCache([root::AbstractString])
+
+A labeled, file-backed key-value store for caching query results across
+Julia sessions.
+
+Data is persisted in `root` as CSV files (for `DataFrame` values) or
+serialized Julia objects (`.jls`) for anything else. An index file
+(`cache_index.toml`) in `root` keeps track of all entries.
+
+The default root directory is `\$HOME/.cache/PaleobiologyDB/` (overridden
+by the `PBDB_CACHE_DIR` environment variable).
+
+# Examples
+```julia
+cache = DataCache()
+cache = DataCache("/my/project/cache")
+
+# Write
+key = write!(cache, df)
+key = write!(cache, df; label="Dinosaur families")
+cache["Trilobites"] = df          # setindex! sugar
+
+# Read
+df = read(cache, key)
+df = read(cache, "Dinosaur families")
+df = cache["Dinosaur families"]
+df = cache[key]
+
+# Introspect
+keys(cache)       # → Vector{CacheKey}
+keylabels(cache)  # → Vector{String}
+keypaths(cache)   # → Vector{String}
+label(cache, key) # → String
+path(cache, key)  # → String
+haskey(cache, "Dinosaur families")
+
+# Manage
+delete!(cache, key)
+delete!(cache, "Dinosaur families")
+clear!(cache)
+list_cache(cache)
+```
+"""
+mutable struct DataCache
+    root::String
+    _index::Dict{String,CacheKey}    # id → CacheKey
+    _by_label::Dict{String,String}   # label → id
+end
+
+const _INDEX_FILENAME = "cache_index.toml"
+
+function _default_cache_dir()
+    return get(ENV, "PBDB_CACHE_DIR", joinpath(homedir(), ".cache", "PaleobiologyDB"))
+end
+
+function DataCache(root::AbstractString = _default_cache_dir())
+    root = abspath(root)
+    mkpath(root)
+    cache = DataCache(root, Dict{String,CacheKey}(), Dict{String,String}())
+    _load_index!(cache)
+    return cache
+end
+
+# --- Index I/O ---------------------------------------------------------------
+
+_index_file(cache::DataCache) = joinpath(cache.root, _INDEX_FILENAME)
+
+function _load_index!(cache::DataCache)
+    p = _index_file(cache)
+    isfile(p) || return
+    data = TOML.parsefile(p)
+    for (id, entry) in get(data, "entries", Dict())
+        lbl   = get(entry, "label", "")
+        fpath = get(entry, "path",  "")
+        isfile(fpath) || continue
+        key = CacheKey(id, lbl, fpath)
+        cache._index[id] = key
+        isempty(lbl) || (cache._by_label[lbl] = id)
+    end
+end
+
+function _save_index(cache::DataCache)
+    entries = Dict{String,Any}()
+    for (id, key) in cache._index
+        entries[id] = Dict{String,Any}("label" => key.label, "path" => key.path)
+    end
+    open(_index_file(cache), "w") do io
+        TOML.print(io, Dict{String,Any}("entries" => entries))
+    end
+end
+
+# --- Storage helpers ---------------------------------------------------------
+
+function _data_path(cache::DataCache, id::String, data)
+    ext = data isa AbstractDataFrame ? ".csv" : ".jls"
+    return joinpath(cache.root, id * ext)
+end
+
+function _write_file(fpath::String, data)
+    if data isa AbstractDataFrame
+        CSV.write(fpath, data)
+    else
+        open(fpath, "w") do io
+            serialize(io, data)
+        end
+    end
+end
+
+function _read_file(key::CacheKey)
+    if endswith(key.path, ".csv")
+        return DataFrame(CSV.File(key.path; normalizenames = true))
+    else
+        return open(deserialize, key.path)
+    end
+end
+
+# --- Internal removal --------------------------------------------------------
+
+function _remove_entry!(cache::DataCache, id::String)
+    key = get(cache._index, id, nothing)
+    isnothing(key) && return
+    isfile(key.path) && rm(key.path; force = true)
+    delete!(cache._index, id)
+    isempty(key.label) || delete!(cache._by_label, key.label)
+end
+
+# --- Public write/read -------------------------------------------------------
+
+"""
+    write!(cache::DataCache, data; label::AbstractString = "") → CacheKey
+
+Store `data` in `cache` and return a [`CacheKey`](@ref).
+
+If `label` is given and another entry with that label already exists,
+it is silently replaced. `DataFrame` values are stored as CSV; all other
+values use Julia `Serialization`.
+"""
+function write!(cache::DataCache, data; label::AbstractString = "")
+    id    = string(uuid4())
+    fpath = _data_path(cache, id, data)
+    _write_file(fpath, data)
+    if !isempty(label)
+        old = get(cache._by_label, label, nothing)
+        isnothing(old) || _remove_entry!(cache, old)
+        cache._by_label[label] = id
+    end
+    key = CacheKey(id, label, fpath)
+    cache._index[id] = key
+    _save_index(cache)
+    return key
+end
+
+"""
+    read(cache::DataCache, key::CacheKey) → data
+    read(cache::DataCache, label::AbstractString) → data
+
+Retrieve a cached dataset by [`CacheKey`](@ref) or label string.
+"""
+function Base.read(cache::DataCache, key::CacheKey)
+    isfile(key.path) || error("Cache file missing: $(key.path)")
+    return _read_file(key)
+end
+
+function Base.read(cache::DataCache, lbl::AbstractString)
+    id = get(cache._by_label, lbl, nothing)
+    isnothing(id) && error("No cache entry with label $(repr(lbl))")
+    return Base.read(cache, cache._index[id])
+end
+
+Base.getindex(cache::DataCache, lbl::AbstractString) = Base.read(cache, lbl)
+Base.getindex(cache::DataCache, key::CacheKey)        = Base.read(cache, key)
+Base.setindex!(cache::DataCache, data, lbl::AbstractString) = write!(cache, data; label = lbl)
+
+# --- Introspection -----------------------------------------------------------
+
+Base.haskey(cache::DataCache, lbl::AbstractString) = haskey(cache._by_label, lbl)
+Base.haskey(cache::DataCache, key::CacheKey)        = haskey(cache._index, key.id)
+Base.length(cache::DataCache)  = length(cache._index)
+Base.isempty(cache::DataCache) = isempty(cache._index)
+
+"""
+    keys(cache::DataCache) → Vector{CacheKey}
+
+Return all [`CacheKey`](@ref) objects stored in `cache`.
+"""
+Base.keys(cache::DataCache) = collect(values(cache._index))
+
+"""
+    keylabels(cache::DataCache) → Vector{String}
+
+Return all labels of entries in `cache` (empty string for unlabeled entries).
+"""
+keylabels(cache::DataCache) = [k.label for k in values(cache._index)]
+
+"""
+    keypaths(cache::DataCache) → Vector{String}
+
+Return the file paths of all entries in `cache`.
+"""
+keypaths(cache::DataCache) = [k.path for k in values(cache._index)]
+
+"""
+    label(cache::DataCache, key::CacheKey) → String
+
+Return the label associated with `key` (same as `key.label`).
+"""
+label(::DataCache, key::CacheKey) = key.label
+
+"""
+    path(cache::DataCache, key::CacheKey) → String
+
+Return the file path of the data file backing `key` (same as `key.path`).
+"""
+path(::DataCache, key::CacheKey) = key.path
+
+# --- Management --------------------------------------------------------------
+
+"""
+    delete!(cache::DataCache, key::CacheKey)
+    delete!(cache::DataCache, label::AbstractString)
+
+Remove an entry from `cache` and delete its backing file from disk.
+"""
+function Base.delete!(cache::DataCache, key::CacheKey)
+    _remove_entry!(cache, key.id)
+    _save_index(cache)
+    return cache
+end
+
+function Base.delete!(cache::DataCache, lbl::AbstractString)
+    id = get(cache._by_label, lbl, nothing)
+    isnothing(id) && return cache
+    _remove_entry!(cache, id)
+    _save_index(cache)
+    return cache
+end
+
+"""
+    clear!(cache::DataCache)
+
+Remove **all** entries from `cache` and delete their backing files from disk.
+"""
+function clear!(cache::DataCache)
+    for id in collect(Base.keys(cache._index))
+        _remove_entry!(cache, id)
+    end
+    _save_index(cache)
+    return cache
+end
+
+"""
+    list_cache(cache::DataCache)
+
+Print a summary table of all entries in `cache`.
+"""
+function list_cache(cache::DataCache)
+    entries = sort(collect(values(cache._index)); by = k -> k.label)
+    if isempty(entries)
+        println("DataCache is empty: $(cache.root)")
+        return
+    end
+    n = length(entries)
+    println("DataCache: $(cache.root)  ($n entr$(n == 1 ? "y" : "ies"))")
+    for key in entries
+        lbl    = isempty(key.label) ? "(unlabeled)" : key.label
+        status = isfile(key.path) ? "" : "  *** FILE MISSING ***"
+        println("  [$(key.id[1:8])…]  $lbl$status")
+        println("              $(key.path)")
+    end
+end
+
+function Base.show(io::IO, cache::DataCache)
+    n = length(cache._index)
+    print(io, "DataCache(\"$(cache.root)\", $n entr$(n == 1 ? "y" : "ies"))")
+end
+
+# =============================================================================
+# Memoization macros  (@mcache / @fcache)
+# =============================================================================
+
+# Module-level stores
+const _mcache_store = Dict{UInt64,Any}()
+const _fcache_ref   = Ref{Union{DataCache,Nothing}}(nothing)
+
+"""
+    default_fcache() → DataCache
+
+Return the module-level default [`DataCache`](@ref) used by [`@fcache`](@ref).
+Created lazily on first access (root: `~/.cache/PaleobiologyDB/` by default).
+"""
+function default_fcache()
+    if isnothing(_fcache_ref[])
+        _fcache_ref[] = DataCache()
+    end
+    return _fcache_ref[]
+end
+
+"""
+    set_default_fcache!(cache::DataCache)
+
+Replace the module-level default cache used by [`@fcache`](@ref).
+"""
+function set_default_fcache!(cache::DataCache)
+    _fcache_ref[] = cache
+    return cache
+end
+
+"""
+    mcache_clear!()
+
+Discard all results stored by [`@mcache`](@ref) for this session.
+"""
+function mcache_clear!()
+    empty!(_mcache_store)
+end
+
+# Build the runtime hash-key expression for both macros.
+# Positional args are hashed by value; keyword args by (name, value) pairs.
+function _cache_hash_expr(func_name::String, raw_args)
+    pos = Any[]
+    kw  = Any[]
+    for a in raw_args
+        if a isa Expr && a.head == :kw
+            push!(kw, :($(QuoteNode(a.args[1])) => $(esc(a.args[2]))))
+        elseif a isa Expr && a.head == :parameters
+            for pa in a.args
+                if pa isa Expr && pa.head == :kw
+                    push!(kw, :($(QuoteNode(pa.args[1])) => $(esc(pa.args[2]))))
+                end
+            end
+        else
+            push!(pos, esc(a))
+        end
+    end
+    return :(hash(($func_name, ($(pos...),), ($(kw...),))))
+end
+
+function _mcache_impl(__source__, expr)
+    expr isa Expr && expr.head == :call ||
+        error("@mcache: expected a function call, got: $expr")
+    func_name = string(expr.args[1])
+    key_expr  = _cache_hash_expr(func_name, expr.args[2:end])
+    return quote
+        let _k = $key_expr
+            if haskey(_mcache_store, _k)
+                _mcache_store[_k]
+            else
+                _r = $(esc(expr))
+                _mcache_store[_k] = _r
+                _r
+            end
+        end
+    end
+end
+
+function _fcache_impl(__source__, expr, cache_expr)
+    expr isa Expr && expr.head == :call ||
+        error("@fcache: expected a function call, got: $expr")
+    func_name = string(expr.args[1])
+    key_expr  = _cache_hash_expr(func_name, expr.args[2:end])
+    return quote
+        let _c = $cache_expr,
+            _lbl = string($key_expr)
+            if haskey(_c, _lbl)
+                Base.read(_c, _lbl)
+            else
+                _r = $(esc(expr))
+                write!(_c, _r; label = _lbl)
+                _r
+            end
+        end
+    end
+end
+
+"""
+    @mcache expr
+
+Evaluate `expr` (a function call) and cache the result **in memory** for
+the current Julia session. Subsequent calls with identical arguments return
+the cached value without re-executing the function.
+
+The cache is keyed on the runtime values of all arguments. Use
+[`mcache_clear!`](@ref) to discard cached results.
+
+# Example
+```julia
+occs = @mcache pbdb_occurrences(base_name="Canidae", show="full")
+taxa = @mcache pbdb_taxa(name="Dinosauria")
+```
+"""
+macro mcache(expr)
+    return _mcache_impl(__source__, expr)
+end
+
+"""
+    @fcache expr
+    @fcache cache expr
+
+Evaluate `expr` (a function call) and store the result in a
+[`DataCache`](@ref), persisting it **across Julia sessions**.
+Subsequent calls with identical arguments load from cache without
+executing the function again.
+
+The one-argument form uses [`default_fcache()`](@ref). Pass an explicit
+`DataCache` as the first argument to use a different store.
+
+# Examples
+```julia
+occs = @fcache pbdb_occurrences(base_name="Canidae", show="full")
+
+my_cache = DataCache("/data/pbdb_cache")
+occs = @fcache my_cache pbdb_occurrences(base_name="Canidae")
+```
+"""
+macro fcache(expr)
+    return _fcache_impl(__source__, expr, :(default_fcache()))
+end
+
+macro fcache(cache, expr)
+    return _fcache_impl(__source__, expr, esc(cache))
+end
+
+# =============================================================================
+# Legacy internal helper  (used by pbdb_query via cache_path=)
+# =============================================================================
+
 function _handle_cache(
-    cache_path::Union{String, Nothing},
-    query_func::Function; 
-    is_force_refresh::Bool = false
+    cache_path::Union{String,Nothing},
+    query_func::Function;
+    is_force_refresh::Bool = false,
 )
     if isnothing(cache_path)
-        # No caching requested, execute query directly
         return query_func()
     end
-    ext = lowercase(splitext(cache_path)[2])
+    ext   = lowercase(splitext(cache_path)[2])
     delim = ext == ".tsv" ? '\t' : ','
     if isfile(cache_path) && !is_force_refresh
-        # Cache file exists, read it
         try
-            # Determine format from file extension
             df = DataFrame(CSV.File(cache_path; delim = delim, normalizenames = true))
             @debug "Read cache file '$cache_path': DataFrame with size $(size(df))."
             @warn "Using cached results from: '$cache_path'"
@@ -26,25 +485,18 @@ function _handle_cache(
             @debug "Failed to read cache file $cache_path: $e. Executing fresh query."
         end
     end
-
-    # Cache doesn't exist or failed to read, execute query
     @debug "Running live query"
     df = query_func()
-    
-    # Create parent directory if it doesn't exist
     @debug "Caching query results"
     cache_dir = dirname(cache_path)
     if !isdir(cache_dir) && !isempty(cache_dir)
         mkpath(cache_dir)
     end
-    
-    # Write to cache
     try
         CSV.write(cache_path, df; delim = delim)
         @debug "Wrote cache file $cache_path: DataFrame with size $(size(df))."
     catch e
         @warn "Failed to write cache file $cache_path: $e"
     end
-    
     return df
 end
