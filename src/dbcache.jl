@@ -6,8 +6,8 @@ using UUIDs
 
 export DataCache, CacheKey
 export write!, keylabels, keypaths, clear!, list_cache, label, path
-export @fcache, @mcache
-export default_fcache, set_default_fcache!, mcache_clear!
+export @filecache, @memcache
+export default_filecache, set_default_filecache!, memcache_clear!
 
 # =============================================================================
 # CacheKey
@@ -320,39 +320,39 @@ end
 # =============================================================================
 
 # Module-level stores
-const _mcache_store = Dict{UInt64,Any}()
-const _fcache_ref   = Ref{Union{DataCache,Nothing}}(nothing)
+const _memcache_store = Dict{UInt64,Any}()
+const _filecache_ref  = Ref{Union{DataCache,Nothing}}(nothing)
 
 """
-    default_fcache() → DataCache
+    default_filecache() → DataCache
 
-Return the module-level default [`DataCache`](@ref) used by [`@fcache`](@ref).
+Return the module-level default [`DataCache`](@ref) used by [`@filecache`](@ref).
 Created lazily on first access (root: `~/.cache/PaleobiologyDB/` by default).
 """
-function default_fcache()
-    if isnothing(_fcache_ref[])
-        _fcache_ref[] = DataCache()
+function default_filecache()
+    if isnothing(_filecache_ref[])
+        _filecache_ref[] = DataCache()
     end
-    return _fcache_ref[]
+    return _filecache_ref[]
 end
 
 """
-    set_default_fcache!(cache::DataCache)
+    set_default_filecache!(cache::DataCache)
 
-Replace the module-level default cache used by [`@fcache`](@ref).
+Replace the module-level default cache used by [`@filecache`](@ref).
 """
-function set_default_fcache!(cache::DataCache)
-    _fcache_ref[] = cache
+function set_default_filecache!(cache::DataCache)
+    _filecache_ref[] = cache
     return cache
 end
 
 """
-    mcache_clear!()
+    memcache_clear!()
 
-Discard all results stored by [`@mcache`](@ref) for this session.
+Discard all results stored by [`@memcache`](@ref) for this session.
 """
-function mcache_clear!()
-    empty!(_mcache_store)
+function memcache_clear!()
+    empty!(_memcache_store)
 end
 
 # Build the runtime hash-key expression for both macros.
@@ -376,27 +376,27 @@ function _cache_hash_expr(func_name::String, raw_args)
     return :(hash(($func_name, ($(pos...),), ($(kw...),))))
 end
 
-function _mcache_impl(__source__, expr)
+function _memcache_impl(expr)
     expr isa Expr && expr.head == :call ||
-        error("@mcache: expected a function call, got: $expr")
+        error("@memcache: expected a function call, got: $expr")
     func_name = string(expr.args[1])
     key_expr  = _cache_hash_expr(func_name, expr.args[2:end])
     return quote
         let _k = $key_expr
-            if haskey(_mcache_store, _k)
-                _mcache_store[_k]
+            if haskey(_memcache_store, _k)
+                _memcache_store[_k]
             else
                 _r = $(esc(expr))
-                _mcache_store[_k] = _r
+                _memcache_store[_k] = _r
                 _r
             end
         end
     end
 end
 
-function _fcache_impl(__source__, expr, cache_expr)
+function _filecache_impl(expr, cache_expr)
     expr isa Expr && expr.head == :call ||
-        error("@fcache: expected a function call, got: $expr")
+        error("@filecache: expected a function call, got: $expr")
     func_name = string(expr.args[1])
     key_expr  = _cache_hash_expr(func_name, expr.args[2:end])
     return quote
@@ -414,51 +414,51 @@ function _fcache_impl(__source__, expr, cache_expr)
 end
 
 """
-    @mcache expr
+    @memcache expr
 
 Evaluate `expr` (a function call) and cache the result **in memory** for
 the current Julia session. Subsequent calls with identical arguments return
 the cached value without re-executing the function.
 
 The cache is keyed on the runtime values of all arguments. Use
-[`mcache_clear!`](@ref) to discard cached results.
+[`memcache_clear!`](@ref) to discard cached results.
 
 # Example
 ```julia
-occs = @mcache pbdb_occurrences(base_name="Canidae", show="full")
-taxa = @mcache pbdb_taxa(name="Dinosauria")
+occs = @memcache pbdb_occurrences(base_name="Canidae", show="full")
+taxa = @memcache pbdb_taxa(name="Dinosauria")
 ```
 """
-macro mcache(expr)
-    return _mcache_impl(__source__, expr)
+macro memcache(expr)
+    return _memcache_impl(expr)
 end
 
 """
-    @fcache expr
-    @fcache cache expr
+    @filecache expr
+    @filecache cache expr
 
 Evaluate `expr` (a function call) and store the result in a
 [`DataCache`](@ref), persisting it **across Julia sessions**.
 Subsequent calls with identical arguments load from cache without
 executing the function again.
 
-The one-argument form uses [`default_fcache()`](@ref). Pass an explicit
+The one-argument form uses [`default_filecache()`](@ref). Pass an explicit
 `DataCache` as the first argument to use a different store.
 
 # Examples
 ```julia
-occs = @fcache pbdb_occurrences(base_name="Canidae", show="full")
+occs = @filecache pbdb_occurrences(base_name="Canidae", show="full")
 
 my_cache = DataCache("/data/pbdb_cache")
-occs = @fcache my_cache pbdb_occurrences(base_name="Canidae")
+occs = @filecache my_cache pbdb_occurrences(base_name="Canidae")
 ```
 """
-macro fcache(expr)
-    return _fcache_impl(__source__, expr, :(default_fcache()))
+macro filecache(expr)
+    return _filecache_impl(expr, :(default_filecache()))
 end
 
-macro fcache(cache, expr)
-    return _fcache_impl(__source__, expr, esc(cache))
+macro filecache(cache, expr)
+    return _filecache_impl(expr, esc(cache))
 end
 
 # =============================================================================

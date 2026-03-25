@@ -237,6 +237,98 @@ measurements = pbdb_measurements(
 )
 ```
 
+## Caching query results
+
+PBDB queries make HTTP requests that can be slow or rate-limited.
+PaleobiologyDB.jl provides two complementary caching mechanisms.
+
+### `DataCache` — labeled file store
+
+A `DataCache` is a named key-value store backed by files on disk.
+Results survive Julia restarts and can be retrieved by a human-readable
+label or by the `CacheKey` returned when writing.
+
+```julia
+using PaleobiologyDB
+
+cache = DataCache()                          # default: ~/.cache/PaleobiologyDB/
+cache = DataCache("/my/project/pbdb_cache")  # custom path
+                                             # (or set PBDB_CACHE_DIR env var)
+
+# --- store ---
+occs  = pbdb_occurrences(base_name="Canidae", interval="Miocene", show="full")
+key   = write!(cache, occs; label="Canidae Miocene occurrences")
+cache["Carnivora families"] = pbdb_taxa(name="Carnivora", rel="children")
+
+# --- retrieve ---
+occs  = read(cache, "Canidae Miocene occurrences")
+occs  = cache["Canidae Miocene occurrences"]
+occs  = cache[key]                           # by CacheKey
+
+# --- inspect ---
+keys(cache)        # → Vector{CacheKey}
+keylabels(cache)   # → Vector{String}
+keypaths(cache)    # → Vector{String}
+list_cache(cache)  # pretty-printed table
+
+# --- manage ---
+delete!(cache, "Canidae Miocene occurrences")
+clear!(cache)
+```
+
+`DataFrame` values are stored as CSV; any other Julia value uses
+`Serialization`. An index file (`cache_index.toml`) in the cache directory
+tracks all entries and is reloaded automatically on the next `DataCache(root)`.
+
+### `@filecache` — transparent file-based memoization
+
+`@filecache` wraps any function call: the first call fetches and stores the
+result; every subsequent call with the same arguments loads it from disk
+without touching the network.
+
+```julia
+# Uses the module-level default cache (~/.cache/PaleobiologyDB/)
+occs = @filecache pbdb_occurrences(base_name="Canidae", interval="Miocene", show="full")
+
+# Use a specific DataCache
+my_cache = DataCache("/data/pbdb_cache")
+taxa = @filecache my_cache pbdb_taxa(name="Carnivora", rel="children")
+
+# Inspect / manage the default cache
+list_cache(default_filecache())
+clear!(default_filecache())
+
+# Point the default at a different cache
+set_default_filecache!(DataCache("/project/cache"))
+```
+
+### `@memcache` — in-memory session memoization
+
+`@memcache` caches results in RAM for the duration of the current Julia
+session. No files are written; the cache is lost when Julia exits.
+Useful for repeated calls within a script or interactive session.
+
+```julia
+occs = @memcache pbdb_occurrences(base_name="Canidae", show="full")
+taxa = @memcache pbdb_taxa(name="Dinosauria")
+
+memcache_clear!()   # discard all in-memory cached results
+```
+
+### Legacy path-based caching
+
+Individual query functions also accept a `cache_path` keyword that writes
+results directly to a CSV or TSV file (pre-`DataCache` interface, still
+fully supported):
+
+```julia
+occs = pbdb_occurrences(
+    base_name="Canidae",
+    show="full",
+    cache_path="canidae_occs.csv",
+)
+```
+
 ## Advanced features
 
 ### Rich field names

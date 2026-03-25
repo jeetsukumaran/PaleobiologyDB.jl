@@ -146,8 +146,79 @@ occ_refs = pbdb_ref_occurrences(base_name = "Canis", ref_pubyr = 2000, vocab = "
 ref_detail = pbdb_reference(1003, vocab = "pbdb", show = "both")
 @info " -> Success: Retrieved $(nrow(ref_detail)) records"
 
-# ----------------------------------------------------------------------
+# ======================================================================
+# Caching query results
+# ======================================================================
+
+# --- DataCache: labeled file store ------------------------------------
+
+@info "Example: DataCache — write and read back by label"
+cache = DataCache(joinpath(tempdir(), "pbdb_readme_cache"))
+occs  = pbdb_occurrences(base_name = "Canidae", interval = "Miocene", show = "full", limit = 20)
+key   = write!(cache, occs; label = "Canidae Miocene occurrences")
+@info " -> Stored $(nrow(occs)) records, key=$(key)"
+
+@info "Example: DataCache — retrieve by label"
+retrieved = read(cache, "Canidae Miocene occurrences")
+@info " -> Retrieved $(nrow(retrieved)) records via label"
+
+@info "Example: DataCache — retrieve via getindex syntax"
+retrieved2 = cache["Canidae Miocene occurrences"]
+@info " -> Retrieved $(nrow(retrieved2)) records via cache[label]"
+
+@info "Example: DataCache — retrieve by CacheKey"
+retrieved3 = cache[key]
+@info " -> Retrieved $(nrow(retrieved3)) records via cache[key]"
+
+@info "Example: DataCache — setindex! sugar"
+cache["Carnivora children"] = pbdb_taxa(name = "Carnivora", rel = "children", vocab = "pbdb")
+@info " -> Stored Carnivora children via cache[label] = data"
+
+@info "Example: DataCache — list_cache"
+list_cache(cache)
+
+@info "Example: DataCache — keylabels / keypaths"
+@info " -> Labels: $(keylabels(cache))"
+
+@info "Example: DataCache — delete! and clear!"
+delete!(cache, "Carnivora children")
+@info " -> After delete!: $(length(keys(cache))) entries remaining"
+clear!(cache)
+@info " -> After clear!: $(length(keys(cache))) entries remaining"
+
+# --- @filecache: transparent file-based memoization -------------------
+
+@info "Example: @filecache — first call fetches from network and saves to disk"
+file_cache = DataCache(joinpath(tempdir(), "pbdb_filecache_example"))
+set_default_filecache!(file_cache)
+occs_fc = @filecache pbdb_occurrences(base_name = "Canidae", interval = "Miocene", show = "full", limit = 20)
+@info " -> First call: $(nrow(occs_fc)) records"
+
+@info "Example: @filecache — second call loads from disk (no network)"
+occs_fc2 = @filecache pbdb_occurrences(base_name = "Canidae", interval = "Miocene", show = "full", limit = 20)
+@info " -> Second call (cached): $(nrow(occs_fc2)) records"
+
+@info "Example: @filecache — explicit cache argument"
+taxa_fc = @filecache file_cache pbdb_taxa(name = "Carnivora", rel = "children", vocab = "pbdb")
+@info " -> Fetched $(nrow(taxa_fc)) records into explicit cache"
+
+# --- @memcache: in-memory session memoization -------------------------
+
+@info "Example: @memcache — first call fetches from network"
+occs_mc = @memcache pbdb_occurrences(base_name = "Canidae", interval = "Miocene", show = "full", limit = 20)
+@info " -> First call: $(nrow(occs_mc)) records"
+
+@info "Example: @memcache — second call returns cached value"
+occs_mc2 = @memcache pbdb_occurrences(base_name = "Canidae", interval = "Miocene", show = "full", limit = 20)
+@info " -> Second call (in-memory cache): $(nrow(occs_mc2)) records"
+
+@info "Example: @memcache — clear the session cache"
+memcache_clear!()
+@info " -> memcache_clear!() done"
+
+# ======================================================================
 # Error handling
+# ======================================================================
 @info "Example: Error handling demonstration (invalid taxon)"
 try
     data = pbdb_occurrences(base_name = "InvalidTaxon", limit = 10)
