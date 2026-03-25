@@ -259,8 +259,17 @@ path(::DataCache, key::CacheKey) = key.path
 """
     delete!(cache::DataCache, key::CacheKey)
     delete!(cache::DataCache, label::AbstractString)
+    delete!(cache::DataCache, uuid_prefix::AbstractString)
+    delete!(cache::DataCache, n::Integer)
 
 Remove an entry from `cache` and delete its backing file from disk.
+
+The `AbstractString` form first tries to match a label exactly, then falls back
+to matching the UUID prefix shown in brackets by `list_cache` (e.g. `"2a9d4a87"`).
+An ambiguous prefix (matching more than one entry) is an error.
+
+The `Integer` form converts `n` to a string and delegates to the string form,
+which is useful for numeric hash labels produced by `@filecache`.
 """
 function Base.delete!(cache::DataCache, key::CacheKey)
     _remove_entry!(cache, key.id)
@@ -270,10 +279,23 @@ end
 
 function Base.delete!(cache::DataCache, lbl::AbstractString)
     id = get(cache._by_label, lbl, nothing)
-    isnothing(id) && return cache
+    if isnothing(id)
+        matches = [k for k in Base.keys(cache._index) if startswith(k, lbl)]
+        if length(matches) == 1
+            id = only(matches)
+        elseif length(matches) > 1
+            error("Ambiguous UUID prefix $(repr(lbl)) matches $(length(matches)) entries")
+        else
+            return cache
+        end
+    end
     _remove_entry!(cache, id)
     _save_index(cache)
     return cache
+end
+
+function Base.delete!(cache::DataCache, n::Integer)
+    return Base.delete!(cache, string(n))
 end
 
 """
