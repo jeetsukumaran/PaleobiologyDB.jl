@@ -2,6 +2,7 @@ module DataCaches
 
 using CSV
 using DataFrames
+using Dates
 import TOML
 using Serialization
 using UUIDs
@@ -23,16 +24,18 @@ export autocache
 A reference to a cached dataset in a [`DataCache`](@ref).
 
 Fields are accessed directly:
-- `key.id          :: String`  — unique identifier (UUID)
-- `key.label       :: String`  — lookup key (hash string, or user-provided label; empty if none)
-- `key.path        :: String`  — absolute path to the backing data file
-- `key.description :: String`  — human-readable source expression (empty if none was recorded)
+- `key.id          :: String`    — unique identifier (UUID)
+- `key.label       :: String`    — lookup key (hash string, or user-provided label; empty if none)
+- `key.path        :: String`    — absolute path to the backing data file
+- `key.description :: String`    — human-readable source expression (empty if none was recorded)
+- `key.datecached  :: DateTime`  — when the entry was written; `typemin(DateTime)` if unknown
 """
 struct CacheKey
     id::String
     label::String
     path::String
     description::String   # human-readable source expression, or ""
+    datecached::DateTime  # timestamp of last write; typemin(DateTime) = unknown (legacy entry)
 end
 
 function Base.show(io::IO, k::CacheKey)
@@ -121,11 +124,14 @@ function _load_index!(cache::DataCache)
     isfile(p) || return
     data = TOML.parsefile(p)
     for (id, entry) in get(data, "entries", Dict())
-        lbl   = get(entry, "label",       "")
-        fpath = get(entry, "path",        "")
-        desc  = get(entry, "description", "")
+        lbl    = get(entry, "label",       "")
+        fpath  = get(entry, "path",        "")
+        desc   = get(entry, "description", "")
+        dt_str = get(entry, "datecached",  "")
+        dt     = isempty(dt_str) ? typemin(DateTime) :
+                 DateTime(dt_str, dateformat"yyyy-mm-ddTHH:MM:SS")
         isfile(fpath) || continue
-        key = CacheKey(id, lbl, fpath, desc)
+        key = CacheKey(id, lbl, fpath, desc, dt)
         cache._index[id] = key
         isempty(lbl) || (cache._by_label[lbl] = id)
     end
@@ -134,7 +140,13 @@ end
 function _save_index(cache::DataCache)
     entries = Dict{String,Any}()
     for (id, key) in cache._index
-        entries[id] = Dict{String,Any}("label" => key.label, "path" => key.path, "description" => key.description)
+        entries[id] = Dict{String,Any}(
+            "label"       => key.label,
+            "path"        => key.path,
+            "description" => key.description,
+            "datecached"  => key.datecached == typemin(DateTime) ? "" :
+                             Dates.format(key.datecached, "yyyy-mm-ddTHH:MM:SS"),
+        )
     end
     open(_index_file(cache), "w") do io
         TOML.print(io, Dict{String,Any}("entries" => entries))
@@ -197,7 +209,7 @@ function write!(cache::DataCache, data; label::AbstractString = "", description:
         isnothing(old) || _remove_entry!(cache, old)
         cache._by_label[label] = id
     end
-    key = CacheKey(id, label, fpath, description)
+    key = CacheKey(id, label, fpath, description, Dates.now())
     cache._index[id] = key
     _save_index(cache)
     return key
@@ -320,7 +332,7 @@ function _relabel_by_id!(cache::DataCache, id::String, new_label::AbstractString
         error("Label $(repr(new_label)) is already used by another cache entry")
     end
     isempty(current.label) || delete!(cache._by_label, current.label)
-    new_key = CacheKey(id, new_label, current.path, current.description)
+    new_key = CacheKey(id, new_label, current.path, current.description, current.datecached)
     cache._index[id] = new_key
     isempty(new_label) || (cache._by_label[new_label] = id)
     _save_index(cache)
@@ -389,8 +401,10 @@ function describe(cache::DataCache)
     for key in entries
         lbl    = !isempty(key.description) ? key.description :
                  !isempty(key.label)       ? key.label       : "(unlabeled)"
+        dt_str = key.datecached == typemin(DateTime) ? "" :
+                 "  (" * Dates.format(key.datecached, "yyyy-mm-ddTHH:MM:SS") * ")"
         status = isfile(key.path) ? "" : "  *** FILE MISSING ***"
-        println("  [$(key.id[1:8])…]  $lbl$status")
+        println("  [$(key.id[1:8])…]  $lbl$dt_str$status")
         println("              $(key.path)")
     end
 end
@@ -538,6 +552,8 @@ end
 
 # Internal helpers — not exported
 
+_log_ts() = Dates.format(Dates.now(), "yyyy-mm-dd HH:MM:SS")
+
 function _autocache_active(func)
     _autocache_enabled_ref[] || return false
     get(task_local_storage(), :_pbdb_in_explicit_cache, false) && return false
@@ -584,8 +600,10 @@ function autocache(fetch_fn, func, endpoint, kwargs; force_refresh::Bool = false
     _store = _get_autocache_store()
     _ac_key, _ac_desc = _autocache_key(func, endpoint, kwargs)
     if haskey(_store, _ac_key) && !force_refresh
+        @debug "$(_log_ts()) autocache: cache hit — $_ac_desc"
         return Base.read(_store, _ac_key)
     end
+    @debug "$(_log_ts()) autocache: fetching live — $_ac_desc"
     result = fetch_fn()
     write!(_store, result; label = _ac_key, description = _ac_desc)
     return result
@@ -620,8 +638,10 @@ function _memcache_impl(expr)
     return quote
         let _k = $key_expr
             if haskey(_memcache_store, _k)
+                @debug "$(DataCaches._log_ts()) @memcache: cache hit — $($func_name)"
                 _memcache_store[_k]
             else
+                @debug "$(DataCaches._log_ts()) @memcache: computing live — $($func_name)"
                 _r = $(esc(expr))
                 _memcache_store[_k] = _r
                 _r
@@ -640,8 +660,10 @@ function _filecache_impl(expr, cache_expr)
         let _c = $cache_expr,
             _lbl = string($key_expr)
             if haskey(_c, _lbl)
+                @debug "$(DataCaches._log_ts()) @filecache: cache hit — $($expr_str)"
                 Base.read(_c, _lbl)
             else
+                @debug "$(DataCaches._log_ts()) @filecache: computing live — $($expr_str)"
                 _r = task_local_storage(:_pbdb_in_explicit_cache, true) do
                     $(esc(expr))
                 end
