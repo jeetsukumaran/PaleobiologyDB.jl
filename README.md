@@ -251,9 +251,9 @@ label or by the `CacheKey` returned when writing.
 ```julia
 using PaleobiologyDB
 
-cache = DataCache()                          # default: ~/.cache/PaleobiologyDB/
-cache = DataCache("/my/project/pbdb_cache")  # custom path
-                                             # (or set PBDB_CACHE_DIR env var)
+cache = PaleobiologyDB.default_filecache()   # default $PBDB_CACHE_DIR or '~/.cache/PaleobiologyDB/'
+cache = DataCache()                          # default $PBDB_CACHE_DIR or '~/.cache/PaleobiologyDB/'
+cache = DataCache("/my/project/pbdb_cache")  # custom path (or set PBDB_CACHE_DIR env var)
 
 # --- store ---
 occs  = pbdb_occurrences(base_name="Canidae", interval="Miocene", show="full")
