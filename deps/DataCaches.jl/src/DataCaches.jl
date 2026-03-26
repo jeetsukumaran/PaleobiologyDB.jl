@@ -8,7 +8,7 @@ using Serialization
 using UUIDs
 
 export DataCache, CacheKey
-export write!, relabel!, keylabels, keypaths, clear!, showcache, label, path
+export write!, relabel!, reindex!, keylabels, keypaths, clear!, showcache, label, path
 export @filecache, @memcache
 export default_filecache, set_default_filecache!, memcache_clear!
 export setautocache!
@@ -25,6 +25,7 @@ A reference to a cached dataset in a [`DataCache`](@ref).
 
 Fields are accessed directly:
 - `key.id          :: String`    — unique identifier (UUID)
+- `key.seq         :: Int`       — stable integer index (persisted; use `reindex!` to compact gaps)
 - `key.label       :: String`    — lookup key (hash string, or user-provided label; empty if none)
 - `key.path        :: String`    — absolute path to the backing data file
 - `key.description :: String`    — human-readable source expression (empty if none was recorded)
@@ -32,6 +33,7 @@ Fields are accessed directly:
 """
 struct CacheKey
     id::String
+    seq::Int              # stable integer index, persisted to TOML
     label::String
     path::String
     description::String   # human-readable source expression, or ""
@@ -40,18 +42,28 @@ end
 
 function Base.show(io::IO, k::CacheKey)
     disp = !isempty(k.description) ? k.description :
-           !isempty(k.label)       ? k.label        : k.id[1:8] * "…"
+           !isempty(k.label)       ? k.label        : k.id[1:8]
     print(io, "CacheKey($(repr(disp)))")
 end
 
-function Base.show(io::IO, ::MIME"text/plain", k::CacheKey)
+# Internal: format one CacheKey line with a given seq column width for alignment.
+function _print_cachekey(io::IO, k::CacheKey, seq_width::Int)
     lbl    = !isempty(k.description) ? k.description :
              !isempty(k.label)       ? k.label       : "(unlabeled)"
-    dt_str = k.datecached == typemin(DateTime) ? "" :
-             "  (" * Dates.format(k.datecached, "yyyy-mm-ddTHH:MM:SS") * ")"
+    dt_str = k.datecached == typemin(DateTime) ?
+             " " ^ 19 :
+             Dates.format(k.datecached, "yyyy-mm-ddTHH:MM:SS")
     status = isfile(k.path) ? "" : "  *** FILE MISSING ***"
-    println(io, "  [$(k.id[1:8])…]  $lbl$dt_str$status")
-    print(io,   "              $(k.path)")
+    seq_str = lpad(k.seq, seq_width)
+    # prefix: "  [" + seq_str + "]  " + dt_str + "  " + uuid8 + "  "
+    #          3   + seq_width + 3  +   19    +  2  +   8   +  2  = seq_width + 37
+    prefix_len = seq_width + 37
+    println(io, "  [$(seq_str)]  $(dt_str)  $(k.id[1:8])  $lbl$status")
+    print(io,   " " ^ prefix_len * k.path)
+end
+
+function Base.show(io::IO, ::MIME"text/plain", k::CacheKey)
+    _print_cachekey(io, k, ndigits(k.seq))
 end
 
 # =============================================================================
@@ -106,6 +118,7 @@ mutable struct DataCache
     root::String
     _index::Dict{String,CacheKey}    # id → CacheKey
     _by_label::Dict{String,String}   # label → id
+    _next_seq::Int                   # monotonically incrementing seq counter
 end
 
 const _INDEX_FILENAME = "cache_index.toml"
@@ -120,7 +133,7 @@ end
 function DataCache(root::AbstractString = _default_cache_dir())
     root = abspath(root)
     mkpath(root)
-    cache = DataCache(root, Dict{String,CacheKey}(), Dict{String,String}())
+    cache = DataCache(root, Dict{String,CacheKey}(), Dict{String,String}(), 1)
     _load_index!(cache)
     return cache
 end
@@ -133,11 +146,14 @@ function _load_index!(cache::DataCache)
     p = _index_file(cache)
     isfile(p) || return
     data = TOML.parsefile(p)
+    legacy = Tuple{String,String,String,String,DateTime}[]  # (id, lbl, fpath, desc, dt) for seq==0
+    max_seq = 0
     for (id, entry) in get(data, "entries", Dict())
         lbl    = get(entry, "label",       "")
         fpath  = get(entry, "path",        "")
         desc   = get(entry, "description", "")
-        dt_raw = get(entry, "datecached", "")
+        seq    = get(entry, "seq",         0)
+        dt_raw = get(entry, "datecached",  "")
         dt = if dt_raw isa DateTime
                  dt_raw
              elseif dt_raw isa AbstractString && !isempty(dt_raw)
@@ -150,16 +166,31 @@ function _load_index!(cache::DataCache)
                  typemin(DateTime)
              end
         isfile(fpath) || continue
-        key = CacheKey(id, lbl, fpath, desc, dt)
+        if seq == 0
+            push!(legacy, (id, lbl, fpath, desc, dt))
+        else
+            max_seq = max(max_seq, seq)
+            key = CacheKey(id, seq, lbl, fpath, desc, dt)
+            cache._index[id] = key
+            isempty(lbl) || (cache._by_label[lbl] = id)
+        end
+    end
+    # Assign seq to legacy entries (no seq in TOML), ordered by datecached
+    sort!(legacy; by = t -> t[5])  # sort by dt
+    for (id, lbl, fpath, desc, dt) in legacy
+        max_seq += 1
+        key = CacheKey(id, max_seq, lbl, fpath, desc, dt)
         cache._index[id] = key
         isempty(lbl) || (cache._by_label[lbl] = id)
     end
+    cache._next_seq = max_seq + 1
 end
 
 function _save_index(cache::DataCache)
     entries = Dict{String,Any}()
     for (id, key) in cache._index
         entries[id] = Dict{String,Any}(
+            "seq"         => key.seq,
             "label"       => key.label,
             "path"        => key.path,
             "description" => key.description,
@@ -221,6 +252,8 @@ string (e.g. the source expression) stored alongside the entry for display.
 """
 function write!(cache::DataCache, data; label::AbstractString = "", description::AbstractString = "")
     id    = string(uuid4())
+    seq   = cache._next_seq
+    cache._next_seq += 1
     fpath = _data_path(cache, id, data)
     _write_file(fpath, data)
     if !isempty(label)
@@ -228,7 +261,7 @@ function write!(cache::DataCache, data; label::AbstractString = "", description:
         isnothing(old) || _remove_entry!(cache, old)
         cache._by_label[label] = id
     end
-    key = CacheKey(id, label, fpath, description, Dates.now())
+    key = CacheKey(id, seq, label, fpath, description, Dates.now())
     cache._index[id] = key
     _save_index(cache)
     return key
@@ -311,8 +344,8 @@ The `AbstractString` form first tries to match a label exactly, then falls back
 to matching the UUID prefix shown in brackets by `describe` (e.g. `"2a9d4a87"`).
 An ambiguous prefix (matching more than one entry) is an error.
 
-The `Integer` form converts `n` to a string and delegates to the string form,
-which is useful for numeric hash labels produced by `@filecache`.
+The `Integer` form identifies the entry by its stable sequence index (as shown
+in `showcache`). Use `reindex!` to compact gaps after many deletions.
 """
 function Base.delete!(cache::DataCache, key::CacheKey)
     _remove_entry!(cache, key.id)
@@ -338,10 +371,21 @@ function Base.delete!(cache::DataCache, lbl::AbstractString)
 end
 
 function Base.delete!(cache::DataCache, n::Integer)
-    return Base.delete!(cache, string(n))
+    key = _resolve_by_seq(cache, Int(n))
+    isnothing(key) && return cache
+    _remove_entry!(cache, key.id)
+    _save_index(cache)
+    return cache
 end
 
-# --- Internal relabel helper -------------------------------------------------
+# --- Internal seq/relabel helpers --------------------------------------------
+
+function _resolve_by_seq(cache::DataCache, n::Int)
+    for key in values(cache._index)
+        key.seq == n && return key
+    end
+    return nothing
+end
 
 function _relabel_by_id!(cache::DataCache, id::String, new_label::AbstractString)
     current = get(cache._index, id, nothing)
@@ -351,7 +395,7 @@ function _relabel_by_id!(cache::DataCache, id::String, new_label::AbstractString
         error("Label $(repr(new_label)) is already used by another cache entry")
     end
     isempty(current.label) || delete!(cache._by_label, current.label)
-    new_key = CacheKey(id, new_label, current.path, current.description, current.datecached)
+    new_key = CacheKey(id, current.seq, new_label, current.path, current.description, current.datecached)
     cache._index[id] = new_key
     isempty(new_label) || (cache._by_label[new_label] = id)
     _save_index(cache)
@@ -361,12 +405,14 @@ end
 """
     relabel!(cache::DataCache, key::CacheKey, new_label::AbstractString) → CacheKey
     relabel!(cache::DataCache, old_label::AbstractString, new_label::AbstractString) → CacheKey
+    relabel!(cache::DataCache, n::Integer, new_label::AbstractString) → CacheKey
 
 Rename the label of an existing cache entry without touching its backing data file.
 
 The `CacheKey` overload identifies the entry by its UUID. The `AbstractString`
 overload first tries to match `old_label` as an exact label, then falls back to
-UUID-prefix matching (same rules as `delete!`).
+UUID-prefix matching (same rules as `delete!`). The `Integer` overload identifies
+the entry by its stable sequence index (as shown in `showcache`).
 
 Raises an error if `new_label` is already in use by a different entry.
 Returns the updated `CacheKey`.
@@ -391,6 +437,12 @@ function relabel!(cache::DataCache, old_label::AbstractString, new_label::Abstra
     return _relabel_by_id!(cache, id, new_label)
 end
 
+function relabel!(cache::DataCache, n::Integer, new_label::AbstractString)
+    key = _resolve_by_seq(cache, Int(n))
+    isnothing(key) && error("No cache entry with index $n")
+    return _relabel_by_id!(cache, key.id, new_label)
+end
+
 """
     clear!(cache::DataCache)
 
@@ -400,6 +452,26 @@ function clear!(cache::DataCache)
     for id in collect(Base.keys(cache._index))
         _remove_entry!(cache, id)
     end
+    _save_index(cache)
+    return cache
+end
+
+"""
+    reindex!(cache::DataCache)
+
+Renumber all entries 1..n (sorted by current sequence order), closing gaps
+left by deletions. After `reindex!`, integer indices in `showcache` output
+restart from 1 with no gaps.
+
+Use this after many write/delete cycles to keep index numbers manageable.
+"""
+function reindex!(cache::DataCache)
+    sorted = sort(collect(values(cache._index)); by = k -> k.seq)
+    for (new_seq, key) in enumerate(sorted)
+        new_key = CacheKey(key.id, new_seq, key.label, key.path, key.description, key.datecached)
+        cache._index[key.id] = new_key
+    end
+    cache._next_seq = length(sorted) + 1
     _save_index(cache)
     return cache
 end
@@ -420,15 +492,16 @@ function Base.show(io::IO, cache::DataCache)
 end
 
 function Base.show(io::IO, ::MIME"text/plain", cache::DataCache)
-    entries = sort(collect(values(cache._index)); by = k -> k.label)
+    entries = sort(collect(values(cache._index)); by = k -> k.seq)
     if isempty(entries)
         print(io, "DataCache is empty: $(cache.root)")
         return
     end
     n = length(entries)
+    seq_width = isempty(entries) ? 1 : ndigits(entries[end].seq)
     println(io, "DataCache: $(cache.root)  ($n entr$(n == 1 ? "y" : "ies"))")
     for (i, key) in enumerate(entries)
-        show(io, MIME"text/plain"(), key)
+        _print_cachekey(io, key, seq_width)
         i < n && println(io)
     end
 end
