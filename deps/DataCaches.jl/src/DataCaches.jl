@@ -8,7 +8,7 @@ using Serialization
 using UUIDs
 
 export DataCache, CacheKey
-export write!, relabel!, keylabels, keypaths, clear!, describe, label, path
+export write!, relabel!, keylabels, keypaths, clear!, showcache, label, path
 export @filecache, @memcache
 export default_filecache, set_default_filecache!, memcache_clear!
 export setautocache!
@@ -42,6 +42,16 @@ function Base.show(io::IO, k::CacheKey)
     disp = !isempty(k.description) ? k.description :
            !isempty(k.label)       ? k.label        : k.id[1:8] * "…"
     print(io, "CacheKey($(repr(disp)))")
+end
+
+function Base.show(io::IO, ::MIME"text/plain", k::CacheKey)
+    lbl    = !isempty(k.description) ? k.description :
+             !isempty(k.label)       ? k.label       : "(unlabeled)"
+    dt_str = k.datecached == typemin(DateTime) ? "" :
+             "  (" * Dates.format(k.datecached, "yyyy-mm-ddTHH:MM:SS") * ")"
+    status = isfile(k.path) ? "" : "  *** FILE MISSING ***"
+    println(io, "  [$(k.id[1:8])…]  $lbl$dt_str$status")
+    print(io,   "              $(k.path)")
 end
 
 # =============================================================================
@@ -89,7 +99,7 @@ haskey(cache, "Dinosaur families")
 delete!(cache, key)
 delete!(cache, "Dinosaur families")
 clear!(cache)
-describe(cache)
+showcache(cache)
 ```
 """
 mutable struct DataCache
@@ -395,32 +405,32 @@ function clear!(cache::DataCache)
 end
 
 """
-    describe(cache::DataCache)
+    showcache(cache::DataCache)
 
-Print a summary table of all entries in `cache`.
+Print a detailed summary of all entries in `cache`.
+Equivalent to `show(stdout, MIME"text/plain"(), cache)`.
 """
-function describe(cache::DataCache)
-    entries = sort(collect(values(cache._index)); by = k -> k.label)
-    if isempty(entries)
-        println("DataCache is empty: $(cache.root)")
-        return
-    end
-    n = length(entries)
-    println("DataCache: $(cache.root)  ($n entr$(n == 1 ? "y" : "ies"))")
-    for key in entries
-        lbl    = !isempty(key.description) ? key.description :
-                 !isempty(key.label)       ? key.label       : "(unlabeled)"
-        dt_str = key.datecached == typemin(DateTime) ? "" :
-                 "  (" * Dates.format(key.datecached, "yyyy-mm-ddTHH:MM:SS") * ")"
-        status = isfile(key.path) ? "" : "  *** FILE MISSING ***"
-        println("  [$(key.id[1:8])…]  $lbl$dt_str$status")
-        println("              $(key.path)")
-    end
+function showcache(cache::DataCache)
+    show(stdout, MIME"text/plain"(), cache)
 end
 
 function Base.show(io::IO, cache::DataCache)
     n = length(cache._index)
     print(io, "DataCache(\"$(cache.root)\", $n entr$(n == 1 ? "y" : "ies"))")
+end
+
+function Base.show(io::IO, ::MIME"text/plain", cache::DataCache)
+    entries = sort(collect(values(cache._index)); by = k -> k.label)
+    if isempty(entries)
+        print(io, "DataCache is empty: $(cache.root)")
+        return
+    end
+    n = length(entries)
+    println(io, "DataCache: $(cache.root)  ($n entr$(n == 1 ? "y" : "ies"))")
+    for (i, key) in enumerate(entries)
+        show(io, MIME"text/plain"(), key)
+        i < n && println(io)
+    end
 end
 
 # =============================================================================
