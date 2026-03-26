@@ -71,14 +71,23 @@ Manage the store:
 dc["canidae_occs"] = pbdb_occurrences(base_name = "Canidae", show = "coords")
 
 # Summarize contents
-describe(dc)
+showcache(dc)
 # DataCache: /home/user/.datacaches/project1  (3 entries)
-#   [2a9d4a87…]  canidae_occs
-#               /home/user/.datacaches/project1/2a9d4a87-....csv
+#   [1]  2025-08-25T14:23:01  2a9d4a87  canidae_occs
+#                                        /home/user/.datacaches/project1/2a9d4a87-....csv
 #   ...
 
-delete!(dc, "trilobites")   # remove one entry
+# Rename a label
+relabel!(dc, "canidae_occs", "canidae")   # by label
+relabel!(dc, 2, "canidae")                # by sequence index
+
+# Remove entries
+delete!(dc, "trilobites")   # by label
+delete!(dc, 2)              # by sequence index
 clear!(dc)                  # remove all entries
+
+# Compact sequence numbers after many deletions
+reindexcache!(dc)
 ```
 
 ### Pattern 2 — Memoized function calls
@@ -278,7 +287,7 @@ keypaths(dc)            # → Vector{String}
 label(dc, key)          # → String  (same as key.label)
 path(dc, key)           # → String  (same as key.path)
 
-describe(dc)            # prints a summary table to stdout
+showcache(dc)           # prints a summary table to stdout
 ```
 
 ### Delete
@@ -286,24 +295,46 @@ describe(dc)            # prints a summary table to stdout
 ```julia
 delete!(dc, key)          # by CacheKey
 delete!(dc, "my label")   # by label
-delete!(dc, "2a9d4a87")   # by UUID prefix (shown by describe)
+delete!(dc, "2a9d4a87")   # by UUID prefix (shown by showcache)
+delete!(dc, 3)            # by sequence index (shown by showcache)
 clear!(dc)                # remove all entries
+```
+
+### Relabel
+
+Rename a label without touching the backing data file.
+
+```julia
+relabel!(dc, "old label", "new label")   # by label
+relabel!(dc, key, "new label")           # by CacheKey
+relabel!(dc, 3, "new label")             # by sequence index
+```
+
+### Reindex
+
+After many write/delete cycles, sequence numbers can grow large. `reindexcache!`
+renumbers all entries 1..n (in existing sequence order), closing all gaps.
+
+```julia
+reindexcache!(dc)
 ```
 
 ---
 
 ## CacheKey
 
-`write!` returns a `CacheKey` struct with four fields:
+`write!` returns a `CacheKey` struct with six fields:
 
 | Field | Type | Description |
 |---|---|---|
 | `id` | `String` | UUID (unique per write) |
+| `seq` | `Int` | Stable integer index; survives reloads; use `reindexcache!` to compact gaps |
 | `label` | `String` | User-provided label, or `""` |
 | `path` | `String` | Absolute path to the backing file |
 | `description` | `String` | Human-readable annotation, or `""` |
+| `datecached` | `DateTime` | Timestamp of last write |
 
-`CacheKey` objects can be passed directly to `read`, `delete!`, and `haskey`.
+`CacheKey` objects can be passed directly to `read`, `delete!`, `relabel!`, and `haskey`.
 
 ---
 
