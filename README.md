@@ -296,11 +296,75 @@ my_cache = DataCache("/data/pbdb_cache")
 taxa = @filecache my_cache pbdb_taxa(name="Carnivora", rel="children")
 
 # Inspect / manage the default cache
-describe(PaleobiologDB.default_filecache())
-clear!(PaleobiologDB.default_filecache())
+describe(PaleobiologyDB.default_filecache())
+clear!(PaleobiologyDB.default_filecache())
 
 # Point the default at a different cache
-PaleobiologDB.set_default_filecache!(DataCache("/project/cache"))
+PaleobiologyDB.set_default_filecache!(DataCache("/project/cache"))
+```
+
+### `setautocache!` — global automatic caching
+
+`setautocache!` enables transparent caching on every API call without
+requiring `@filecache` wrappers. When active, all `pbdb_*` functions
+automatically check the cache before making an HTTP request and store
+the result after a live fetch.
+
+```julia
+using PaleobiologyDB
+using PaleobiologyDB.DataCaches
+
+# Enable autocache for ALL pbdb_* functions (uses default cache)
+DataCaches.setautocache!(true)
+
+occs = pbdb_occurrences(base_name="Canidae", interval="Miocene")  # live fetch + cached
+occs = pbdb_occurrences(base_name="Canidae", interval="Miocene")  # instant cache hit
+
+# Disable
+DataCaches.setautocache!(false)
+occs = pbdb_occurrences(base_name="Canidae", interval="Miocene")  # live fetch again
+```
+
+**Per-function control** — enable autocache for specific functions only:
+
+```julia
+# Cache only occurrence queries
+DataCaches.setautocache!(true, pbdb_occurrences)
+
+# Cache occurrences and taxa (additive)
+DataCaches.setautocache!(true, [pbdb_occurrences, pbdb_taxa])
+
+# Remove a function from the autocache allowlist
+DataCaches.setautocache!(false, pbdb_occurrences)
+```
+
+**Custom cache store:**
+
+```julia
+my_cache = DataCache("/data/project_cache")
+
+# All functions → custom cache
+c = DataCaches.setautocache!(true; cache=my_cache)
+
+# Specific function → custom cache
+DataCaches.setautocache!(true, pbdb_occurrences; cache=my_cache)
+```
+
+`setautocache!` returns the active `DataCache` (or `nothing` when disabling),
+so you can immediately inspect it:
+
+```julia
+cache = DataCaches.setautocache!(true)
+describe(cache)
+```
+
+**Compatibility with `@filecache`:** Using `@filecache` explicitly while
+autocache is on is fully safe — autocache is automatically suppressed for
+that call so the result is written exactly once:
+
+```julia
+DataCaches.setautocache!(true)
+occs = @filecache pbdb_occurrences(base_name="Felidae")  # one cache write, no duplication
 ```
 
 ### `@memcache` — in-memory session memoization
