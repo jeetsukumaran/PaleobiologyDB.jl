@@ -10,6 +10,7 @@ export DataCache, CacheKey
 export write!, keylabels, keypaths, clear!, describe, label, path
 export @filecache, @memcache
 export default_filecache, set_default_filecache!, memcache_clear!
+export setautocache!
 
 # =============================================================================
 # CacheKey
@@ -347,6 +348,12 @@ end
 const _memcache_store = Dict{UInt64,Any}()
 const _filecache_ref  = Ref{Union{DataCache,Nothing}}(nothing)
 
+# Autocache state
+const _autocache_enabled_ref = Ref{Bool}(false)
+const _autocache_cache_ref   = Ref{Union{DataCache,Nothing}}(nothing)
+# nothing = all functions (global mode); Set = per-function allowlist
+const _autocache_funcs_ref   = Ref{Union{Nothing,Set{Any}}}(nothing)
+
 """
     default_filecache() → DataCache
 
@@ -377,6 +384,117 @@ Discard all results stored by [`@memcache`](@ref) for this session.
 """
 function memcache_clear!()
     empty!(_memcache_store)
+end
+
+"""
+    setautocache!(enabled::Bool; cache::Union{DataCache,Nothing}=nothing) -> Union{DataCache,Nothing}
+
+Enable or disable automatic caching for **all** `pbdb_*` API functions.
+
+When `enabled=true`, every call to a `pbdb_*` function automatically stores its result
+in a [`DataCache`](@ref) and returns the cached result on subsequent identical calls.
+Pass `cache` to use a specific store; otherwise [`default_filecache()`](@ref) is used.
+
+Returns the active [`DataCache`](@ref), or `nothing` when disabling.
+
+# Examples
+```julia
+DataCaches.setautocache!(true)
+DataCaches.setautocache!(false)
+DataCaches.setautocache!(true; cache=DataCache("/my/project/cache"))
+```
+"""
+function setautocache!(enabled::Bool; cache::Union{DataCache,Nothing}=nothing)
+    _autocache_enabled_ref[] = enabled
+    _autocache_funcs_ref[]   = nothing  # global mode
+    if enabled
+        _autocache_cache_ref[] = isnothing(cache) ? default_filecache() : cache
+    else
+        _autocache_cache_ref[] = nothing
+    end
+    return _autocache_cache_ref[]
+end
+
+"""
+    setautocache!(enabled::Bool, func; cache::Union{DataCache,Nothing}=nothing) -> Union{DataCache,Nothing}
+    setautocache!(enabled::Bool, funcs::AbstractVector; cache::Union{DataCache,Nothing}=nothing) -> Union{DataCache,Nothing}
+
+Enable or disable automatic caching for a specific function (or list of functions).
+
+When `enabled=true`, autocache is activated for `func` (additive — does not affect
+other per-function settings). If global autocache is currently on, calling this switches
+to per-function mode with only `{func}`.
+
+When `enabled=false` and per-function mode is active, removes `func` from the allowlist.
+If the allowlist becomes empty, autocache is fully disabled.
+
+**Note:** `setautocache!(false, func)` has no effect when global autocache is on; call
+`setautocache!(false)` to disable globally.
+
+Returns the active [`DataCache`](@ref), or `nothing` when fully disabled.
+
+# Examples
+```julia
+DataCaches.setautocache!(true, pbdb_occurrences)
+DataCaches.setautocache!(true, [pbdb_occurrences, pbdb_taxa])
+DataCaches.setautocache!(false, pbdb_occurrences)
+```
+"""
+function setautocache!(enabled::Bool, func; cache::Union{DataCache,Nothing}=nothing)
+    if enabled
+        _autocache_enabled_ref[] = true
+        if isnothing(_autocache_cache_ref[]) || !isnothing(cache)
+            _autocache_cache_ref[] = isnothing(cache) ? default_filecache() : cache
+        end
+        existing = _autocache_funcs_ref[]
+        if isnothing(existing)
+            _autocache_funcs_ref[] = Set{Any}([func])
+        else
+            push!(existing, func)
+        end
+    else
+        existing = _autocache_funcs_ref[]
+        if isnothing(existing)
+            @warn "setautocache!(false, func) has no effect when global autocache is active. " *
+                  "Call setautocache!(false) to disable autocache globally."
+            return _autocache_cache_ref[]
+        end
+        delete!(existing, func)
+        if isempty(existing)
+            _autocache_enabled_ref[] = false
+            _autocache_funcs_ref[]   = nothing
+            _autocache_cache_ref[]   = nothing
+        end
+    end
+    return _autocache_cache_ref[]
+end
+
+function setautocache!(enabled::Bool, funcs::AbstractVector; cache::Union{DataCache,Nothing}=nothing)
+    for f in funcs
+        setautocache!(enabled, f; cache=cache)
+    end
+    return _autocache_cache_ref[]
+end
+
+# Internal helpers — not exported; called from dbapi.jl
+
+function _autocache_active(func)
+    _autocache_enabled_ref[] || return false
+    get(task_local_storage(), :_pbdb_in_explicit_cache, false) && return false
+    funcs = _autocache_funcs_ref[]
+    isnothing(funcs) && return true  # global mode: all functions
+    return func in funcs
+end
+
+function _get_autocache_store()
+    c = _autocache_cache_ref[]
+    isnothing(c) && error("Autocache is enabled but no cache is configured.")
+    return c
+end
+
+function _autocache_key(func, endpoint, kwargs)
+    sorted_kw = sort(collect(pairs(kwargs)); by=first)
+    return string(hash(("_autocache_", nameof(func), endpoint, sorted_kw)))
 end
 
 # Build the runtime hash-key expression for both macros.
@@ -429,7 +547,9 @@ function _filecache_impl(expr, cache_expr)
             if haskey(_c, _lbl)
                 Base.read(_c, _lbl)
             else
-                _r = $(esc(expr))
+                _r = task_local_storage(:_pbdb_in_explicit_cache, true) do
+                    $(esc(expr))
+                end
                 write!(_c, _r; label = _lbl)
                 _r
             end

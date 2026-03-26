@@ -15,6 +15,8 @@ using JSON3
 using CSV
 using DataFrames
 
+import .DataCaches: _autocache_active, _get_autocache_store, _autocache_key
+
 export pbdb_occurrence, pbdb_occurrences, pbdb_ref_occurrences,
 	pbdb_collection, pbdb_collections, pbdb_collections_geo,
 	pbdb_ref_collections, pbdb_config,
@@ -234,33 +236,32 @@ function pbdb_query(
     base_url::AbstractString = DEFAULT_BASE_URL,
     readtimeout::Integer = 300,
     retries::Int = 3,
+    _autocache_func::Union{Function,Nothing} = nothing,
     kwargs...
 )
-	# is_force_refresh = isnothing(nothing) ? (isnothing(nothing) ? true : false) : is_force_refresh
-	# is_force_refresh = something(is_force_refresh, isnothing(cache_path) || false)
 	is_force_refresh = something(is_force_refresh, isnothing(cache_path) || false)
-    return _handle_cache(
-		cache_path, 
-		() -> begin
-			q = Dict{String, Any}()
-			for (k, v) in pairs(kwargs)
-				q[string(k)] = v  # Now only real PBDB parameters
-			end
-			url = _build_url(
-				endpoint;
-				base_url = base_url,
-				format = format,
-				query = q
-			)
-			return _fetch_df(
-				url;
-				format,
-				readtimeout,
-				retries,
-			)
-		end,
-		is_force_refresh = is_force_refresh,
-	)
+
+	_do_fetch = () -> begin
+		q = Dict{String, Any}()
+		for (k, v) in pairs(kwargs)
+			q[string(k)] = v
+		end
+		url = _build_url(endpoint; base_url=base_url, format=format, query=q)
+		return _fetch_df(url; format, readtimeout, retries)
+	end
+
+	if !isnothing(_autocache_func) && _autocache_active(_autocache_func)
+		_store  = _get_autocache_store()
+		_ac_key = _autocache_key(_autocache_func, endpoint, kwargs)
+		if DataCaches.haskey(_store, _ac_key) && !is_force_refresh
+			return Base.read(_store, _ac_key)
+		end
+		result = _handle_cache(cache_path, _do_fetch; is_force_refresh=is_force_refresh)
+		DataCaches.write!(_store, result; label=_ac_key)
+		return result
+	end
+
+    return _handle_cache(cache_path, _do_fetch; is_force_refresh=is_force_refresh)
 end
 
 
@@ -291,7 +292,7 @@ pbdb_occurrence(1001; vocab="pbdb", show=["class","coords"])
 ```
 """
 function pbdb_occurrence(id; kwargs...)
-	return pbdb_query("occs/single"; id = id, kwargs...)
+	return pbdb_query("occs/single"; id = id, _autocache_func=pbdb_occurrence, kwargs...)
 end
 
 """
@@ -335,7 +336,7 @@ occs = pbdb_occurrences(
 ```
 """
 function pbdb_occurrences(; kwargs...)
-	return pbdb_query("occs/list"; kwargs...)
+	return pbdb_query("occs/list"; _autocache_func=pbdb_occurrences, kwargs...)
 end
 
 """
@@ -360,7 +361,7 @@ pbdb_ref_occurrences(base_name="Canis"; ref_pubyr=2000, vocab="pbdb")
 ```
 """
 function pbdb_ref_occurrences(; kwargs...)
-	return pbdb_query("occs/refs"; kwargs...)
+	return pbdb_query("occs/refs"; _autocache_func=pbdb_ref_occurrences, kwargs...)
 end
 
 # # Collections -----------------------------------------------------------------
@@ -394,7 +395,7 @@ pbdb_collection(
 ```
 """
 function pbdb_collection(id; kwargs...)
-	return pbdb_query("colls/single"; id = id, kwargs...)
+	return pbdb_query("colls/single"; id = id, _autocache_func=pbdb_collection, kwargs...)
 end
 
 """
@@ -423,7 +424,7 @@ pbdb_collections(base_name="Cetacea", interval="Miocene"; show=["ref","loc","str
 ```
 """
 function pbdb_collections(; kwargs...)
-	return pbdb_query("colls/list"; kwargs...)
+	return pbdb_query("colls/list"; _autocache_func=pbdb_collections, kwargs...)
 end
 
 """
@@ -448,7 +449,7 @@ pbdb_collections_geo(2; lngmin=0.0, lngmax=15.0, latmin=0.0, latmax=15.0, vocab=
 """
 function pbdb_collections_geo(level; kwargs...)
 	isnothing(level) && error("Parameter `level` is required (see `pbdb_config(show = \"clusters\")`)")
-	return pbdb_query("colls/summary"; level = level, kwargs...)
+	return pbdb_query("colls/summary"; level = level, _autocache_func=pbdb_collections_geo, kwargs...)
 end
 
 """
@@ -474,7 +475,7 @@ pbdb_collections_geo(level=2; lngmin=0.0, lngmax=15.0, latmin=0.0, latmax=15.0)
 """
 function pbdb_collections_geo(; level, kwargs...)
 	isnothing(level) && error("Parameter `level` is required (see `pbdb_config(show = \"clusters\")`)")
-	return pbdb_query("colls/summary"; level = level, kwargs...)
+	return pbdb_query("colls/summary"; level = level, _autocache_func=pbdb_collections_geo, kwargs...)
 end
 
 # Taxa ------------------------------------------------------------------------
@@ -501,7 +502,7 @@ pbdb_taxon(name="Canis"; vocab="pbdb", show=["attr","app","size"])
 ```
 """
 function pbdb_taxon(; kwargs...)
-	return pbdb_query("taxa/single"; kwargs...)
+	return pbdb_query("taxa/single"; _autocache_func=pbdb_taxon, kwargs...)
 end
 function pbdb_taxon(id; kwargs...)
 	return pbdb_taxon(; id = id, kwargs...)
@@ -530,7 +531,7 @@ pbdb_taxa(name="Canidae"; rel="all_parents", vocab="pbdb", show=["attr","app","s
 ```
 """
 function pbdb_taxa(; kwargs...)
-	return pbdb_query("taxa/list"; kwargs...)
+	return pbdb_query("taxa/list"; _autocache_func=pbdb_taxa, kwargs...)
 end
 
 """
@@ -553,7 +554,7 @@ pbdb_taxa_auto(name="Cani"; limit=10)
 ```
 """
 function pbdb_taxa_auto(; kwargs...)
-	return pbdb_query("taxa/auto"; format = :json, kwargs...)
+	return pbdb_query("taxa/auto"; format = :json, _autocache_func=pbdb_taxa_auto, kwargs...)
 end
 
 # Intervals & scales ----------------------------------------------------------
@@ -581,7 +582,7 @@ pbdb_interval(id=1; vocab="pbdb")
 ```
 """
 function pbdb_interval(; kwargs...)
-	return pbdb_query("intervals/single"; kwargs...)
+	return pbdb_query("intervals/single"; _autocache_func=pbdb_interval, kwargs...)
 end
 function pbdb_interval(id; kwargs...)
 	return pbdb_interval(; id = id, kwargs...)
@@ -608,7 +609,7 @@ pbdb_intervals(min_ma=0, max_ma=5; vocab="pbdb")
 ```
 """
 function pbdb_intervals(; kwargs...)
-	return pbdb_query("intervals/list"; kwargs...)
+	return pbdb_query("intervals/list"; _autocache_func=pbdb_intervals, kwargs...)
 end
 
 """
@@ -631,7 +632,7 @@ pbdb_scale(1; vocab="pbdb")
 ```
 """
 function pbdb_scale(id; kwargs...)
-	return pbdb_query("scales/single"; id = id, kwargs...)
+	return pbdb_query("scales/single"; id = id, _autocache_func=pbdb_scale, kwargs...)
 end
 
 """
@@ -652,7 +653,7 @@ pbdb_scales()
 ```
 """
 function pbdb_scales(; kwargs...)
-	return pbdb_query("scales/list"; kwargs...)
+	return pbdb_query("scales/list"; _autocache_func=pbdb_scales, kwargs...)
 end
 
 # Strata ----------------------------------------------------------------------
@@ -679,7 +680,7 @@ pbdb_strata(rank="formation", lngmin=-120, lngmax=-100, latmin=30, latmax=50)
 ```
 """
 function pbdb_strata(; kwargs...)
-	return pbdb_query("strata/list"; kwargs...)
+	return pbdb_query("strata/list"; _autocache_func=pbdb_strata, kwargs...)
 end
 
 """
@@ -703,7 +704,7 @@ pbdb_strata_auto(name="Pin"; vocab="pbdb")
 ```
 """
 function pbdb_strata_auto(; kwargs...)
-	return pbdb_query("strata/auto"; format = :json, kwargs...)
+	return pbdb_query("strata/auto"; format = :json, _autocache_func=pbdb_strata_auto, kwargs...)
 end
 
 # References ------------------------------------------------------------------
@@ -728,7 +729,7 @@ pbdb_reference(1003; vocab="pbdb", show="both")
 ```
 """
 function pbdb_reference(id; kwargs...)
-	return pbdb_query("refs/single"; id = id, kwargs...)
+	return pbdb_query("refs/single"; id = id, _autocache_func=pbdb_reference, kwargs...)
 end
 
 """
@@ -753,7 +754,7 @@ pbdb_references(ref_author="Polly")
 ```
 """
 function pbdb_references(; kwargs...)
-	return pbdb_query("refs/list"; kwargs...)
+	return pbdb_query("refs/list"; _autocache_func=pbdb_references, kwargs...)
 end
 
 """
@@ -778,7 +779,7 @@ pbdb_ref_collections(base_name="Canidae", interval="Quaternary", cc="ASI")
 ```
 """
 function pbdb_ref_collections(; kwargs...)
-	return pbdb_query("colls/refs"; kwargs...)
+	return pbdb_query("colls/refs"; _autocache_func=pbdb_ref_collections, kwargs...)
 end
 
 """
@@ -805,7 +806,7 @@ pbdb_ref_taxa(name="Canidae"; vocab="pbdb", show=["both","comments"])
 ```
 """
 function pbdb_ref_taxa(; kwargs...)
-	return pbdb_query("taxa/refs"; kwargs...)
+	return pbdb_query("taxa/refs"; _autocache_func=pbdb_ref_taxa, kwargs...)
 end
 
 # Specimens & measurements -----------------------------------------------------
@@ -830,7 +831,7 @@ pbdb_specimen(30050; show=["class","loc","refattr"])
 ```
 """
 function pbdb_specimen(id; kwargs...)
-	return pbdb_query("specs/single"; id = id, kwargs...)
+	return pbdb_query("specs/single"; id = id, _autocache_func=pbdb_specimen, kwargs...)
 end
 
 """
@@ -854,7 +855,7 @@ pbdb_specimens(base_name="Cetacea", interval="Miocene"; vocab="pbdb")
 ```
 """
 function pbdb_specimens(; kwargs...)
-	return pbdb_query("specs/list"; kwargs...)
+	return pbdb_query("specs/list"; _autocache_func=pbdb_specimens, kwargs...)
 end
 
 """
@@ -879,7 +880,7 @@ pbdb_ref_specimens(spec_id=[1505, 30050])
 ```
 """
 function pbdb_ref_specimens(; kwargs...)
-	return pbdb_query("specs/refs"; kwargs...)
+	return pbdb_query("specs/refs"; _autocache_func=pbdb_ref_specimens, kwargs...)
 end
 
 """
@@ -904,7 +905,7 @@ pbdb_measurements(spec_id=[1505,30050]; show=["spec","class","methods"], vocab="
 ```
 """
 function pbdb_measurements(; kwargs...)
-	return pbdb_query("specs/measurements"; kwargs...)
+	return pbdb_query("specs/measurements"; _autocache_func=pbdb_measurements, kwargs...)
 end
 
 # Opinions --------------------------------------------------------------------
@@ -929,7 +930,7 @@ pbdb_opinion(1000; vocab="pbdb", show="full")
 ```
 """
 function pbdb_opinion(id; kwargs...)
-	return pbdb_query("opinions/single"; id = id, kwargs...)
+	return pbdb_query("opinions/single"; id = id, _autocache_func=pbdb_opinion, kwargs...)
 end
 
 """
@@ -954,7 +955,7 @@ pbdb_opinions(op_pubyr=1818)
 ```
 """
 function pbdb_opinions(; kwargs...)
-	return pbdb_query("opinions/list"; kwargs...)
+	return pbdb_query("opinions/list"; _autocache_func=pbdb_opinions, kwargs...)
 end
 
 """
@@ -978,7 +979,7 @@ pbdb_opinions_taxa(base_name="Canis")
 ```
 """
 function pbdb_opinions_taxa(; kwargs...)
-	return pbdb_query("taxa/opinions"; kwargs...)
+	return pbdb_query("taxa/opinions"; _autocache_func=pbdb_opinions_taxa, kwargs...)
 end
 
 """
@@ -1171,5 +1172,5 @@ pbdb_config(show="ranks")
 ```
 """
 function pbdb_config(; kwargs...)
-	return pbdb_query("config"; kwargs...)
+	return pbdb_query("config"; _autocache_func=pbdb_config, kwargs...)
 end
