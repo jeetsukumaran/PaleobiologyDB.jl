@@ -161,6 +161,46 @@ function _fetch_df(url::AbstractString; format::Symbol = :csv, readtimeout::Inte
 	end
 end
 
+# =============================================================================
+# Legacy internal helper  (used by pbdb_query via cache_path=)
+# =============================================================================
+
+function _handle_cache(
+    cache_path::Union{String,Nothing},
+    query_func::Function;
+    is_force_refresh::Bool = false,
+)
+    if isnothing(cache_path)
+        return query_func()
+    end
+    ext   = lowercase(splitext(cache_path)[2])
+    delim = ext == ".tsv" ? '\t' : ','
+    if isfile(cache_path) && !is_force_refresh
+        try
+            df = DataFrame(CSV.File(cache_path; delim = delim, normalizenames = true))
+            @debug "Read cache file '$cache_path': DataFrame with size $(size(df))."
+            @warn "Using cached results from: '$cache_path'"
+            return df
+        catch e
+            @debug "Failed to read cache file $cache_path: $e. Executing fresh query."
+        end
+    end
+    @debug "Running live query"
+    df = query_func()
+    @debug "Caching query results"
+    cache_dir = dirname(cache_path)
+    if !isdir(cache_dir) && !isempty(cache_dir)
+        mkpath(cache_dir)
+    end
+    try
+        CSV.write(cache_path, df; delim = delim)
+        @debug "Wrote cache file $cache_path: DataFrame with size $(size(df))."
+    catch e
+        @warn "Failed to write cache file $cache_path: $e"
+    end
+    return df
+end
+
 # Public: central query function ---------------------------------------------
 
 """
