@@ -239,7 +239,7 @@ function pbdb_query(
     _autocache_func::Union{Function,Nothing} = nothing,
     kwargs...
 )
-	is_force_refresh = something(is_force_refresh, isnothing(cache_path) || false)
+	is_force_refresh = something(is_force_refresh, false)
 
 	_do_fetch = () -> begin
 		q = Dict{String, Any}()
