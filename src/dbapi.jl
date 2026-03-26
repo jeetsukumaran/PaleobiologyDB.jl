@@ -15,7 +15,7 @@ using JSON3
 using CSV
 using DataFrames
 
-import .DataCaches: _autocache_active, _get_autocache_store, _autocache_key
+import DataCaches: autocache
 
 export pbdb_occurrence, pbdb_occurrences, pbdb_ref_occurrences,
 	pbdb_collection, pbdb_collections, pbdb_collections_geo,
@@ -250,18 +250,17 @@ function pbdb_query(
 		return _fetch_df(url; format, readtimeout, retries)
 	end
 
-	if !isnothing(_autocache_func) && _autocache_active(_autocache_func)
-		_store           = _get_autocache_store()
-		_ac_key, _ac_desc = _autocache_key(_autocache_func, endpoint, kwargs)
-		if DataCaches.haskey(_store, _ac_key) && !is_force_refresh
-			return Base.read(_store, _ac_key)
-		end
-		result = _handle_cache(cache_path, _do_fetch; is_force_refresh=is_force_refresh)
-		DataCaches.write!(_store, result; label=_ac_key, description=_ac_desc)
-		return result
+	if !isnothing(_autocache_func)
+		return autocache(
+			() -> _handle_cache(cache_path, _do_fetch; is_force_refresh = is_force_refresh),
+			_autocache_func,
+			endpoint,
+			kwargs;
+			force_refresh = is_force_refresh,
+		)
 	end
 
-    return _handle_cache(cache_path, _do_fetch; is_force_refresh=is_force_refresh)
+	return _handle_cache(cache_path, _do_fetch; is_force_refresh = is_force_refresh)
 end
 
 

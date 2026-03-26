@@ -53,7 +53,7 @@ R package.
 """
 module PaleobiologyDB
 
-include("datacaches.jl")
+using DataCaches
 include("dbapi.jl")
 include("pbdbdocs.jl")
 

@@ -1,4 +1,4 @@
-module DataCaches 
+module DataCaches
 
 using CSV
 using DataFrames
@@ -11,6 +11,7 @@ export write!, keylabels, keypaths, clear!, describe, label, path
 export @filecache, @memcache
 export default_filecache, set_default_filecache!, memcache_clear!
 export setautocache!
+export autocache
 
 # =============================================================================
 # CacheKey
@@ -96,6 +97,9 @@ end
 
 const _INDEX_FILENAME = "cache_index.toml"
 
+# NOTE: default dir intentionally keeps "PaleobiologyDB" while this package
+# ships bundled with PaleobiologyDB.jl. Update to "DataCaches" when published
+# as an independent package.
 function _default_cache_dir()
     return get(ENV, "PBDB_CACHE_DIR", joinpath(homedir(), ".cache", "PaleobiologyDB"))
 end
@@ -482,7 +486,7 @@ function setautocache!(enabled::Bool, funcs::AbstractVector; cache::Union{DataCa
     return _autocache_cache_ref[]
 end
 
-# Internal helpers — not exported; called from dbapi.jl
+# Internal helpers — not exported
 
 function _autocache_active(func)
     _autocache_enabled_ref[] || return false
@@ -505,6 +509,36 @@ function _autocache_key(func, endpoint, kwargs)
     desc = isempty(kw_str) ? "$(nameof(func))($(endpoint))" :
                              "$(nameof(func))($(endpoint); $(kw_str))"
     return (label, desc)
+end
+
+"""
+    autocache(fetch_fn, func, endpoint, kwargs; force_refresh::Bool = false)
+
+Integration hook for API clients: transparently apply autocaching around a fetch closure.
+
+If autocache is enabled for `func`, checks the cache for a prior result keyed on
+`(func, endpoint, kwargs)`. On a hit (and `force_refresh = false`) returns the cached
+value immediately. On a miss, calls `fetch_fn()`, stores the result, and returns it.
+
+If autocache is not active for `func`, calls `fetch_fn()` directly.
+
+# Arguments
+- `fetch_fn`:       Zero-argument callable that performs the real fetch.
+- `func`:           The public API function whose autocache opt-in is checked.
+- `endpoint`:       The API endpoint string (e.g. `"occs/list"`).
+- `kwargs`:         Keyword arguments passed by the caller.
+- `force_refresh`:  When `true`, bypasses the hit check and overwrites any existing entry.
+"""
+function autocache(fetch_fn, func, endpoint, kwargs; force_refresh::Bool = false)
+    _autocache_active(func) || return fetch_fn()
+    _store = _get_autocache_store()
+    _ac_key, _ac_desc = _autocache_key(func, endpoint, kwargs)
+    if haskey(_store, _ac_key) && !force_refresh
+        return Base.read(_store, _ac_key)
+    end
+    result = fetch_fn()
+    write!(_store, result; label = _ac_key, description = _ac_desc)
+    return result
 end
 
 # Build the runtime hash-key expression for both macros.
