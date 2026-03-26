@@ -977,7 +977,7 @@ function pbdb_count(
 	retries::Int = 3,
 	kwargs...,
 )
-	q = Dict{String, Any}("limit" => "0")
+	q = Dict{String, Any}("limit" => "0", "rowcount" => "1")
 	for (k, v) in pairs(kwargs)
 		q[string(k)] = v
 	end
