@@ -22,19 +22,22 @@ export setautocache!
 A reference to a cached dataset in a [`DataCache`](@ref).
 
 Fields are accessed directly:
-- `key.id     :: String`  — unique identifier (UUID)
-- `key.label  :: String`  — human-readable name (empty string if none was given)
-- `key.path   :: String`  — absolute path to the backing data file
+- `key.id          :: String`  — unique identifier (UUID)
+- `key.label       :: String`  — lookup key (hash string, or user-provided label; empty if none)
+- `key.path        :: String`  — absolute path to the backing data file
+- `key.description :: String`  — human-readable source expression (empty if none was recorded)
 """
 struct CacheKey
     id::String
     label::String
     path::String
+    description::String   # human-readable source expression, or ""
 end
 
 function Base.show(io::IO, k::CacheKey)
-    lbl = isempty(k.label) ? k.id[1:8] * "…" : repr(k.label)
-    print(io, "CacheKey($lbl)")
+    disp = !isempty(k.description) ? k.description :
+           !isempty(k.label)       ? k.label        : k.id[1:8] * "…"
+    print(io, "CacheKey($(repr(disp)))")
 end
 
 # =============================================================================
@@ -114,10 +117,11 @@ function _load_index!(cache::DataCache)
     isfile(p) || return
     data = TOML.parsefile(p)
     for (id, entry) in get(data, "entries", Dict())
-        lbl   = get(entry, "label", "")
-        fpath = get(entry, "path",  "")
+        lbl   = get(entry, "label",       "")
+        fpath = get(entry, "path",        "")
+        desc  = get(entry, "description", "")
         isfile(fpath) || continue
-        key = CacheKey(id, lbl, fpath)
+        key = CacheKey(id, lbl, fpath, desc)
         cache._index[id] = key
         isempty(lbl) || (cache._by_label[lbl] = id)
     end
@@ -126,7 +130,7 @@ end
 function _save_index(cache::DataCache)
     entries = Dict{String,Any}()
     for (id, key) in cache._index
-        entries[id] = Dict{String,Any}("label" => key.label, "path" => key.path)
+        entries[id] = Dict{String,Any}("label" => key.label, "path" => key.path, "description" => key.description)
     end
     open(_index_file(cache), "w") do io
         TOML.print(io, Dict{String,Any}("entries" => entries))
@@ -171,15 +175,16 @@ end
 # --- Public write/read -------------------------------------------------------
 
 """
-    write!(cache::DataCache, data; label::AbstractString = "") → CacheKey
+    write!(cache::DataCache, data; label::AbstractString = "", description::AbstractString = "") → CacheKey
 
 Store `data` in `cache` and return a [`CacheKey`](@ref).
 
 If `label` is given and another entry with that label already exists,
 it is silently replaced. `DataFrame` values are stored as CSV; all other
-values use Julia `Serialization`.
+values use Julia `Serialization`. `description` is an optional human-readable
+string (e.g. the source expression) stored alongside the entry for display.
 """
-function write!(cache::DataCache, data; label::AbstractString = "")
+function write!(cache::DataCache, data; label::AbstractString = "", description::AbstractString = "")
     id    = string(uuid4())
     fpath = _data_path(cache, id, data)
     _write_file(fpath, data)
@@ -188,7 +193,7 @@ function write!(cache::DataCache, data; label::AbstractString = "")
         isnothing(old) || _remove_entry!(cache, old)
         cache._by_label[label] = id
     end
-    key = CacheKey(id, label, fpath)
+    key = CacheKey(id, label, fpath, description)
     cache._index[id] = key
     _save_index(cache)
     return key
@@ -328,7 +333,8 @@ function describe(cache::DataCache)
     n = length(entries)
     println("DataCache: $(cache.root)  ($n entr$(n == 1 ? "y" : "ies"))")
     for key in entries
-        lbl    = isempty(key.label) ? "(unlabeled)" : key.label
+        lbl    = !isempty(key.description) ? key.description :
+                 !isempty(key.label)       ? key.label       : "(unlabeled)"
         status = isfile(key.path) ? "" : "  *** FILE MISSING ***"
         println("  [$(key.id[1:8])…]  $lbl$status")
         println("              $(key.path)")
@@ -494,7 +500,11 @@ end
 
 function _autocache_key(func, endpoint, kwargs)
     sorted_kw = sort(collect(pairs(kwargs)); by=first)
-    return string(hash(("_autocache_", nameof(func), endpoint, sorted_kw)))
+    label = string(hash(("_autocache_", nameof(func), endpoint, sorted_kw)))
+    kw_str = join(["$(k) = $(repr(v))" for (k, v) in sorted_kw], ", ")
+    desc = isempty(kw_str) ? "$(nameof(func))($(endpoint))" :
+                             "$(nameof(func))($(endpoint); $(kw_str))"
+    return (label, desc)
 end
 
 # Build the runtime hash-key expression for both macros.
@@ -541,6 +551,7 @@ function _filecache_impl(expr, cache_expr)
         error("@filecache: expected a function call, got: $expr")
     func_name = string(expr.args[1])
     key_expr  = _cache_hash_expr(func_name, expr.args[2:end])
+    expr_str  = sprint(Base.show_unquoted, expr)
     return quote
         let _c = $cache_expr,
             _lbl = string($key_expr)
@@ -550,7 +561,7 @@ function _filecache_impl(expr, cache_expr)
                 _r = task_local_storage(:_pbdb_in_explicit_cache, true) do
                     $(esc(expr))
                 end
-                write!(_c, _r; label = _lbl)
+                write!(_c, _r; label = _lbl, description = $expr_str)
                 _r
             end
         end
