@@ -380,20 +380,6 @@ taxa = @memcache pbdb_taxa(name="Dinosauria")
 PaleobiologyDB.memcache_clear!()   # discard all in-memory cached results
 ```
 
-### Legacy path-based caching
-
-Individual query functions also accept a `cache_path` keyword that writes
-results directly to a CSV or TSV file (pre-`DataCache` interface, still
-fully supported):
-
-```julia
-occs = pbdb_occurrences(
-    base_name="Canidae",
-    show="full",
-    cache_path="canidae_occs.csv",
-)
-```
-
 ## Advanced features
 
 ### Rich field names
