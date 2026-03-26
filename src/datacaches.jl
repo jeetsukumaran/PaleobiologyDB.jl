@@ -1,3 +1,5 @@
+module DataCaches 
+
 using CSV
 using DataFrames
 import TOML
@@ -522,3 +524,5 @@ function _handle_cache(
     end
     return df
 end
+
+end # module
