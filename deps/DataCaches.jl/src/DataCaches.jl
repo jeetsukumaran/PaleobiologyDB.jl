@@ -127,9 +127,18 @@ function _load_index!(cache::DataCache)
         lbl    = get(entry, "label",       "")
         fpath  = get(entry, "path",        "")
         desc   = get(entry, "description", "")
-        dt_str = get(entry, "datecached",  "")
-        dt     = isempty(dt_str) ? typemin(DateTime) :
-                 DateTime(dt_str, dateformat"yyyy-mm-ddTHH:MM:SS")
+        dt_raw = get(entry, "datecached", "")
+        dt = if dt_raw isa DateTime
+                 dt_raw
+             elseif dt_raw isa AbstractString && !isempty(dt_raw)
+                 try
+                     DateTime(dt_raw, dateformat"yyyy-mm-ddTHH:MM:SS")
+                 catch
+                     typemin(DateTime)
+                 end
+             else
+                 typemin(DateTime)
+             end
         isfile(fpath) || continue
         key = CacheKey(id, lbl, fpath, desc, dt)
         cache._index[id] = key
