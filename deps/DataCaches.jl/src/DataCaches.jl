@@ -8,7 +8,7 @@ using Serialization
 using UUIDs
 
 export DataCache, CacheKey
-export write!, relabel!, reindex!, keylabels, keypaths, clear!, showcache, label, path
+export write!, relabel!, reindexcache!, keylabels, keypaths, clear!, showcache, label, path
 export @filecache, @memcache
 export default_filecache, set_default_filecache!, memcache_clear!
 export setautocache!
@@ -25,7 +25,7 @@ A reference to a cached dataset in a [`DataCache`](@ref).
 
 Fields are accessed directly:
 - `key.id          :: String`    — unique identifier (UUID)
-- `key.seq         :: Int`       — stable integer index (persisted; use `reindex!` to compact gaps)
+- `key.seq         :: Int`       — stable integer index (persisted; use `reindexcache!` to compact gaps)
 - `key.label       :: String`    — lookup key (hash string, or user-provided label; empty if none)
 - `key.path        :: String`    — absolute path to the backing data file
 - `key.description :: String`    — human-readable source expression (empty if none was recorded)
@@ -345,7 +345,7 @@ to matching the UUID prefix shown in brackets by `describe` (e.g. `"2a9d4a87"`).
 An ambiguous prefix (matching more than one entry) is an error.
 
 The `Integer` form identifies the entry by its stable sequence index (as shown
-in `showcache`). Use `reindex!` to compact gaps after many deletions.
+in `showcache`). Use `reindexcache!` to compact gaps after many deletions.
 """
 function Base.delete!(cache::DataCache, key::CacheKey)
     _remove_entry!(cache, key.id)
@@ -457,15 +457,15 @@ function clear!(cache::DataCache)
 end
 
 """
-    reindex!(cache::DataCache)
+    reindexcache!(cache::DataCache)
 
 Renumber all entries 1..n (sorted by current sequence order), closing gaps
-left by deletions. After `reindex!`, integer indices in `showcache` output
+left by deletions. After `reindexcache!`, integer indices in `showcache` output
 restart from 1 with no gaps.
 
 Use this after many write/delete cycles to keep index numbers manageable.
 """
-function reindex!(cache::DataCache)
+function reindexcache!(cache::DataCache)
     sorted = sort(collect(values(cache._index)); by = k -> k.seq)
     for (new_seq, key) in enumerate(sorted)
         new_key = CacheKey(key.id, new_seq, key.label, key.path, key.description, key.datecached)
