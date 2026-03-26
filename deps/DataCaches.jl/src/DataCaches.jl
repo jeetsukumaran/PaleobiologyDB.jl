@@ -7,7 +7,7 @@ using Serialization
 using UUIDs
 
 export DataCache, CacheKey
-export write!, keylabels, keypaths, clear!, describe, label, path
+export write!, relabel!, keylabels, keypaths, clear!, describe, label, path
 export @filecache, @memcache
 export default_filecache, set_default_filecache!, memcache_clear!
 export setautocache!
@@ -308,6 +308,56 @@ end
 
 function Base.delete!(cache::DataCache, n::Integer)
     return Base.delete!(cache, string(n))
+end
+
+# --- Internal relabel helper -------------------------------------------------
+
+function _relabel_by_id!(cache::DataCache, id::String, new_label::AbstractString)
+    current = get(cache._index, id, nothing)
+    isnothing(current) && error("No cache entry with id $(repr(id))")
+    existing_id = get(cache._by_label, new_label, nothing)
+    if !isnothing(existing_id) && existing_id != id
+        error("Label $(repr(new_label)) is already used by another cache entry")
+    end
+    isempty(current.label) || delete!(cache._by_label, current.label)
+    new_key = CacheKey(id, new_label, current.path, current.description)
+    cache._index[id] = new_key
+    isempty(new_label) || (cache._by_label[new_label] = id)
+    _save_index(cache)
+    return new_key
+end
+
+"""
+    relabel!(cache::DataCache, key::CacheKey, new_label::AbstractString) → CacheKey
+    relabel!(cache::DataCache, old_label::AbstractString, new_label::AbstractString) → CacheKey
+
+Rename the label of an existing cache entry without touching its backing data file.
+
+The `CacheKey` overload identifies the entry by its UUID. The `AbstractString`
+overload first tries to match `old_label` as an exact label, then falls back to
+UUID-prefix matching (same rules as `delete!`).
+
+Raises an error if `new_label` is already in use by a different entry.
+Returns the updated `CacheKey`.
+"""
+function relabel!(cache::DataCache, key::CacheKey, new_label::AbstractString)
+    haskey(cache._index, key.id) || error("CacheKey not found in cache")
+    return _relabel_by_id!(cache, key.id, new_label)
+end
+
+function relabel!(cache::DataCache, old_label::AbstractString, new_label::AbstractString)
+    id = get(cache._by_label, old_label, nothing)
+    if isnothing(id)
+        matches = [k for k in Base.keys(cache._index) if startswith(k, old_label)]
+        if length(matches) == 1
+            id = only(matches)
+        elseif length(matches) > 1
+            error("Ambiguous UUID prefix $(repr(old_label)) matches $(length(matches)) entries")
+        else
+            error("No cache entry with label $(repr(old_label))")
+        end
+    end
+    return _relabel_by_id!(cache, id, new_label)
 end
 
 """

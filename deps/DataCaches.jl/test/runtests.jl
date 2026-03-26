@@ -97,6 +97,57 @@ using DataFrames
         end
     end
 
+    @testset "relabel! by label" begin
+        mktempdir() do dir
+            c = DataCache(dir)
+            write!(c, [1, 2, 3]; label = "old")
+            new_key = relabel!(c, "old", "new")
+            @test new_key.label == "new"
+            @test !haskey(c, "old")
+            @test haskey(c, "new")
+            @test Base.read(c, "new") == [1, 2, 3]
+        end
+    end
+
+    @testset "relabel! by CacheKey" begin
+        mktempdir() do dir
+            c = DataCache(dir)
+            key = write!(c, 42; label = "alpha")
+            new_key = relabel!(c, key, "beta")
+            @test new_key.label == "beta"
+            @test haskey(c, "beta")
+            @test !haskey(c, "alpha")
+        end
+    end
+
+    @testset "relabel! persists across reload" begin
+        mktempdir() do dir
+            c1 = DataCache(dir)
+            write!(c1, [9, 9]; label = "before")
+            relabel!(c1, "before", "after")
+            c2 = DataCache(dir)
+            @test haskey(c2, "after")
+            @test !haskey(c2, "before")
+            @test Base.read(c2, "after") == [9, 9]
+        end
+    end
+
+    @testset "relabel! conflict errors" begin
+        mktempdir() do dir
+            c = DataCache(dir)
+            write!(c, 1; label = "a")
+            write!(c, 2; label = "b")
+            @test_throws ErrorException relabel!(c, "a", "b")
+        end
+    end
+
+    @testset "relabel! missing label errors" begin
+        mktempdir() do dir
+            c = DataCache(dir)
+            @test_throws ErrorException relabel!(c, "nonexistent", "x")
+        end
+    end
+
     @testset "memcache_clear!" begin
         memcache_clear!()
         @test true
