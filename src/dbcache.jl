@@ -5,7 +5,7 @@ using Serialization
 using UUIDs
 
 export DataCache, CacheKey
-export write!, keylabels, keypaths, clear!, list_cache, label, path
+export write!, keylabels, keypaths, clear!, describe, label, path
 export @filecache, @memcache
 # export default_filecache, set_default_filecache!, memcache_clear!
 
@@ -79,7 +79,7 @@ haskey(cache, "Dinosaur families")
 delete!(cache, key)
 delete!(cache, "Dinosaur families")
 clear!(cache)
-list_cache(cache)
+describe(cache)
 ```
 """
 mutable struct DataCache
@@ -265,7 +265,7 @@ path(::DataCache, key::CacheKey) = key.path
 Remove an entry from `cache` and delete its backing file from disk.
 
 The `AbstractString` form first tries to match a label exactly, then falls back
-to matching the UUID prefix shown in brackets by `list_cache` (e.g. `"2a9d4a87"`).
+to matching the UUID prefix shown in brackets by `describe` (e.g. `"2a9d4a87"`).
 An ambiguous prefix (matching more than one entry) is an error.
 
 The `Integer` form converts `n` to a string and delegates to the string form,
@@ -312,11 +312,11 @@ function clear!(cache::DataCache)
 end
 
 """
-    list_cache(cache::DataCache)
+    describe(cache::DataCache)
 
 Print a summary table of all entries in `cache`.
 """
-function list_cache(cache::DataCache)
+function describe(cache::DataCache)
     entries = sort(collect(values(cache._index)); by = k -> k.label)
     if isempty(entries)
         println("DataCache is empty: $(cache.root)")

@@ -174,8 +174,8 @@ retrieved3 = cache[key]
 cache["Carnivora children"] = pbdb_taxa(name = "Carnivora", rel = "children", vocab = "pbdb")
 @info " -> Stored Carnivora children via cache[label] = data"
 
-@info "Example: DataCache — list_cache"
-list_cache(cache)
+@info "Example: DataCache — describe"
+describe(cache)
 
 @info "Example: DataCache — keylabels / keypaths"
 @info " -> Labels: $(keylabels(cache))"

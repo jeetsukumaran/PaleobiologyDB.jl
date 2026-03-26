@@ -269,7 +269,7 @@ occs  = cache[key]                           # by CacheKey
 keys(cache)        # → Vector{CacheKey}
 keylabels(cache)   # → Vector{String}
 keypaths(cache)    # → Vector{String}
-list_cache(cache)  # pretty-printed table
+describe(cache)  # pretty-printed table
 
 # --- manage ---
 delete!(cache, "Canidae Miocene occurrences")
@@ -295,7 +295,7 @@ my_cache = DataCache("/data/pbdb_cache")
 taxa = @filecache my_cache pbdb_taxa(name="Carnivora", rel="children")
 
 # Inspect / manage the default cache
-list_cache(PaleobiologDB.default_filecache())
+describe(PaleobiologDB.default_filecache())
 clear!(PaleobiologDB.default_filecache())
 
 # Point the default at a different cache
