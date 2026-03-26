@@ -250,9 +250,10 @@ label or by the `CacheKey` returned when writing.
 
 ```julia
 using PaleobiologyDB
+using PaleobiologyDB.DataCaches
 
-cache = PaleobiologyDB.default_filecache()   # default $PBDB_CACHE_DIR or '~/.cache/PaleobiologyDB/'
-cache = DataCache()                          # default $PBDB_CACHE_DIR or '~/.cache/PaleobiologyDB/'
+cache = default_filecache()     # default $PBDB_CACHE_DIR or '~/.cache/PaleobiologyDB/'
+cache = DataCache()             # default $PBDB_CACHE_DIR or '~/.cache/PaleobiologyDB/'
 cache = DataCache("/my/project/pbdb_cache")  # custom path (or set PBDB_CACHE_DIR env var)
 
 # --- store ---
