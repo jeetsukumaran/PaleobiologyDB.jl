@@ -1,10 +1,6 @@
-## PaleobiologyDB.jl v1.2.0 (Upcoming)
+## PaleobiologyDB.jl v2.0.0 (Upcoming)
 
 
-### Added
-
-- `cache_path` option on all queries to support local data caching.
-- `PyRate` utilities.
 
 ### Changed
 
