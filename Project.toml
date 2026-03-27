@@ -30,4 +30,4 @@ Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 test = ["Test", "Aqua"]
 
 [sources]
-DataCaches = {path = "deps/DataCaches.jl"}
+DataCaches = {url = "https://github.com/jeetsukumaran/DataCaches.jl"}
