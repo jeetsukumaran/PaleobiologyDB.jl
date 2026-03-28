@@ -26,9 +26,7 @@ export pbdb_occurrence, pbdb_occurrences, pbdb_ref_occurrences,
 	pbdb_reference, pbdb_references,
 	pbdb_specimen, pbdb_specimens, pbdb_ref_specimens, pbdb_measurements,
 	pbdb_opinion, pbdb_opinions,
-	pbdb_count,
-	pbdb_count_occurrences, pbdb_count_collections, pbdb_count_taxa,
-	pbdb_count_references, pbdb_count_specimens, pbdb_count_opinions
+	pbdb_count
 
 # --- Internal helpers -------------------------------------------------------
 
@@ -965,89 +963,40 @@ function pbdb_count(
 	return hasproperty(obj, :records_found) ? Int(obj.records_found) : missing
 end
 
-"""
-	pbdb_count_occurrences(; kwargs...) -> Union{Int, Missing}
+const _PBDB_COUNT_ENDPOINTS = Dict{Symbol, String}(
+	:occurrences => "occs/list",
+	:collections => "colls/list",
+	:taxa        => "taxa/list",
+	:references  => "refs/list",
+	:specimens   => "specs/list",
+	:opinions    => "opinions/list",
+)
 
-Return the total number of fossil occurrence records matching the query,
-without downloading the records. Accepts the same filter parameters as
-`pbdb_occurrences`.
+"""
+	pbdb_count(resource::Symbol; kwargs...) -> Union{Int, Missing}
+
+Return the total number of records for the given resource type without
+downloading the records themselves.
+
+`resource` must be one of: $(join(sort!(collect(keys(_PBDB_COUNT_ENDPOINTS))), ", ")).
 
 # Examples
 ```julia
-pbdb_count_occurrences(base_name="Canidae")
-pbdb_count_occurrences(interval="Miocene", cc="ASI")
+pbdb_count(:occurrences; base_name="Canidae")
+pbdb_count(:collections; interval="Miocene", cc="ASI")
+
+# Dynamic dispatch and splatting work:
+params = Dict(:base_name => "Canidae")
+pbdb_count(:occurrences; params...)
 ```
 """
-pbdb_count_occurrences(; kwargs...) = pbdb_count("occs/list"; kwargs...)
-
-"""
-	pbdb_count_collections(; kwargs...) -> Union{Int, Missing}
-
-Return the total number of fossil collection records matching the query,
-without downloading the records. Accepts the same filter parameters as
-`pbdb_collections`.
-
-# Examples
-```julia
-pbdb_count_collections(base_name="Cetacea", interval="Miocene")
-```
-"""
-pbdb_count_collections(; kwargs...) = pbdb_count("colls/list"; kwargs...)
-
-"""
-	pbdb_count_taxa(; kwargs...) -> Union{Int, Missing}
-
-Return the total number of taxonomic names matching the query, without
-downloading the records. Accepts the same filter parameters as `pbdb_taxa`.
-
-# Examples
-```julia
-pbdb_count_taxa(base_name="Mammalia")
-```
-"""
-pbdb_count_taxa(; kwargs...) = pbdb_count("taxa/list"; kwargs...)
-
-"""
-	pbdb_count_references(; kwargs...) -> Union{Int, Missing}
-
-Return the total number of bibliographic references matching the query,
-without downloading the records. Accepts the same filter parameters as
-`pbdb_references`.
-
-# Examples
-```julia
-pbdb_count_references(ref_author="Polly")
-```
-"""
-pbdb_count_references(; kwargs...) = pbdb_count("refs/list"; kwargs...)
-
-"""
-	pbdb_count_specimens(; kwargs...) -> Union{Int, Missing}
-
-Return the total number of fossil specimen records matching the query,
-without downloading the records. Accepts the same filter parameters as
-`pbdb_specimens`.
-
-# Examples
-```julia
-pbdb_count_specimens(base_name="Cetacea")
-```
-"""
-pbdb_count_specimens(; kwargs...) = pbdb_count("specs/list"; kwargs...)
-
-"""
-	pbdb_count_opinions(; kwargs...) -> Union{Int, Missing}
-
-Return the total number of taxonomic opinion records matching the query,
-without downloading the records. Accepts the same filter parameters as
-`pbdb_opinions`.
-
-# Examples
-```julia
-pbdb_count_opinions(op_pubyr=1818)
-```
-"""
-pbdb_count_opinions(; kwargs...) = pbdb_count("opinions/list"; kwargs...)
+pbdb_count(resource::Symbol; kwargs...) = pbdb_count(
+	get(_PBDB_COUNT_ENDPOINTS, resource) do
+		valid = join(sort!(string.(collect(keys(_PBDB_COUNT_ENDPOINTS)))), ", ")
+		error("pbdb_count: unknown resource :$resource. Valid: $valid")
+	end;
+	kwargs...,
+)
 
 """
 	pbdb_config(; kwargs...)
