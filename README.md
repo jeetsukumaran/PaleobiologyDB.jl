@@ -38,7 +38,6 @@ canids = pbdb_occurrences(
     base_name="Canidae",
     interval="Miocene",
     show="full",
-    vocab="pbdb",
     extids=true,
     limit=100
 )
@@ -50,14 +49,12 @@ canids = pbdb_occurrences(
     base_name="Canidae",
     interval="Miocene",
     show=["coords", "class"],
-    vocab="pbdb",
     extids=true,
 )
 
 # Get taxonomic information
 canis_info = pbdb_taxon(
     name="Canis",
-    vocab="pbdb",
     extids=true,
     show=["attr", "app", "size"]
 )
@@ -66,14 +63,12 @@ canis_info = pbdb_taxon(
 collection = pbdb_collection(
     "col:1003",
     show=["loc", "stratext"],
-    vocab="pbdb",
     extids=true,
 )
 # old-style numeric-only id
 collection = pbdb_collection(
     1003,
     show=["loc", "stratext"],
-    vocab="pbdb"
     # extids=false,
 )
 ```
@@ -102,7 +97,6 @@ search: PaleobiologyDB
   # Get occurrences for Canidae
   occs = pbdb_occurrences(
       base_name="Canidae",
-      vocab="pbdb",
       extids=true,
       show="full",
   )
@@ -170,9 +164,9 @@ search: pbdb_occurrences pbdb_occurrence pbdb_ref_occurrences pbdb_references pb
 occs = pbdb_occurrences(base_name="Mammalia", limit=10)
 
 # Specific occurrence
-single_occ = pbdb_occurrence("occ:1001", vocab="pbdb", show="full")
+single_occ = pbdb_occurrence("occ:1001", show="full")
 # old-style numeric-only id
-single_occ = pbdb_occurrence(1001, vocab="pbdb", show="full")
+single_occ = pbdb_occurrence(1001, show="full")
 
 # Geographic and temporal filtering
 pliocene_mammals = pbdb_occurrences(
@@ -181,19 +175,17 @@ pliocene_mammals = pbdb_occurrences(
     lngmin=-130.0, lngmax=-60.0,
     latmin=25.0, latmax=70.0,
     show=["coords", "classext", "stratext"],
-    vocab="pbdb"
 )
 ```
 
 ### Taxonomic data
 
 ```julia
-mammalia = pbdb_taxon(name="Mammalia", vocab="pbdb", show=["attr", "size"])
+mammalia = pbdb_taxon(name="Mammalia", show=["attr", "size"])
 
 carnivores = pbdb_taxa(
     name="Carnivora",
     rel="children",
-    vocab="pbdb",
     show=["attr", "app"]
 )
 
@@ -222,18 +214,15 @@ clusters = pbdb_collections_geo(
 whale_specimens = pbdb_specimens(
     base_name="Cetacea",
     interval="Miocene",
-    vocab="pbdb"
 )
 
 measurements = pbdb_measurements(
     spec_id=["spm:1505", "spm:30050"],
     show=["spec", "methods"],
-    vocab="pbdb"
 )
 measurements = pbdb_measurements(
     spec_id=[1505, 30050],
     show=["spec", "methods"],
-    vocab="pbdb"
 )
 ```
 
@@ -384,11 +373,11 @@ PaleobiologyDB.memcache_clear!()   # discard all in-memory cached results
 
 ### Rich field names
 
-Use `vocab="pbdb"` for descriptive field names:
+Full descriptive field names are returned by default. Pass `vocab="com"` for compact 3-letter codes:
 
 ```julia
-df_short = pbdb_occurrences(base_name="Canis", limit=5)            # compact codes
-df_full  = pbdb_occurrences(base_name="Canis", limit=5, vocab="pbdb") # full names
+df_full  = pbdb_occurrences(base_name="Canis", limit=5)             # full names
+df_short = pbdb_occurrences(base_name="Canis", limit=5, vocab="com") # compact codes
 ```
 
 ### Additional information blocks
@@ -398,7 +387,6 @@ detailed_occs = pbdb_occurrences(
     base_name="Dinosauria",
     interval="Cretaceous",
     show=["coords","classext","stratext","ident","loc"],
-    vocab="pbdb"
 )
 ```
 
@@ -414,14 +402,32 @@ formations = pbdb_strata(rank="formation",
                          latmin=30, latmax=50)
 ```
 
+### Counting records
+
+Use `pbdb_count` to get the number of matching records without downloading
+the data. Pass a `Symbol` for the resource type:
+
+```julia
+pbdb_count(:occurrences; base_name="Canidae")
+pbdb_count(:collections; interval="Miocene", cc="ASI")
+pbdb_count(:taxa; base_name="Mammalia")
+
+# Dynamic and splatting work too:
+params = Dict(:base_name => "Cetacea", :interval => "Miocene")
+pbdb_count(:specimens; params...)
+```
+
+Valid resource symbols: `:occurrences`, `:collections`, `:taxa`,
+`:references`, `:specimens`, `:opinions`.
+
 ### References and bibliography
 
 ```julia
-refs = pbdb_ref_taxa(name="Canidae", show=["both","comments"], vocab="pbdb")
+refs = pbdb_ref_taxa(name="Canidae", show=["both","comments"])
 
-occ_refs = pbdb_ref_occurrences(base_name="Canis", ref_pubyr=2000, vocab="pbdb")
+occ_refs = pbdb_ref_occurrences(base_name="Canis", ref_pubyr=2000)
 
-ref_detail = pbdb_reference(1003, vocab="pbdb", show="both")
+ref_detail = pbdb_reference(1003, show="both")
 ```
 
 ## Function reference
@@ -434,6 +440,7 @@ ref_detail = pbdb_reference(1003, vocab="pbdb", show="both")
 * References: `pbdb_reference`, `pbdb_references`
 * Specimens: `pbdb_specimen`, `pbdb_specimens`, `pbdb_ref_specimens`, `pbdb_measurements`
 * Opinions: `pbdb_opinion`, `pbdb_opinions`
+* Counts: `pbdb_count` (pass a `Symbol` resource or a raw endpoint string)
 
 All wrappers delegate to `pbdb_query(endpoint; kwargs...)`.
 

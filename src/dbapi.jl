@@ -55,8 +55,8 @@ function _build_url(endpoint::AbstractString; base_url::AbstractString = DEFAULT
 		error("Unsupported format: $format. Use one of $(collect(keys(_FORMAT_SUFFIX))).")
 	end
 
-	# Merge-in default vocabulary for text responses if user didn't provide one
-	if format in (:csv, :tsv, :txt) && !haskey(query, "vocab")
+	# Merge-in default vocabulary if user didn't provide one
+	if !haskey(query, "vocab")
 		query = copy(query)
 		query["vocab"] = "pbdb"
 	end
@@ -175,7 +175,7 @@ Low-level function that sends a request to a PBDB endpoint and returns a `DataFr
   scalars or vectors (vectors become comma-separated lists). Bools become `true`/`false`.
 
 Notes:
-- For text formats, `vocab="pbdb"` is added by default if not provided.
+- `vocab="pbdb"` is used by default if not provided.
 - JSON responses use PBDB's JSON schema and are converted from the `records` array.
 """
 function pbdb_query(
@@ -225,9 +225,9 @@ A `DataFrame` with information about the specified occurrence.
 # Examples
 ```julia
 pbdb_occurrence("occ:1001")
-pbdb_occurrence("occ:1001"; vocab="pbdb", show="full")
+pbdb_occurrence("occ:1001"; show="full")
 pbdb_occurrence(1001)
-pbdb_occurrence(1001; vocab="pbdb", show=["class","coords"])
+pbdb_occurrence(1001; show=["class","coords"])
 ```
 """
 function pbdb_occurrence(id; kwargs...)
@@ -294,7 +294,7 @@ A `DataFrame` with references linked to occurrence records.
 
 # Examples
 ```julia
-pbdb_ref_occurrences(base_name="Canis"; ref_pubyr=2000, vocab="pbdb")
+pbdb_ref_occurrences(base_name="Canis"; ref_pubyr=2000)
 ```
 """
 function pbdb_ref_occurrences(; kwargs...)
@@ -324,7 +324,6 @@ pbdb_collection("col:1003")
 pbdb_collection(1003)
 pbdb_collection(
 	"col:1003";
-	vocab="pbdb",
 	show=["loc","stratext"],
 	extids=true
 )
@@ -379,7 +378,7 @@ A `DataFrame` summarizing the selected collections by geographic clusters.
 
 # Examples
 ```julia
-pbdb_collections_geo(2; lngmin=0.0, lngmax=15.0, latmin=0.0, latmax=15.0, vocab="pbdb")
+pbdb_collections_geo(2; lngmin=0.0, lngmax=15.0, latmin=0.0, latmax=15.0)
 ```
 """
 function pbdb_collections_geo(level; kwargs...)
@@ -433,7 +432,7 @@ A `DataFrame` with information about the selected taxon.
 
 # Examples
 ```julia
-pbdb_taxon(name="Canis"; vocab="pbdb", show=["attr","app","size"])
+pbdb_taxon(name="Canis"; show=["attr","app","size"])
 ```
 """
 function pbdb_taxon(; kwargs...)
@@ -462,7 +461,7 @@ A `DataFrame` of taxa matching the query.
 
 # Examples
 ```julia
-pbdb_taxa(name="Canidae"; rel="all_parents", vocab="pbdb", show=["attr","app","size","class"])
+pbdb_taxa(name="Canidae"; rel="all_parents", show=["attr","app","size","class"])
 ```
 """
 function pbdb_taxa(; kwargs...)
@@ -513,7 +512,7 @@ A `DataFrame` describing the selected interval.
 # Examples
 ```julia
 pbdb_interval(name="Miocene")
-pbdb_interval(id=1; vocab="pbdb")
+pbdb_interval(id=1)
 ```
 """
 function pbdb_interval(; kwargs...)
@@ -540,7 +539,7 @@ A `DataFrame` with the selected intervals.
 
 # Examples
 ```julia
-pbdb_intervals(min_ma=0, max_ma=5; vocab="pbdb")
+pbdb_intervals(min_ma=0, max_ma=5)
 ```
 """
 function pbdb_intervals(; kwargs...)
@@ -563,7 +562,6 @@ A `DataFrame` with information about the requested time scale.
 # Examples
 ```julia
 pbdb_scale(1)
-pbdb_scale(1; vocab="pbdb")
 ```
 """
 function pbdb_scale(id; kwargs...)
@@ -635,7 +633,7 @@ A `DataFrame` of matching stratum names, ranks, and occurrence counts (JSON endp
 
 # Examples
 ```julia
-pbdb_strata_auto(name="Pin"; vocab="pbdb")
+pbdb_strata_auto(name="Pin")
 ```
 """
 function pbdb_strata_auto(; kwargs...)
@@ -660,7 +658,7 @@ A `DataFrame` with information about the requested reference.
 
 # Examples
 ```julia
-pbdb_reference(1003; vocab="pbdb", show="both")
+pbdb_reference(1003; show="both")
 ```
 """
 function pbdb_reference(id; kwargs...)
@@ -737,7 +735,7 @@ A `DataFrame` with references linked to the selected taxa.
 
 # Examples
 ```julia
-pbdb_ref_taxa(name="Canidae"; vocab="pbdb", show=["both","comments"])
+pbdb_ref_taxa(name="Canidae"; show=["both","comments"])
 ```
 """
 function pbdb_ref_taxa(; kwargs...)
@@ -786,7 +784,7 @@ A `DataFrame` with specimen records matching the query.
 
 # Examples
 ```julia
-pbdb_specimens(base_name="Cetacea", interval="Miocene"; vocab="pbdb")
+pbdb_specimens(base_name="Cetacea", interval="Miocene")
 ```
 """
 function pbdb_specimens(; kwargs...)
@@ -836,7 +834,7 @@ A `DataFrame` of measurement records.
 
 # Examples
 ```julia
-pbdb_measurements(spec_id=[1505,30050]; show=["spec","class","methods"], vocab="pbdb")
+pbdb_measurements(spec_id=[1505,30050]; show=["spec","class","methods"])
 ```
 """
 function pbdb_measurements(; kwargs...)
@@ -861,7 +859,7 @@ A `DataFrame` with the requested opinion.
 
 # Examples
 ```julia
-pbdb_opinion(1000; vocab="pbdb", show="full")
+pbdb_opinion(1000; show="full")
 ```
 """
 function pbdb_opinion(id; kwargs...)

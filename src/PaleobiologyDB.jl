@@ -14,7 +14,6 @@ using PaleobiologyDB
 # Get occurrences for Canidae
 occs = pbdb_occurrences(
     base_name="Canidae",
-    vocab="pbdb",
     extids=true,
     show="full",
 )
@@ -24,13 +23,12 @@ occs = pbdb_occurrences(
 )
 
 # Get taxonomic information
-taxa = pbdb_taxa(name="Canis", vocab="pbdb")
+taxa = pbdb_taxa(name="Canis")
 
 # Get a single collection
 coll = pbdb_collection(
     "col:1003",
     show=["coords", "loc", "stratext"],
-    vocab="pbdb",
     extids=true,
 )
 coll = pbdb_collection(
