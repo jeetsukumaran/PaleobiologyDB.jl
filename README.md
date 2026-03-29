@@ -26,7 +26,7 @@ Or, if you want the latest development version from the source repository:
 
 ```julia
 using Pkg
-Pkg.add(url = "https://github.com/jeetsukumaran/DataCaches.jl")
+Pkg.add(url = "https://github.com/JuliaData/DataCaches.jl")
 Pkg.add(url = "https://github.com/jeetsukumaran/PaleobiologyDB.jl")
 ```
 
