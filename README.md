@@ -26,7 +26,8 @@ Or, if you want the latest development version from the source repository:
 
 ```julia
 using Pkg
-Pkg.add(url="https://github.com/jeetsukumaran/PaleobiologyDB.jl")
+Pkg.add(url = "https://github.com/jeetsukumaran/DataCaches.jl")
+Pkg.add(url = "https://github.com/jeetsukumaran/PaleobiologyDB.jl")
 ```
 
 ## Quick start
@@ -35,41 +36,41 @@ Pkg.add(url="https://github.com/jeetsukumaran/PaleobiologyDB.jl")
 using PaleobiologyDB
 
 canids = pbdb_occurrences(
-    base_name="Canidae",
-    interval="Miocene",
-    show="full",
-    extids=true,
-    limit=100
+    base_name = "Canidae",
+    interval = "Miocene",
+    show = "full",
+    extids = true,
+    limit = 100
 )
 
 
 
 # Get fossil occurrences
 canids = pbdb_occurrences(
-    base_name="Canidae",
-    interval="Miocene",
-    show=["coords", "class"],
-    extids=true,
+    base_name = "Canidae",
+    interval = "Miocene",
+    show = ["coords", "class"],
+    extids = true,
 )
 
 # Get taxonomic information
 canis_info = pbdb_taxon(
-    name="Canis",
-    extids=true,
-    show=["attr", "app", "size"]
+    name = "Canis",
+    extids = true,
+    show = ["attr", "app", "size"]
 )
 
 # Get a specific collection
 collection = pbdb_collection(
     "col:1003",
-    show=["loc", "stratext"],
-    extids=true,
+    show = ["loc", "stratext"],
+    extids = true,
 )
 # old-style numeric-only id
 collection = pbdb_collection(
     1003,
-    show=["loc", "stratext"],
-    # extids=false,
+    show = ["loc", "stratext"],
+    # extids = false,
 )
 ```
 
@@ -96,13 +97,13 @@ search: PaleobiologyDB
 
   # Get occurrences for Canidae
   occs = pbdb_occurrences(
-      base_name="Canidae",
-      extids=true,
-      show="full",
+      base_name = "Canidae",
+      extids = true,
+      show = "full",
   )
   occs = pbdb_occurrences(
-      base_name="Canidae",
-      show=["coords", "classext"],
+      base_name = "Canidae",
+      show = ["coords", "classext"],
   )
 ```
 
@@ -142,16 +143,16 @@ search: pbdb_occurrences pbdb_occurrence pbdb_ref_occurrences pbdb_references pb
 
   # `taxon_name` retrieves *only* units of this rank
   occs = pbdb_occurrences(
-      taxon_name="Canis",
-      show=["full", "ident"], # all columns
-      limit=100,
+      taxon_name = "Canis",
+      show = ["full", "ident"], # all columns
+      limit = 100,
   )
 
   # `base_name` retrieves units of this and nested rank
   occs = pbdb_occurrences(
-      base_name="Canis",
-      show=["coords","classext"],
-      limit=100,
+      base_name = "Canis",
+      show = ["coords", "classext"],
+      limit = 100,
   )
 ```
 
@@ -161,50 +162,50 @@ search: pbdb_occurrences pbdb_occurrence pbdb_ref_occurrences pbdb_references pb
 
 ```julia
 # Simple occurrence query
-occs = pbdb_occurrences(base_name="Mammalia", limit=10)
+occs = pbdb_occurrences(base_name = "Mammalia", limit = 10)
 
 # Specific occurrence
-single_occ = pbdb_occurrence("occ:1001", show="full")
+single_occ = pbdb_occurrence("occ:1001", show = "full")
 # old-style numeric-only id
-single_occ = pbdb_occurrence(1001, show="full")
+single_occ = pbdb_occurrence(1001, show = "full")
 
 # Geographic and temporal filtering
 pliocene_mammals = pbdb_occurrences(
-    base_name="Mammalia",
-    interval="Pliocene",
-    lngmin=-130.0, lngmax=-60.0,
-    latmin=25.0, latmax=70.0,
-    show=["coords", "classext", "stratext"],
+    base_name = "Mammalia",
+    interval = "Pliocene",
+    lngmin = -130.0, lngmax = -60.0,
+    latmin = 25.0, latmax = 70.0,
+    show = ["coords", "classext", "stratext"],
 )
 ```
 
 ### Taxonomic data
 
 ```julia
-mammalia = pbdb_taxon(name="Mammalia", show=["attr", "size"])
+mammalia = pbdb_taxon(name = "Mammalia", show = ["attr", "size"])
 
 carnivores = pbdb_taxa(
-    name="Carnivora",
-    rel="children",
-    show=["attr", "app"]
+    name = "Carnivora",
+    rel = "children",
+    show = ["attr", "app"]
 )
 
-suggestions = pbdb_taxa_auto(name="Cani", limit=10)
+suggestions = pbdb_taxa_auto(name = "Cani", limit = 10)
 ```
 
 ### Collections and geography
 
 ```julia
 european_collections = pbdb_collections(
-    lngmin=-10.0, lngmax=40.0,
-    latmin=35.0, latmax=65.0,
-    interval="Cenozoic"
+    lngmin = -10.0, lngmax = 40.0,
+    latmin = 35.0, latmax = 65.0,
+    interval = "Cenozoic"
 )
 
 clusters = pbdb_collections_geo(
-    level=2,
-    lngmin=0.0, lngmax=15.0,
-    latmin=45.0, latmax=55.0
+    level = 2,
+    lngmin = 0.0, lngmax = 15.0,
+    latmin = 45.0, latmax = 55.0
 )
 ```
 
@@ -212,17 +213,17 @@ clusters = pbdb_collections_geo(
 
 ```julia
 whale_specimens = pbdb_specimens(
-    base_name="Cetacea",
-    interval="Miocene",
+    base_name = "Cetacea",
+    interval = "Miocene",
 )
 
 measurements = pbdb_measurements(
-    spec_id=["spm:1505", "spm:30050"],
-    show=["spec", "methods"],
+    spec_id = ["spm:1505", "spm:30050"],
+    show = ["spec", "methods"],
 )
 measurements = pbdb_measurements(
-    spec_id=[1505, 30050],
-    show=["spec", "methods"],
+    spec_id = [1505, 30050],
+    show = ["spec", "methods"],
 )
 ```
 
@@ -246,9 +247,9 @@ cache = DataCache()             # default $PBDB_CACHE_DIR or '~/.cache/Paleobiol
 cache = DataCache("/my/project/pbdb_cache")  # custom path (or set PBDB_CACHE_DIR env var)
 
 # --- store ---
-occs  = pbdb_occurrences(base_name="Canidae", interval="Miocene", show="full")
-key   = write!(cache, occs; label="Canidae Miocene occurrences")
-cache["Carnivora families"] = pbdb_taxa(name="Carnivora", rel="children")
+occs  = pbdb_occurrences(base_name = "Canidae", interval = "Miocene", show = "full")
+key   = write!(cache, occs; label = "Canidae Miocene occurrences")
+cache["Carnivora families"] = pbdb_taxa(name = "Carnivora", rel = "children")
 
 # --- retrieve ---
 occs  = read(cache, "Canidae Miocene occurrences")
@@ -278,11 +279,11 @@ without touching the network.
 
 ```julia
 # Uses the module-level default cache (~/.cache/PaleobiologyDB/)
-occs = @filecache pbdb_occurrences(base_name="Canidae", interval="Miocene", show="full")
+occs = @filecache pbdb_occurrences(base_name = "Canidae", interval = "Miocene", show = "full")
 
 # Use a specific DataCache
 my_cache = DataCache("/data/pbdb_cache")
-taxa = @filecache my_cache pbdb_taxa(name="Carnivora", rel="children")
+taxa = @filecache my_cache pbdb_taxa(name = "Carnivora", rel = "children")
 
 # Inspect / manage the default cache
 describe(PaleobiologyDB.default_filecache())
@@ -306,12 +307,12 @@ using PaleobiologyDB.DataCaches
 # Enable autocache for ALL pbdb_* functions (uses default cache)
 DataCaches.setautocache!(true)
 
-occs = pbdb_occurrences(base_name="Canidae", interval="Miocene")  # live fetch + cached
-occs = pbdb_occurrences(base_name="Canidae", interval="Miocene")  # instant cache hit
+occs = pbdb_occurrences(base_name = "Canidae", interval = "Miocene")  # live fetch + cached
+occs = pbdb_occurrences(base_name = "Canidae", interval = "Miocene")  # instant cache hit
 
 # Disable
 DataCaches.setautocache!(false)
-occs = pbdb_occurrences(base_name="Canidae", interval="Miocene")  # live fetch again
+occs = pbdb_occurrences(base_name = "Canidae", interval = "Miocene")  # live fetch again
 ```
 
 **Per-function control** — enable autocache for specific functions only:
@@ -333,10 +334,10 @@ DataCaches.setautocache!(false, pbdb_occurrences)
 my_cache = DataCache("/data/project_cache")
 
 # All functions → custom cache
-c = DataCaches.setautocache!(true; cache=my_cache)
+c = DataCaches.setautocache!(true; cache = my_cache)
 
 # Specific function → custom cache
-DataCaches.setautocache!(true, pbdb_occurrences; cache=my_cache)
+DataCaches.setautocache!(true, pbdb_occurrences; cache = my_cache)
 ```
 
 `setautocache!` returns the active `DataCache` (or `nothing` when disabling),
@@ -353,7 +354,7 @@ that call so the result is written exactly once:
 
 ```julia
 DataCaches.setautocache!(true)
-occs = @filecache pbdb_occurrences(base_name="Felidae")  # one cache write, no duplication
+occs = @filecache pbdb_occurrences(base_name = "Felidae")  # one cache write, no duplication
 ```
 
 ### `@memcache` — in-memory session memoization
@@ -363,8 +364,8 @@ session. No files are written; the cache is lost when Julia exits.
 Useful for repeated calls within a script or interactive session.
 
 ```julia
-occs = @memcache pbdb_occurrences(base_name="Canidae", show="full")
-taxa = @memcache pbdb_taxa(name="Dinosauria")
+occs = @memcache pbdb_occurrences(base_name = "Canidae", show = "full")
+taxa = @memcache pbdb_taxa(name = "Dinosauria")
 
 PaleobiologyDB.memcache_clear!()   # discard all in-memory cached results
 ```
@@ -373,33 +374,33 @@ PaleobiologyDB.memcache_clear!()   # discard all in-memory cached results
 
 ### Rich field names
 
-Full descriptive field names are returned by default. Pass `vocab="com"` for compact 3-letter codes:
+Full descriptive field names are returned by default. Pass `vocab = "com"` for compact 3-letter codes:
 
 ```julia
-df_full  = pbdb_occurrences(base_name="Canis", limit=5)             # full names
-df_short = pbdb_occurrences(base_name="Canis", limit=5, vocab="com") # compact codes
+df_full  = pbdb_occurrences(base_name = "Canis", limit = 5)              # full names
+df_short = pbdb_occurrences(base_name = "Canis", limit = 5, vocab = "com") # compact codes
 ```
 
 ### Additional information blocks
 
 ```julia
 detailed_occs = pbdb_occurrences(
-    base_name="Dinosauria",
-    interval="Cretaceous",
-    show=["coords","classext","stratext","ident","loc"],
+    base_name = "Dinosauria",
+    interval = "Cretaceous",
+    show = ["coords", "classext", "stratext", "ident", "loc"],
 )
 ```
 
 ### Time and stratigraphy
 
 ```julia
-old_mammals = pbdb_occurrences(base_name="Mammalia", min_ma=50.0, max_ma=65.0)
+old_mammals = pbdb_occurrences(base_name = "Mammalia", min_ma = 50.0, max_ma = 65.0)
 
-miocene_data = pbdb_occurrences(interval="Miocene", cc="NAM")
+miocene_data = pbdb_occurrences(interval = "Miocene", cc = "NAM")
 
-formations = pbdb_strata(rank="formation",
-                         lngmin=-120, lngmax=-100,
-                         latmin=30, latmax=50)
+formations = pbdb_strata(rank = "formation",
+                         lngmin = -120, lngmax = -100,
+                         latmin = 30, latmax = 50)
 ```
 
 ### Counting records
@@ -408,9 +409,9 @@ Use `pbdb_count` to get the number of matching records without downloading
 the data. Pass a `Symbol` for the resource type:
 
 ```julia
-pbdb_count(:occurrences; base_name="Canidae")
-pbdb_count(:collections; interval="Miocene", cc="ASI")
-pbdb_count(:taxa; base_name="Mammalia")
+pbdb_count(:occurrences; base_name = "Canidae")
+pbdb_count(:collections; interval = "Miocene", cc = "ASI")
+pbdb_count(:taxa; base_name = "Mammalia")
 
 # Dynamic and splatting work too:
 params = Dict(:base_name => "Cetacea", :interval => "Miocene")
@@ -423,11 +424,11 @@ Valid resource symbols: `:occurrences`, `:collections`, `:taxa`,
 ### References and bibliography
 
 ```julia
-refs = pbdb_ref_taxa(name="Canidae", show=["both","comments"])
+refs = pbdb_ref_taxa(name = "Canidae", show = ["both", "comments"])
 
-occ_refs = pbdb_ref_occurrences(base_name="Canis", ref_pubyr=2000)
+occ_refs = pbdb_ref_occurrences(base_name = "Canis", ref_pubyr = 2000)
 
-ref_detail = pbdb_reference(1003, show="both")
+ref_detail = pbdb_reference(1003, show = "both")
 ```
 
 ## Function reference
@@ -460,9 +461,9 @@ Errors are thrown as ordinary Julia exceptions (e.g. `HTTP.ExceptionRequest.Stat
 
 ```julia
 try
-    data = pbdb_occurrences(base_name="InvalidTaxon", limit=10)
+    data = pbdb_occurrences(base_name = "InvalidTaxon", limit = 10)
 catch e
-    @warn "PBDB request failed" exception=e
+    @warn "PBDB request failed" exception = e
 end
 ```
 

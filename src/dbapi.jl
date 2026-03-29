@@ -164,7 +164,7 @@ end
 # Public: central query function ---------------------------------------------
 
 """
-	pbdb_query(endpoint::AbstractString; format::Symbol=:csv, base_url::AbstractString=DEFAULT_BASE_URL, kwargs...)
+	pbdb_query(endpoint::AbstractString; format::Symbol = :csv, base_url::AbstractString = DEFAULT_BASE_URL, kwargs...)
 
 Low-level function that sends a request to a PBDB endpoint and returns a `DataFrame`.
 
@@ -193,7 +193,7 @@ function pbdb_query(
 		for (k, v) in pairs(kwargs)
 			q[string(k)] = v
 		end
-		url = _build_url(endpoint; base_url=base_url, format=format, query=q)
+		url = _build_url(endpoint; base_url = base_url, format = format, query = q)
 		return _fetch_df(url; format, readtimeout, retries)
 	end
 
@@ -225,13 +225,13 @@ A `DataFrame` with information about the specified occurrence.
 # Examples
 ```julia
 pbdb_occurrence("occ:1001")
-pbdb_occurrence("occ:1001"; show="full")
+pbdb_occurrence("occ:1001"; show = "full")
 pbdb_occurrence(1001)
-pbdb_occurrence(1001; show=["class","coords"])
+pbdb_occurrence(1001; show = ["class", "coords"])
 ```
 """
 function pbdb_occurrence(id; kwargs...)
-	return pbdb_query("occs/single"; id = id, _autocache_func=pbdb_occurrence, kwargs...)
+	return pbdb_query("occs/single"; id = id, _autocache_func = pbdb_occurrence, kwargs...)
 end
 
 """
@@ -260,21 +260,21 @@ A `DataFrame` with fossil occurrence records matching the query.
 
 # `taxon_name` retrieves *only* units of this rank
 occs = pbdb_occurrences(
-	taxon_name="Canis",
-	show="full", # all columns
-	limit=100,
+	taxon_name = "Canis",
+	show = "full", # all columns
+	limit = 100,
 )
 
 # `base_name` retrieves units of this and nested rank
 occs = pbdb_occurrences(
-	base_name="Canis",
-	show=["coords","classext"],
-	limit=100,
+	base_name = "Canis",
+	show = ["coords", "classext"],
+	limit = 100,
 )
 ```
 """
 function pbdb_occurrences(; kwargs...)
-	return pbdb_query("occs/list"; _autocache_func=pbdb_occurrences, kwargs...)
+	return pbdb_query("occs/list"; _autocache_func = pbdb_occurrences, kwargs...)
 end
 
 """
@@ -294,11 +294,11 @@ A `DataFrame` with references linked to occurrence records.
 
 # Examples
 ```julia
-pbdb_ref_occurrences(base_name="Canis"; ref_pubyr=2000)
+pbdb_ref_occurrences(base_name = "Canis"; ref_pubyr = 2000)
 ```
 """
 function pbdb_ref_occurrences(; kwargs...)
-	return pbdb_query("occs/refs"; _autocache_func=pbdb_ref_occurrences, kwargs...)
+	return pbdb_query("occs/refs"; _autocache_func = pbdb_ref_occurrences, kwargs...)
 end
 
 # # Collections -----------------------------------------------------------------
@@ -324,13 +324,13 @@ pbdb_collection("col:1003")
 pbdb_collection(1003)
 pbdb_collection(
 	"col:1003";
-	show=["loc","stratext"],
-	extids=true
+	show = ["loc", "stratext"],
+	extids = true
 )
 ```
 """
 function pbdb_collection(id; kwargs...)
-	return pbdb_query("colls/single"; id = id, _autocache_func=pbdb_collection, kwargs...)
+	return pbdb_query("colls/single"; id = id, _autocache_func = pbdb_collection, kwargs...)
 end
 
 """
@@ -354,11 +354,11 @@ A `DataFrame` of collections matching the query.
 
 # Examples
 ```julia
-pbdb_collections(base_name="Cetacea", interval="Miocene"; show=["ref","loc","stratext"])
+pbdb_collections(base_name = "Cetacea", interval = "Miocene"; show = ["ref", "loc", "stratext"])
 ```
 """
 function pbdb_collections(; kwargs...)
-	return pbdb_query("colls/list"; _autocache_func=pbdb_collections, kwargs...)
+	return pbdb_query("colls/list"; _autocache_func = pbdb_collections, kwargs...)
 end
 
 """
@@ -378,12 +378,12 @@ A `DataFrame` summarizing the selected collections by geographic clusters.
 
 # Examples
 ```julia
-pbdb_collections_geo(2; lngmin=0.0, lngmax=15.0, latmin=0.0, latmax=15.0)
+pbdb_collections_geo(2; lngmin = 0.0, lngmax = 15.0, latmin = 0.0, latmax = 15.0)
 ```
 """
 function pbdb_collections_geo(level; kwargs...)
 	isnothing(level) && error("Parameter `level` is required (see `pbdb_config(show = \"clusters\")`)")
-	return pbdb_query("colls/summary"; level = level, _autocache_func=pbdb_collections_geo, kwargs...)
+	return pbdb_query("colls/summary"; level = level, _autocache_func = pbdb_collections_geo, kwargs...)
 end
 
 """
@@ -404,12 +404,12 @@ A `DataFrame` summarizing the selected collections by geographic clusters.
 
 # Examples
 ```julia
-pbdb_collections_geo(level=2; lngmin=0.0, lngmax=15.0, latmin=0.0, latmax=15.0)
+pbdb_collections_geo(level = 2; lngmin = 0.0, lngmax = 15.0, latmin = 0.0, latmax = 15.0)
 ```
 """
 function pbdb_collections_geo(; level, kwargs...)
 	isnothing(level) && error("Parameter `level` is required (see `pbdb_config(show = \"clusters\")`)")
-	return pbdb_query("colls/summary"; level = level, _autocache_func=pbdb_collections_geo, kwargs...)
+	return pbdb_query("colls/summary"; level = level, _autocache_func = pbdb_collections_geo, kwargs...)
 end
 
 # Taxa ------------------------------------------------------------------------
@@ -432,11 +432,11 @@ A `DataFrame` with information about the selected taxon.
 
 # Examples
 ```julia
-pbdb_taxon(name="Canis"; show=["attr","app","size"])
+pbdb_taxon(name = "Canis"; show = ["attr", "app", "size"])
 ```
 """
 function pbdb_taxon(; kwargs...)
-	return pbdb_query("taxa/single"; _autocache_func=pbdb_taxon, kwargs...)
+	return pbdb_query("taxa/single"; _autocache_func = pbdb_taxon, kwargs...)
 end
 function pbdb_taxon(id; kwargs...)
 	return pbdb_taxon(; id = id, kwargs...)
@@ -461,11 +461,11 @@ A `DataFrame` of taxa matching the query.
 
 # Examples
 ```julia
-pbdb_taxa(name="Canidae"; rel="all_parents", show=["attr","app","size","class"])
+pbdb_taxa(name = "Canidae"; rel = "all_parents", show = ["attr", "app", "size", "class"])
 ```
 """
 function pbdb_taxa(; kwargs...)
-	return pbdb_query("taxa/list"; _autocache_func=pbdb_taxa, kwargs...)
+	return pbdb_query("taxa/list"; _autocache_func = pbdb_taxa, kwargs...)
 end
 
 """
@@ -484,11 +484,11 @@ This endpoint returns JSON in PBDB; the wrapper converts to a `DataFrame`.
 
 # Examples
 ```julia
-pbdb_taxa_auto(name="Cani"; limit=10)
+pbdb_taxa_auto(name = "Cani"; limit = 10)
 ```
 """
 function pbdb_taxa_auto(; kwargs...)
-	return pbdb_query("taxa/auto"; format = :json, _autocache_func=pbdb_taxa_auto, kwargs...)
+	return pbdb_query("taxa/auto"; format = :json, _autocache_func = pbdb_taxa_auto, kwargs...)
 end
 
 # Intervals & scales ----------------------------------------------------------
@@ -511,12 +511,12 @@ A `DataFrame` describing the selected interval.
 
 # Examples
 ```julia
-pbdb_interval(name="Miocene")
-pbdb_interval(id=1)
+pbdb_interval(name = "Miocene")
+pbdb_interval(id = 1)
 ```
 """
 function pbdb_interval(; kwargs...)
-	return pbdb_query("intervals/single"; _autocache_func=pbdb_interval, kwargs...)
+	return pbdb_query("intervals/single"; _autocache_func = pbdb_interval, kwargs...)
 end
 function pbdb_interval(id; kwargs...)
 	return pbdb_interval(; id = id, kwargs...)
@@ -539,11 +539,11 @@ A `DataFrame` with the selected intervals.
 
 # Examples
 ```julia
-pbdb_intervals(min_ma=0, max_ma=5)
+pbdb_intervals(min_ma = 0, max_ma = 5)
 ```
 """
 function pbdb_intervals(; kwargs...)
-	return pbdb_query("intervals/list"; _autocache_func=pbdb_intervals, kwargs...)
+	return pbdb_query("intervals/list"; _autocache_func = pbdb_intervals, kwargs...)
 end
 
 """
@@ -565,7 +565,7 @@ pbdb_scale(1)
 ```
 """
 function pbdb_scale(id; kwargs...)
-	return pbdb_query("scales/single"; id = id, _autocache_func=pbdb_scale, kwargs...)
+	return pbdb_query("scales/single"; id = id, _autocache_func = pbdb_scale, kwargs...)
 end
 
 """
@@ -586,7 +586,7 @@ pbdb_scales()
 ```
 """
 function pbdb_scales(; kwargs...)
-	return pbdb_query("scales/list"; _autocache_func=pbdb_scales, kwargs...)
+	return pbdb_query("scales/list"; _autocache_func = pbdb_scales, kwargs...)
 end
 
 # Strata ----------------------------------------------------------------------
@@ -609,11 +609,11 @@ A `DataFrame` with strata records matching the query.
 
 # Examples
 ```julia
-pbdb_strata(rank="formation", lngmin=-120, lngmax=-100, latmin=30, latmax=50)
+pbdb_strata(rank = "formation", lngmin = -120, lngmax = -100, latmin = 30, latmax = 50)
 ```
 """
 function pbdb_strata(; kwargs...)
-	return pbdb_query("strata/list"; _autocache_func=pbdb_strata, kwargs...)
+	return pbdb_query("strata/list"; _autocache_func = pbdb_strata, kwargs...)
 end
 
 """
@@ -633,11 +633,11 @@ A `DataFrame` of matching stratum names, ranks, and occurrence counts (JSON endp
 
 # Examples
 ```julia
-pbdb_strata_auto(name="Pin")
+pbdb_strata_auto(name = "Pin")
 ```
 """
 function pbdb_strata_auto(; kwargs...)
-	return pbdb_query("strata/auto"; format = :json, _autocache_func=pbdb_strata_auto, kwargs...)
+	return pbdb_query("strata/auto"; format = :json, _autocache_func = pbdb_strata_auto, kwargs...)
 end
 
 # References ------------------------------------------------------------------
@@ -658,11 +658,11 @@ A `DataFrame` with information about the requested reference.
 
 # Examples
 ```julia
-pbdb_reference(1003; show="both")
+pbdb_reference(1003; show = "both")
 ```
 """
 function pbdb_reference(id; kwargs...)
-	return pbdb_query("refs/single"; id = id, _autocache_func=pbdb_reference, kwargs...)
+	return pbdb_query("refs/single"; id = id, _autocache_func = pbdb_reference, kwargs...)
 end
 
 """
@@ -683,11 +683,11 @@ A `DataFrame` with references matching the query.
 
 # Examples
 ```julia
-pbdb_references(ref_author="Polly")
+pbdb_references(ref_author = "Polly")
 ```
 """
 function pbdb_references(; kwargs...)
-	return pbdb_query("refs/list"; _autocache_func=pbdb_references, kwargs...)
+	return pbdb_query("refs/list"; _autocache_func = pbdb_references, kwargs...)
 end
 
 """
@@ -708,11 +708,11 @@ A `DataFrame` listing references associated with the selected collections.
 
 # Examples
 ```julia
-pbdb_ref_collections(base_name="Canidae", interval="Quaternary", cc="ASI")
+pbdb_ref_collections(base_name = "Canidae", interval = "Quaternary", cc = "ASI")
 ```
 """
 function pbdb_ref_collections(; kwargs...)
-	return pbdb_query("colls/refs"; _autocache_func=pbdb_ref_collections, kwargs...)
+	return pbdb_query("colls/refs"; _autocache_func = pbdb_ref_collections, kwargs...)
 end
 
 """
@@ -735,11 +735,11 @@ A `DataFrame` with references linked to the selected taxa.
 
 # Examples
 ```julia
-pbdb_ref_taxa(name="Canidae"; show=["both","comments"])
+pbdb_ref_taxa(name = "Canidae"; show = ["both", "comments"])
 ```
 """
 function pbdb_ref_taxa(; kwargs...)
-	return pbdb_query("taxa/refs"; _autocache_func=pbdb_ref_taxa, kwargs...)
+	return pbdb_query("taxa/refs"; _autocache_func = pbdb_ref_taxa, kwargs...)
 end
 
 # Specimens & measurements -----------------------------------------------------
@@ -760,11 +760,11 @@ A `DataFrame` describing the specified specimen.
 
 # Examples
 ```julia
-pbdb_specimen(30050; show=["class","loc","refattr"])
+pbdb_specimen(30050; show = ["class", "loc", "refattr"])
 ```
 """
 function pbdb_specimen(id; kwargs...)
-	return pbdb_query("specs/single"; id = id, _autocache_func=pbdb_specimen, kwargs...)
+	return pbdb_query("specs/single"; id = id, _autocache_func = pbdb_specimen, kwargs...)
 end
 
 """
@@ -784,11 +784,11 @@ A `DataFrame` with specimen records matching the query.
 
 # Examples
 ```julia
-pbdb_specimens(base_name="Cetacea", interval="Miocene")
+pbdb_specimens(base_name = "Cetacea", interval = "Miocene")
 ```
 """
 function pbdb_specimens(; kwargs...)
-	return pbdb_query("specs/list"; _autocache_func=pbdb_specimens, kwargs...)
+	return pbdb_query("specs/list"; _autocache_func = pbdb_specimens, kwargs...)
 end
 
 """
@@ -809,11 +809,11 @@ A `DataFrame` with references linked to the selected specimens.
 
 # Examples
 ```julia
-pbdb_ref_specimens(spec_id=[1505, 30050])
+pbdb_ref_specimens(spec_id = [1505, 30050])
 ```
 """
 function pbdb_ref_specimens(; kwargs...)
-	return pbdb_query("specs/refs"; _autocache_func=pbdb_ref_specimens, kwargs...)
+	return pbdb_query("specs/refs"; _autocache_func = pbdb_ref_specimens, kwargs...)
 end
 
 """
@@ -834,11 +834,11 @@ A `DataFrame` of measurement records.
 
 # Examples
 ```julia
-pbdb_measurements(spec_id=[1505,30050]; show=["spec","class","methods"])
+pbdb_measurements(spec_id = [1505, 30050]; show = ["spec", "class", "methods"])
 ```
 """
 function pbdb_measurements(; kwargs...)
-	return pbdb_query("specs/measurements"; _autocache_func=pbdb_measurements, kwargs...)
+	return pbdb_query("specs/measurements"; _autocache_func = pbdb_measurements, kwargs...)
 end
 
 # Opinions --------------------------------------------------------------------
@@ -859,11 +859,11 @@ A `DataFrame` with the requested opinion.
 
 # Examples
 ```julia
-pbdb_opinion(1000; show="full")
+pbdb_opinion(1000; show = "full")
 ```
 """
 function pbdb_opinion(id; kwargs...)
-	return pbdb_query("opinions/single"; id = id, _autocache_func=pbdb_opinion, kwargs...)
+	return pbdb_query("opinions/single"; id = id, _autocache_func = pbdb_opinion, kwargs...)
 end
 
 """
@@ -884,11 +884,11 @@ A `DataFrame` with opinions matching the query.
 
 # Examples
 ```julia
-pbdb_opinions(op_pubyr=1818)
+pbdb_opinions(op_pubyr = 1818)
 ```
 """
 function pbdb_opinions(; kwargs...)
-	return pbdb_query("opinions/list"; _autocache_func=pbdb_opinions, kwargs...)
+	return pbdb_query("opinions/list"; _autocache_func = pbdb_opinions, kwargs...)
 end
 
 """
@@ -908,11 +908,11 @@ A `DataFrame` with taxonomic opinions for the selected taxa.
 
 # Examples
 ```julia
-pbdb_opinions_taxa(base_name="Canis")
+pbdb_opinions_taxa(base_name = "Canis")
 ```
 """
 function pbdb_opinions_taxa(; kwargs...)
-	return pbdb_query("taxa/opinions"; _autocache_func=pbdb_opinions_taxa, kwargs...)
+	return pbdb_query("taxa/opinions"; _autocache_func = pbdb_opinions_taxa, kwargs...)
 end
 
 """
@@ -937,8 +937,8 @@ does not return a `records_found` field for the given endpoint.
 
 # Examples
 ```julia
-pbdb_count("occs/list"; base_name="Canidae")
-pbdb_count("colls/list"; interval="Miocene", cc="ASI")
+pbdb_count("occs/list"; base_name = "Canidae")
+pbdb_count("colls/list"; interval = "Miocene", cc = "ASI")
 ```
 """
 function pbdb_count(
@@ -980,8 +980,8 @@ downloading the records themselves.
 
 # Examples
 ```julia
-pbdb_count(:occurrences; base_name="Canidae")
-pbdb_count(:collections; interval="Miocene", cc="ASI")
+pbdb_count(:occurrences; base_name = "Canidae")
+pbdb_count(:collections; interval = "Miocene", cc = "ASI")
 
 # Dynamic dispatch and splatting work:
 params = Dict(:base_name => "Canidae")
@@ -1045,16 +1045,16 @@ A `DataFrame` with the requested configuration information.
 # Examples
 ```julia
 # List available geographic cluster levels
-pbdb_config(show="clusters")
+pbdb_config(show = "clusters")
 
 # List continent codes
-pbdb_config(show="continents")
+pbdb_config(show = "continents")
 
 # List taxonomic ranks
-pbdb_config(show="ranks")
+pbdb_config(show = "ranks")
 
 ```
 """
 function pbdb_config(; kwargs...)
-	return pbdb_query("config"; _autocache_func=pbdb_config, kwargs...)
+	return pbdb_query("config"; _autocache_func = pbdb_config, kwargs...)
 end

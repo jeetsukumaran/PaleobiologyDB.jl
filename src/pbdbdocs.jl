@@ -34,13 +34,13 @@ pbdb_api_search("latitude")
 
 ```julia
 # Explore geographic parameters
-pbdb_parameters("occurrences", category="geographic")
+pbdb_parameters("occurrences", category = "geographic")
 
 # Look at basic response fields only
-pbdb_fields("occurrences", block="basic")
+pbdb_fields("occurrences", block = "basic")
 
 # Search only in parameters
-pbdb_api_search("temporal", scope="parameters")
+pbdb_api_search("temporal", scope = "parameters")
 ```
 For detailed help on any function, use `?function_name` (e.g., `?pbdb_help`).
 
@@ -144,7 +144,7 @@ pbdb_help()              # List all available endpoints
 pbdb_help("occurrences") # Show detailed help for occurrences endpoint
 ```
 """
-function pbdb_help(endpoint="")
+function pbdb_help(endpoint = "")
     if isempty(endpoint)
         list_endpoints()
     else
@@ -162,7 +162,7 @@ function pbdb_endpoints()
 end
 
 """
-    pbdb_parameters(endpoint; category="")
+    pbdb_parameters(endpoint; category = "")
 
 Show parameters for an endpoint, optionally filtered by category.
 
@@ -170,10 +170,10 @@ Examples:
 
 ```julia
 pbdb_parameters("occurrences")                    # All parameters
-pbdb_parameters("occurrences", category="temporal") # Just temporal parameters
+pbdb_parameters("occurrences", category = "temporal") # Just temporal parameters
 ```
 """
-function pbdb_parameters(endpoint; category="")
+function pbdb_parameters(endpoint; category = "")
     doc_data = get_doc_data(endpoint)
     params = doc_data["parameters"]
 
@@ -199,7 +199,7 @@ function pbdb_parameters(endpoint; category="")
 end
 
 """
-    pbdb_fields(endpoint; block="")
+    pbdb_fields(endpoint; block = "")
 
 Show response fields for an endpoint, optionally filtered by block.
 
@@ -207,10 +207,10 @@ Examples:
 
 ```julia
 pbdb_fields("occurrences")              # All fields
-pbdb_fields("occurrences", block="basic") # Just basic fields
+pbdb_fields("occurrences", block = "basic") # Just basic fields
 ```
 """
-function pbdb_fields(endpoint; block="")
+function pbdb_fields(endpoint; block = "")
     doc_data = get_doc_data(endpoint)
     field_blocks = doc_data["response_fields"]
 
@@ -236,7 +236,7 @@ function pbdb_fields(endpoint; block="")
 end
 
 """
-    pbdb_api_search(pattern; scope="all", endpoint="occurrences")
+    pbdb_api_search(pattern; scope = "all", endpoint = "occurrences")
 
 Search documentation for a pattern.
 
@@ -244,11 +244,11 @@ Examples:
 
 ```julia
 pbdb_api_search("latitude")                     # Search everywhere
-pbdb_api_search("age", scope="parameters")      # Search only parameters
-pbdb_api_search("temporal", scope="fields")     # Search only fields
+pbdb_api_search("age", scope = "parameters")      # Search only parameters
+pbdb_api_search("temporal", scope = "fields")     # Search only fields
 ```
 """
-function pbdb_api_search(pattern; scope="all", endpoint="occurrences")
+function pbdb_api_search(pattern; scope = "all", endpoint = "occurrences")
     doc_data = get_doc_data(endpoint)
     results = find_matches(doc_data, pattern, scope)
 
