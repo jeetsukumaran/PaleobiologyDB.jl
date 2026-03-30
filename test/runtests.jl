@@ -26,16 +26,17 @@ end
         @test _joinvals(false) == "false"
     end
 
-    @testset "_build_url default vocab for text" begin
+    @testset "_build_url default vocab" begin
         url_txt = _build_url("occs/list"; format = :csv, query = Dict{String,Any}("base_name" => "Canidae"))
         @test occursin("/occs/list.csv?", url_txt)
-        @test occursin("vocab=pbdb", url_txt)  # added by default for text formats
+        @test occursin("vocab=pbdb", url_txt)  # added by default for all formats
 
         url_csv_with_vocab = _build_url("occs/list"; format = :csv, query = Dict{String,Any}("base_name" => "Canidae", "vocab" => "pbdb"))
         @test occursin("vocab=pbdb", url_csv_with_vocab)
 
         url_json = _build_url("occs/single"; format = :json, query = Dict{String,Any}("id" => 1001))
-        @test endswith(url_json, ".json?id=1001")  # no default vocab for json
+        @test occursin("vocab=pbdb", url_json)  # added by default for json too
+        @test occursin("id=1001", url_json)
     end
 end
 
