@@ -59,9 +59,9 @@ clear!(PaleobiologyDB.default_filecache())
 PaleobiologyDB.set_default_filecache!(DataCache("/project/cache"))
 ```
 
-## `setautocache!` — global automatic caching
+## `set_autocaching!` — global automatic caching
 
-`setautocache!` enables transparent caching on every API call without requiring
+`set_autocaching!` enables transparent caching on every API call without requiring
 `@filecache` wrappers.
 
 ```julia
@@ -69,34 +69,34 @@ using PaleobiologyDB
 using PaleobiologyDB.DataCaches
 
 # Enable for ALL pbdb_* functions
-DataCaches.setautocache!(true)
+DataCaches.set_autocaching!(true)
 
 occs = pbdb_occurrences(base_name = "Canidae", interval = "Miocene")  # live fetch + cached
 occs = pbdb_occurrences(base_name = "Canidae", interval = "Miocene")  # instant cache hit
 
 # Disable
-DataCaches.setautocache!(false)
+DataCaches.set_autocaching!(false)
 ```
 
 **Per-function control:**
 
 ```julia
 # Cache only occurrence queries
-DataCaches.setautocache!(true, pbdb_occurrences)
+DataCaches.set_autocaching!(true, pbdb_occurrences)
 
 # Cache occurrences and taxa
-DataCaches.setautocache!(true, [pbdb_occurrences, pbdb_taxa])
+DataCaches.set_autocaching!(true, [pbdb_occurrences, pbdb_taxa])
 
 # Remove a function from the autocache list
-DataCaches.setautocache!(false, pbdb_occurrences)
+DataCaches.set_autocaching!(false, pbdb_occurrences)
 ```
 
 **Custom cache store:**
 
 ```julia
 my_cache = DataCache("/data/project_cache")
-DataCaches.setautocache!(true; cache = my_cache)
-DataCaches.setautocache!(true, pbdb_occurrences; cache = my_cache)
+DataCaches.set_autocaching!(true; cache = my_cache)
+DataCaches.set_autocaching!(true, pbdb_occurrences; cache = my_cache)
 ```
 
 Using `@filecache` explicitly while autocache is on is safe — autocache is suppressed
