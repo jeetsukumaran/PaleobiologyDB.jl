@@ -1,0 +1,5 @@
+[deps]
+Aqua = "4c88cf16-eb10-579e-8560-4a9242c79595"
+DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
+HTTP = "cd3eb016-35fb-5094-929b-558a96fad6f3"
+PaleobiologyDB = "c9cb2f45-518b-476d-9b58-4dd79871b05b"
