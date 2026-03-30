@@ -33,4 +33,4 @@ test = ["Test", "Aqua"]
 docs = ["Documenter"]
 
 [sources]
-DataCaches = {url = "git@github.com:JuliaData/DataCaches.jl.git"}
+DataCaches = {url = "https://github.com/JuliaData/DataCaches.jl.git"}
