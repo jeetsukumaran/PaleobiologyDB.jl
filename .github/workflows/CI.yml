@@ -62,6 +62,6 @@ jobs:
         shell: julia --project=docs --color=yes {0}
         run: |
           using Documenter: DocMeta, doctest
-          using DataCaches
-          DocMeta.setdocmeta!(DataCaches, :DocTestSetup, :(using DataCaches); recursive=true)
-          doctest(DataCaches)
+          using PaleobiologyDB
+          DocMeta.setdocmeta!(PaleobiologyDB, :DocTestSetup, :(using PaleobiologyDB); recursive=true)
+          doctest(PaleobiologyDB)
