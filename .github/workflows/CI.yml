@@ -43,7 +43,6 @@ jobs:
         run: |
           julia --color=yes --project=test -e '
             using Pkg
-            Pkg.develop(PackageSpec(path=pwd()))
             Pkg.add(PackageSpec(
               name="DataCaches",
               uuid="c1455f2b-6d6f-4f37-b463-919f923708a5",
