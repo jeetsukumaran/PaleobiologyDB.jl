@@ -49,6 +49,7 @@ jobs:
               uuid="c1455f2b-6d6f-4f37-b463-919f923708a5",
               url="https://github.com/JuliaData/DataCaches.jl.git",
             ))
+            Pkg.develop(PackageSpec(path=pwd()))
             Pkg.instantiate()
           '
       - uses: julia-actions/julia-buildpkg@v1
