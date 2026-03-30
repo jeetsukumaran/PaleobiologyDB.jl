@@ -1,0 +1,6 @@
+[deps]
+Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
+PaleobiologyDB = "c9cb2f45-518b-476d-9b58-4dd79871b05b"
+
+[compat]
+Documenter = "1"

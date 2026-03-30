@@ -1,0 +1,115 @@
+# Caching
+
+PBDB queries make HTTP requests that can be slow or rate-limited.
+PaleobiologyDB.jl provides three complementary caching mechanisms via
+the re-exported [DataCaches.jl](https://github.com/jeetsukumaran/DataCaches.jl) package.
+
+## `DataCache` — labeled file store
+
+A `DataCache` is a named key-value store backed by files on disk.
+Results survive Julia restarts and can be retrieved by a human-readable label.
+
+```julia
+using PaleobiologyDB
+using PaleobiologyDB.DataCaches
+
+cache = DataCache()                          # uses $PBDB_CACHE_DIR or ~/.cache/PaleobiologyDB/
+cache = DataCache("/my/project/pbdb_cache")  # custom path
+
+# Store
+occs = pbdb_occurrences(base_name = "Canidae", interval = "Miocene", show = "full")
+key  = write!(cache, occs; label = "Canidae Miocene occurrences")
+cache["Carnivora families"] = pbdb_taxa(name = "Carnivora", rel = "children")
+
+# Retrieve
+occs = read(cache, "Canidae Miocene occurrences")
+occs = cache["Canidae Miocene occurrences"]
+occs = cache[key]
+
+# Inspect
+keys(cache)        # → Vector{CacheKey}
+keylabels(cache)   # → Vector{String}
+describe(cache)    # pretty-printed table
+
+# Manage
+delete!(cache, "Canidae Miocene occurrences")
+clear!(cache)
+```
+
+`DataFrame` values are stored as CSV; any other Julia value uses `Serialization`.
+
+## `@filecache` — transparent file-based memoization
+
+`@filecache` wraps any function call: the first call fetches and stores the result;
+every subsequent call with the same arguments loads it from disk without touching the network.
+
+```julia
+# Uses the module-level default cache (~/.cache/PaleobiologyDB/)
+occs = @filecache pbdb_occurrences(base_name = "Canidae", interval = "Miocene", show = "full")
+
+# Use a specific DataCache
+my_cache = DataCache("/data/pbdb_cache")
+taxa = @filecache my_cache pbdb_taxa(name = "Carnivora", rel = "children")
+
+# Inspect/manage the default cache
+describe(PaleobiologyDB.default_filecache())
+clear!(PaleobiologyDB.default_filecache())
+
+# Point the default at a different cache
+PaleobiologyDB.set_default_filecache!(DataCache("/project/cache"))
+```
+
+## `setautocache!` — global automatic caching
+
+`setautocache!` enables transparent caching on every API call without requiring
+`@filecache` wrappers.
+
+```julia
+using PaleobiologyDB
+using PaleobiologyDB.DataCaches
+
+# Enable for ALL pbdb_* functions
+DataCaches.setautocache!(true)
+
+occs = pbdb_occurrences(base_name = "Canidae", interval = "Miocene")  # live fetch + cached
+occs = pbdb_occurrences(base_name = "Canidae", interval = "Miocene")  # instant cache hit
+
+# Disable
+DataCaches.setautocache!(false)
+```
+
+**Per-function control:**
+
+```julia
+# Cache only occurrence queries
+DataCaches.setautocache!(true, pbdb_occurrences)
+
+# Cache occurrences and taxa
+DataCaches.setautocache!(true, [pbdb_occurrences, pbdb_taxa])
+
+# Remove a function from the autocache list
+DataCaches.setautocache!(false, pbdb_occurrences)
+```
+
+**Custom cache store:**
+
+```julia
+my_cache = DataCache("/data/project_cache")
+DataCaches.setautocache!(true; cache = my_cache)
+DataCaches.setautocache!(true, pbdb_occurrences; cache = my_cache)
+```
+
+Using `@filecache` explicitly while autocache is on is safe — autocache is suppressed
+for that call so the result is written exactly once.
+
+## `@memcache` — in-memory session memoization
+
+`@memcache` caches results in RAM for the duration of the current Julia session.
+No files are written; the cache is lost when Julia exits.
+
+```julia
+occs = @memcache pbdb_occurrences(base_name = "Canidae", show = "full")
+taxa = @memcache pbdb_taxa(name = "Dinosauria")
+
+PaleobiologyDB.memcache_clear!()   # discard all in-memory cached results
+```
