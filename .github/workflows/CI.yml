@@ -25,7 +25,7 @@ jobs:
       matrix:
         version:
           - '1.12'
-          # - '1.6'
+          - '1.6'
           - 'pre'
         os:
           - ubuntu-latest
@@ -38,5 +38,18 @@ jobs:
           version: ${{ matrix.version }}
           arch: ${{ matrix.arch }}
       - uses: julia-actions/cache@v2
+      - name: Instantiate test environment
+        shell: bash
+        run: |
+          julia --color=yes --project=test -e '
+            using Pkg
+            Pkg.develop(PackageSpec(path=pwd()))
+            Pkg.add(PackageSpec(
+              name="DataCaches",
+              uuid="c1455f2b-6d6f-4f37-b463-919f923708a5",
+              url="https://github.com/JuliaData/DataCaches.jl.git",
+            ))
+            Pkg.instantiate()
+          '
       - uses: julia-actions/julia-buildpkg@v1
       - uses: julia-actions/julia-runtest@v1
