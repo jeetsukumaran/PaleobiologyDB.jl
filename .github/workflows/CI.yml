@@ -3,7 +3,6 @@ on:
   push:
     branches:
       - main
-      - 20260328_api2
     tags: ['*']
   pull_request:
   workflow_dispatch:
