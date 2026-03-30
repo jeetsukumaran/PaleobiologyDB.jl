@@ -1,6 +1,10 @@
 [deps]
 Aqua = "4c88cf16-eb10-579e-8560-4a9242c79595"
+DataCaches = "c1455f2b-6d6f-4f37-b463-919f923708a5"
 DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
 HTTP = "cd3eb016-35fb-5094-929b-558a96fad6f3"
 PaleobiologyDB = "c9cb2f45-518b-476d-9b58-4dd79871b05b"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[sources]
+DataCaches = {url = "https://github.com/JuliaData/DataCaches.jl.git"}
