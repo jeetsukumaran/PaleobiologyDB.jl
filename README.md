@@ -81,6 +81,10 @@ collection = pbdb_collection(
 )
 ```
 
+## Documentation
+
+[This README](https://github.com/jeetsukumaran/PaleobiologyDB.jl/blob/main/README.md) provides a concise summary of installation and usage, while the more thorough [package API documentation](https://jeetsukumaran.github.io/PaleobiologyDB.jl/) can be found here: <https://jeetsukumaran.github.io/PaleobiologyDB.jl/>.
+
 ## The PBDB/PaleobiologyDB.jl interface
 
 Every "endpoint" of the PBDB data service API corresponds to a function in the PaleobiologyDB.jl package: calling this function with the API endpoint parameters returns a `DataFrame` with the response.

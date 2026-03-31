@@ -13,7 +13,7 @@ Results survive Julia restarts and can be retrieved by a human-readable label.
 using PaleobiologyDB
 using PaleobiologyDB.DataCaches
 
-cache = DataCache()                          # uses $PBDB_CACHE_DIR or ~/.cache/PaleobiologyDB/
+cache = DataCache()                          # uses default path ("~/.caches/DataCaches/_DEFAULT")
 cache = DataCache("/my/project/pbdb_cache")  # custom path
 
 # Store
