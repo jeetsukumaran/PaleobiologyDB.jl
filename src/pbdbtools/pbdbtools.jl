@@ -1,6 +1,9 @@
 
 using DataFrames
 
+export pbdb_audit_taxonomic_resolution,
+       pbdb_audit_taxonomic_resolution!
+
 # ---------------------------------------------------------------------------
 # Taxonomic rank hierarchy
 # ---------------------------------------------------------------------------
