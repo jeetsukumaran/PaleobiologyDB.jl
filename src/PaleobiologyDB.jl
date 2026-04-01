@@ -56,5 +56,6 @@ export DataCaches
 
 include("dbapi.jl")
 include("pbdbdocs.jl")
+include("pbdbtools/pbdbtools.jl")
 
 end # module
