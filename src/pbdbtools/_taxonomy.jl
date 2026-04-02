@@ -33,19 +33,18 @@ const PBDB_RANK_HIERARCHY = [
 # Internal helpers
 # ---------------------------------------------------------------------------
 
-function _pbdb_rank_index(rank::Symbol)::Int
-    rank_str = String(rank)
-    idx = findfirst(==(rank_str), PBDB_RANK_HIERARCHY)
+function _pbdb_rank_index(rank::AbstractString)::Int
+    idx = findfirst(==(rank), PBDB_RANK_HIERARCHY)
     if isnothing(idx)
         throw(ArgumentError(
-            "Unknown taxonomic rank: :$(rank). " *
+            "Unknown taxonomic rank: \"$(rank)\". " *
             "Must be one of: $(join(PBDB_RANK_HIERARCHY, ", "))"
         ))
     end
     idx
 end
 
-function _pbdb_ranks_at_or_finer_than(rank::Symbol)::Vector{String}
+function _pbdb_ranks_at_or_finer_than(rank::AbstractString)::Vector{String}
     PBDB_RANK_HIERARCHY[1:_pbdb_rank_index(rank)]
 end
 
@@ -61,26 +60,26 @@ taxonomic resolution specified by `taxonomic_rank`.
 
 Two criteria are applied:
 1. The `accepted_rank` column must be at `taxonomic_rank` or finer (more
-   specific). For example, `:genus` accepts `"genus"`, `"species"`, and
-   `"subspecies"`; `:family` additionally accepts `"subfamily"`, `"tribe"`,
+   specific). For example, `"genus"` accepts `"genus"`, `"species"`, and
+   `"subspecies"`; `"family"` additionally accepts `"subfamily"`, `"tribe"`,
    `"subtribe"`. Rows with a missing `accepted_rank` are dropped.
 2. If `df` contains a column whose name matches `taxonomic_rank` (e.g. a
-   `:genus` or `:family` column), that column must also be non-missing and
+   `genus` or `family` column), that column must also be non-missing and
    non-empty.
 
 # Examples
 ```julia
 # Keep only rows identified to genus level or finer
-df_clean = drop_unresolved_taxonomy(df, :genus)
+df_clean = drop_unresolved_taxonomy(df, "genus")
 
 # Keep only rows identified to family level or finer
-df_clean = drop_unresolved_taxonomy(df, :family)
+df_clean = drop_unresolved_taxonomy(df, "family")
 
 # Works for any rank in the Linnaean hierarchy
-df_clean = drop_unresolved_taxonomy(df, :order)
+df_clean = drop_unresolved_taxonomy(df, "order")
 ```
 """
-function drop_unresolved_taxonomy(df::DataFrame, taxonomic_rank::Symbol)::DataFrame
+function drop_unresolved_taxonomy(df::DataFrame, taxonomic_rank::AbstractString)::DataFrame
     drop_unresolved_taxonomy!(copy(df), taxonomic_rank)
 end
 
@@ -90,16 +89,17 @@ end
 In-place version of [`drop_unresolved_taxonomy`](@ref).
 Modifies `df` directly and returns it.
 """
-function drop_unresolved_taxonomy!(df::DataFrame, taxonomic_rank::Symbol)::DataFrame
+function drop_unresolved_taxonomy!(df::DataFrame, taxonomic_rank::AbstractString)::DataFrame
     valid_ranks = _pbdb_ranks_at_or_finer_than(taxonomic_rank)
 
     # 1. Filter by accepted_rank; rows with missing accepted_rank are dropped.
     subset!(df, :accepted_rank => ByRow(r -> r in valid_ranks); skipmissing = true)
 
-    # 2. If a dedicated column exists for this rank (e.g. :genus, :family),
+    # 2. If a dedicated column exists for this rank (e.g. genus, family),
     #    also require it to be non-missing and non-empty.
-    if hasproperty(df, taxonomic_rank)
-        subset!(df, taxonomic_rank => ByRow(v -> !ismissing(v) && !isempty(v)))
+    rank_col = Symbol(taxonomic_rank)
+    if hasproperty(df, rank_col)
+        subset!(df, rank_col => ByRow(v -> !ismissing(v) && !isempty(v)))
     end
 
     df
