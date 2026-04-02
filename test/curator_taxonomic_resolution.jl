@@ -1,12 +1,12 @@
 # test/curator_taxonomic_resolution.jl
-# Tests for PaleobiologyDB.Curator.filter_minimum_taxonomic_resolution
+# Tests for PaleobiologyDB.Curator.drop_unresolved_taxonomy
 
 using Test
 using DataFrames
 using PaleobiologyDB
 
-const _filter_res  = PaleobiologyDB.Curator.filter_minimum_taxonomic_resolution
-const _filter_res! = PaleobiologyDB.Curator.filter_minimum_taxonomic_resolution!
+const _filter_res  = PaleobiologyDB.Curator.drop_unresolved_taxonomy
+const _filter_res! = PaleobiologyDB.Curator.drop_unresolved_taxonomy!
 const _rank_index  = PaleobiologyDB.Curator._pbdb_rank_index
 const _ranks_finer = PaleobiologyDB.Curator._pbdb_ranks_at_or_finer_than
 const RANK_HIERARCHY = PaleobiologyDB.Curator.PBDB_RANK_HIERARCHY
@@ -29,7 +29,7 @@ end
 
 # ---------------------------------------------------------------------------
 
-@testset "Curator.filter_minimum_taxonomic_resolution" begin
+@testset "Curator.drop_unresolved_taxonomy" begin
 
     # -----------------------------------------------------------------------
     @testset "internal helpers" begin

@@ -1,6 +1,6 @@
 # test/curator_taxonomy_namevalidation.jl
 # Tests for PaleobiologyDB.Curator taxonomy name-validation functions:
-#   istaxon, audit_taxonomy, drop_unrecognized_names, drop_unrecognized_names!
+#   istaxon, audit_taxonomy, drop_unrecognized_taxonomy, drop_unrecognized_taxonomy!
 #
 # Offline tests inject a mock taxa-list index directly into the module-level
 # Refs so no network access is required.
@@ -14,8 +14,8 @@ using PaleobiologyDB
 
 const _istaxon   = PaleobiologyDB.Curator.istaxon
 const _audit     = PaleobiologyDB.Curator.audit_taxonomy
-const _drop      = PaleobiologyDB.Curator.drop_unrecognized_names
-const _drop!     = PaleobiologyDB.Curator.drop_unrecognized_names!
+const _drop      = PaleobiologyDB.Curator.drop_unrecognized_taxonomy
+const _drop!     = PaleobiologyDB.Curator.drop_unrecognized_taxonomy!
 
 # ---------------------------------------------------------------------------
 # Helpers: inject a mock taxa index so offline tests never touch the network
@@ -112,10 +112,10 @@ end
 end
 
 # ---------------------------------------------------------------------------
-# drop_unrecognized_names (non-mutating) — offline
+# drop_unrecognized_taxonomy (non-mutating) — offline
 # ---------------------------------------------------------------------------
 
-@testset "drop_unrecognized_names — offline mock" begin
+@testset "drop_unrecognized_taxonomy — offline mock" begin
     _inject_mock_index!(_MOCK_TAXA)
 
     df = DataFrame(
@@ -144,10 +144,10 @@ end
 end
 
 # ---------------------------------------------------------------------------
-# drop_unrecognized_names! (in-place) — offline
+# drop_unrecognized_taxonomy! (in-place) — offline
 # ---------------------------------------------------------------------------
 
-@testset "drop_unrecognized_names! — offline mock" begin
+@testset "drop_unrecognized_taxonomy! — offline mock" begin
     _inject_mock_index!(_MOCK_TAXA)
 
     df = DataFrame(
@@ -214,7 +214,7 @@ end
     @test _istaxon("NO_FAMILY_SPECIFIED"; validation_authority = :query) == false
 end
 
-@testset "drop_unrecognized_names — live snapshot" begin
+@testset "drop_unrecognized_taxonomy — live snapshot" begin
     if !LIVE
         return
     end

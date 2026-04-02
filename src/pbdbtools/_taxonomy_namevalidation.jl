@@ -17,8 +17,8 @@
 # Public API (all live in PaleobiologyDB.Curator namespace):
 #   istaxon                  — single-name predicate
 #   audit_taxonomy           — Bool mask for a DataFrame column
-#   drop_unrecognized_names  — filtered DataFrame copy (non-mutating)
-#   drop_unrecognized_names! — filtered DataFrame (in-place)
+#   drop_unrecognized_taxonomy  — filtered DataFrame copy (non-mutating)
+#   drop_unrecognized_taxonomy! — filtered DataFrame (in-place)
 # ---------------------------------------------------------------------------
 
 using DataFrames, CSV
@@ -138,7 +138,7 @@ Return a `Vector{Bool}` of length `nrow(df)` where `true` means the value in
 and found in the database).
 
 The result can be used directly with `df[mask, :]` or passed to
-[`drop_unrecognized_names`](@ref).
+[`drop_unrecognized_taxonomy`](@ref).
 
 ## Keyword arguments
 
@@ -182,22 +182,22 @@ function audit_taxonomy(
 end
 
 """
-    drop_unrecognized_names(df, taxon_field; validation_authority=:snapshot, validate_correct_rank=false)
+    drop_unrecognized_taxonomy(df, taxon_field; validation_authority=:snapshot, validate_correct_rank=false)
 
 Return a filtered copy of `df` keeping only rows where `taxon_field` contains a
 PBDB-recognised taxon name (non-missing, non-empty, found in the database).
 
 See [`audit_taxonomy`](@ref) for keyword argument semantics.
-See also [`drop_unrecognized_names!`](@ref) for the in-place variant.
+See also [`drop_unrecognized_taxonomy!`](@ref) for the in-place variant.
 
 ## Example
 
 ```julia
-df_clean = drop_unrecognized_names(df, :family)
-df_clean = drop_unrecognized_names(df, :family; validate_correct_rank = true)
+df_clean = drop_unrecognized_taxonomy(df, :family)
+df_clean = drop_unrecognized_taxonomy(df, :family; validate_correct_rank = true)
 ```
 """
-function drop_unrecognized_names(
+function drop_unrecognized_taxonomy(
     df::DataFrame,
     taxon_field::Symbol;
     validation_authority::Symbol = :snapshot,
@@ -208,19 +208,19 @@ function drop_unrecognized_names(
 end
 
 """
-    drop_unrecognized_names!(df, taxon_field; validation_authority=:snapshot, validate_correct_rank=false)
+    drop_unrecognized_taxonomy!(df, taxon_field; validation_authority=:snapshot, validate_correct_rank=false)
 
-In-place variant of [`drop_unrecognized_names`](@ref).  Removes rows from `df`
+In-place variant of [`drop_unrecognized_taxonomy`](@ref).  Removes rows from `df`
 where `taxon_field` is missing, empty, or not found in the PBDB taxonomy.
 Returns `df`.
 
 ## Example
 
 ```julia
-drop_unrecognized_names!(df, :family)
+drop_unrecognized_taxonomy!(df, :family)
 ```
 """
-function drop_unrecognized_names!(
+function drop_unrecognized_taxonomy!(
     df::DataFrame,
     taxon_field::Symbol;
     validation_authority::Symbol = :snapshot,
