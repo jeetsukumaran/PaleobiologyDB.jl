@@ -7,18 +7,25 @@ authors = ["Jeet Sukumaran <jeetsukumaran@gmail.com>"]
 CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
 DataCaches = "c1455f2b-6d6f-4f37-b463-919f923708a5"
 DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
+Downloads = "f43a241f-c20a-4ad4-852c-f6b1247861c6"
 HTTP = "cd3eb016-35fb-5094-929b-558a96fad6f3"
 JSON3 = "0f8b85d8-7281-11e9-16c2-39a750bddbf1"
+Scratch = "6c6a2e73-6563-6170-7368-637461726353"
 URIs = "5c2747f8-b7ea-4ff2-ba2e-563bfd36b1d4"
+
+[sources]
+DataCaches = {url = "https://github.com/JuliaData/DataCaches.jl.git"}
 
 [compat]
 Aqua = "0.8"
-Documenter = "1"
 CSV = "0.10.15"
 DataCaches = "0.1.0"
 DataFrames = "1.7.1"
+Documenter = "1"
+Downloads = "1.7.0"
 HTTP = "1.10.17"
 JSON3 = "1.14.3"
+Scratch = "1"
 Test = "1"
 URIs = "1.6.1"
 julia = "1.11"
@@ -29,8 +36,5 @@ Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
-test = ["Test", "Aqua"]
 docs = ["Documenter"]
-
-[sources]
-DataCaches = {url = "https://github.com/JuliaData/DataCaches.jl.git"}
+test = ["Test", "Aqua"]
