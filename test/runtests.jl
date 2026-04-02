@@ -8,6 +8,8 @@ import HTTP
 const _build_url = PaleobiologyDB._build_url
 const _joinvals  = PaleobiologyDB._joinvals
 
+include("curator_taxonomic_resolution.jl")
+
 if isnothing(Base.find_package("Aqua")) 
     println("Aqua package not available in this environment: skipping Aqua tests")
     println("Re-run with 'using Pkg; Pkg.test()' or 'pkg> test' to run Aqua tests.")

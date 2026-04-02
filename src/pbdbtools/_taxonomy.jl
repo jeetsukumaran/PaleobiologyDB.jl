@@ -99,7 +99,7 @@ function filter_minimum_taxonomic_resolution!(df::DataFrame, taxonomic_rank::Sym
     # 2. If a dedicated column exists for this rank (e.g. :genus, :family),
     #    also require it to be non-missing and non-empty.
     if hasproperty(df, taxonomic_rank)
-        subset!(df, taxonomic_rank => ByRow(v -> !isempty(v)); skipmissing = true)
+        subset!(df, taxonomic_rank => ByRow(v -> !ismissing(v) && !isempty(v)))
     end
 
     df
