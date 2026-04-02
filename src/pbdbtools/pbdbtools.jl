@@ -1,8 +1,8 @@
 
 using DataFrames
 
-export pbdb_audit_occurrence_taxonomy,
-       pbdb_audit_occurrence_taxonomy!
+export filter_minimum_taxonomic_resolution,
+       filter_minimum_taxonomic_resolution!
 
 # ---------------------------------------------------------------------------
 # Taxonomic rank hierarchy
@@ -57,7 +57,7 @@ end
 # ---------------------------------------------------------------------------
 
 """
-    pbdb_audit_occurrence_taxonomy(df, taxonomic_rank) -> DataFrame
+    filter_minimum_taxonomic_resolution(df, taxonomic_rank) -> DataFrame
 
 Return a filtered copy of `df` containing only rows that meet the minimum
 taxonomic resolution specified by `taxonomic_rank`.
@@ -74,26 +74,26 @@ Two criteria are applied:
 # Examples
 ```julia
 # Keep only rows identified to genus level or finer
-df_clean = pbdb_audit_occurrence_taxonomy(df, :genus)
+df_clean = filter_minimum_taxonomic_resolution(df, :genus)
 
 # Keep only rows identified to family level or finer
-df_clean = pbdb_audit_occurrence_taxonomy(df, :family)
+df_clean = filter_minimum_taxonomic_resolution(df, :family)
 
 # Works for any rank in the Linnaean hierarchy
-df_clean = pbdb_audit_occurrence_taxonomy(df, :order)
+df_clean = filter_minimum_taxonomic_resolution(df, :order)
 ```
 """
-function pbdb_audit_occurrence_taxonomy(df::DataFrame, taxonomic_rank::Symbol)::DataFrame
-    pbdb_audit_occurrence_taxonomy!(copy(df), taxonomic_rank)
+function filter_minimum_taxonomic_resolution(df::DataFrame, taxonomic_rank::Symbol)::DataFrame
+    filter_minimum_taxonomic_resolution!(copy(df), taxonomic_rank)
 end
 
 """
-    pbdb_audit_occurrence_taxonomy!(df, taxonomic_rank) -> DataFrame
+    filter_minimum_taxonomic_resolution!(df, taxonomic_rank) -> DataFrame
 
-In-place version of [`pbdb_audit_occurrence_taxonomy`](@ref).
+In-place version of [`filter_minimum_taxonomic_resolution`](@ref).
 Modifies `df` directly and returns it.
 """
-function pbdb_audit_occurrence_taxonomy!(df::DataFrame, taxonomic_rank::Symbol)::DataFrame
+function filter_minimum_taxonomic_resolution!(df::DataFrame, taxonomic_rank::Symbol)::DataFrame
     valid_ranks = _pbdb_ranks_at_or_finer_than(taxonomic_rank)
 
     # 1. Filter by accepted_rank; rows with missing accepted_rank are dropped.
