@@ -93,20 +93,24 @@ function _download_store!(store::LocalStore)
 
     @info "$(store.description): starting download" url=store.url
 
-    last_logged = Ref(Int64(0))
+    last_logged = Ref(time())
     tmp = path * ".download"
 
     try
         Downloads.download(
             store.url, tmp;
             progress = (total, now) -> begin
-                if total > 0 && now - last_logged[] >= 10_000_000
+                now > 0 || return
+                time() - last_logged[] >= 2.0 || return
+                mb_n = round(now / 1e6; digits = 1)
+                if total > 0
                     pct  = round(100 * now / total; digits = 1)
-                    mb_n = round(now   / 1e6; digits = 1)
                     mb_t = round(total / 1e6; digits = 1)
                     @info "$(store.description): $mb_n / $mb_t MB ($pct%)"
-                    last_logged[] = now
+                else
+                    @info "$(store.description): $mb_n MB received"
                 end
+                last_logged[] = time()
             end,
         )
         mv(tmp, path; force = true)
