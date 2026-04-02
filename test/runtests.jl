@@ -81,7 +81,7 @@ end
         @test nrow(df) ≥ 1
         # JSON uses short 3-letter field names by default; but DataFrame columns are from JSON keys.
         # Just assert it's non-empty and has some expected fields in either vocabulary.
-        @test any(in.([:nam, :nam_orig, :taxon_name], Ref(names(df))))
+        @test any(in.([:nam, :nam_orig, :taxon_name], Ref(propertynames(df))))
     end
 
     @testset "collections summary requires level" begin
