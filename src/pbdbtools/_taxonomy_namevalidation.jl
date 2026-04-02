@@ -15,9 +15,9 @@
 #              the large one-time download.
 #
 # Public API (all live in PaleobiologyDB.Curator namespace):
-#   isvalid_taxon        — single-name predicate
-#   audit_taxonomy       — Bool mask for a DataFrame column
-#   filter_valid_taxa    — filtered DataFrame copy
+#   isvalid_taxon             — single-name predicate
+#   audit_taxonomy            — Bool mask for a DataFrame column
+#   filter_valid_taxon_names  — filtered DataFrame copy
 # ---------------------------------------------------------------------------
 
 using DataFrames, CSV
@@ -103,7 +103,7 @@ isvalid_taxon("Pliosauridae"; validation_authority = :query)      # live API cal
 ```
 """
 function isvalid_taxon(
-    taxon_name::String;
+    taxon_name::AbstractString;
     validation_authority::Symbol = :snapshot,
     validate_correct_rank::Union{Nothing, Symbol} = nothing,
 )::Bool
@@ -181,7 +181,7 @@ function audit_taxonomy(
 end
 
 """
-    filter_valid_taxa(df, taxon_field; validation_authority=:snapshot, validate_correct_rank=false)
+    filter_valid_taxon_names(df, taxon_field; validation_authority=:snapshot, validate_correct_rank=false)
 
 Return a filtered copy of `df` keeping only rows where `taxon_field` contains a
 valid PBDB taxon name.  Accepts the same keyword arguments as
@@ -190,10 +190,10 @@ valid PBDB taxon name.  Accepts the same keyword arguments as
 ## Example
 
 ```julia
-df_clean = filter_valid_taxa(df, :family)
+df_clean = filter_valid_taxon_names(df, :family)
 ```
 """
-function filter_valid_taxa(
+function filter_valid_taxon_names(
     df::DataFrame,
     taxon_field::Symbol;
     validation_authority::Symbol = :snapshot,
