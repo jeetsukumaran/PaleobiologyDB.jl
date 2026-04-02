@@ -17,25 +17,29 @@ the full namespace `PaleobiologyDB.Curator.Store.*`.
 ## Functions
 
 - `Store.list()`            — list metadata for all registered stores
-- `Store.info(:taxa_list)`  — metadata for a specific store
-- `Store.refresh!(:taxa_list)` — force re-download
-- `Store.delete!(:taxa_list)` — remove the local snapshot
+- `Store.info(:pbdb_taxa)`  — metadata for a specific store
+- `Store.refresh!(:pbdb_taxa)` — force re-download
+- `Store.delete!(:pbdb_taxa)` — remove the local snapshot
 
 ## Example
 
 ```julia
 PaleobiologyDB.Curator.Store.list()
-PaleobiologyDB.Curator.Store.info(:taxa_list)
-PaleobiologyDB.Curator.Store.refresh!(:taxa_list)
-PaleobiologyDB.Curator.Store.delete!(:taxa_list)
+PaleobiologyDB.Curator.Store.info(:pbdb_taxa)
+PaleobiologyDB.Curator.Store.refresh!(:pbdb_taxa)
+PaleobiologyDB.Curator.Store.delete!(:pbdb_taxa)
 ```
 """
 module Store
-    """Force re-download of the named store (e.g. `:taxa_list`)."""
-    refresh!(name::Symbol; force::Bool = true) = Curator._refresh_store!(name; force = force)
+    # parentmodule(@__MODULE__) resolves to Curator at call time, avoiding the
+    # need for an explicit import from the enclosing module.
+    _curator() = parentmodule(@__MODULE__)
+
+    """Force re-download of the named store (e.g. `:pbdb_taxa`)."""
+    refresh!(name::Symbol; force::Bool = true) = _curator()._refresh_store!(name; force = force)
 
     """Delete the local snapshot for the named store."""
-    delete!(name::Symbol) = Curator._delete_store!(name)
+    delete!(name::Symbol) = _curator()._delete_store!(name)
 
     """
     Return a NamedTuple of metadata for the named store.
@@ -43,10 +47,10 @@ module Store
     Fields: `name`, `description`, `path`, `exists`, `size_mb`, `age_days`,
     `max_age_days`, `is_fresh`.
     """
-    info(name::Symbol) = Curator._store_info(name)
+    info(name::Symbol) = _curator()._store_info(name)
 
     """Return a vector of info NamedTuples for all registered stores."""
-    list() = Curator._list_stores()
+    list() = _curator()._list_stores()
 end
 
 end

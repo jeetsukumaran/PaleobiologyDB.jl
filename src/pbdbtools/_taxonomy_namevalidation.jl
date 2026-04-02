@@ -15,9 +15,10 @@
 #              the large one-time download.
 #
 # Public API (all live in PaleobiologyDB.Curator namespace):
-#   isvalid_taxon             — single-name predicate
-#   audit_taxonomy            — Bool mask for a DataFrame column
-#   filter_valid_taxon_names  — filtered DataFrame copy
+#   istaxon                  — single-name predicate
+#   audit_taxonomy           — Bool mask for a DataFrame column
+#   drop_unrecognized_names  — filtered DataFrame copy (non-mutating)
+#   drop_unrecognized_names! — filtered DataFrame (in-place)
 # ---------------------------------------------------------------------------
 
 using DataFrames, CSV
@@ -27,9 +28,9 @@ using DataFrames, CSV
 # ---------------------------------------------------------------------------
 
 const _TAXA_LIST_STORE = LocalStore(
-    :taxa_list,
+    :pbdb_taxa,
     "https://paleobiodb.org/data1.2/taxa/list.csv?all_records&vocab=pbdb",
-    "taxa_list.csv",
+    "pbdb_taxa.csv",
     30,
     "PBDB taxa list",
 )
@@ -73,7 +74,7 @@ end
 # ---------------------------------------------------------------------------
 
 """
-    isvalid_taxon(taxon_name; validation_authority=:snapshot, validate_correct_rank=nothing)
+    istaxon(taxon_name; validation_authority=:snapshot, validate_correct_rank=nothing)
 
 Return `true` if `taxon_name` is a non-empty string recognised by the PBDB taxonomy.
 
@@ -95,14 +96,14 @@ Return `true` if `taxon_name` is a non-empty string recognised by the PBDB taxon
 ## Examples
 
 ```julia
-isvalid_taxon("Pliosauridae")                                      # → true
-isvalid_taxon("NO_FAMILY_SPECIFIED")                               # → false
-isvalid_taxon("Pliosauridae"; validate_correct_rank = :family)    # → true
-isvalid_taxon("Pliosauridae"; validate_correct_rank = :genus)     # → false
-isvalid_taxon("Pliosauridae"; validation_authority = :query)      # live API call
+istaxon("Pliosauridae")                                      # → true
+istaxon("NO_FAMILY_SPECIFIED")                               # → false
+istaxon("Pliosauridae"; validate_correct_rank = :family)    # → true
+istaxon("Pliosauridae"; validate_correct_rank = :genus)     # → false
+istaxon("Pliosauridae"; validation_authority = :query)      # live API call
 ```
 """
-function isvalid_taxon(
+function istaxon(
     taxon_name::AbstractString;
     validation_authority::Symbol = :snapshot,
     validate_correct_rank::Union{Nothing, Symbol} = nothing,
@@ -136,11 +137,12 @@ Return a `Vector{Bool}` of length `nrow(df)` where `true` means the value in
 `taxon_field` for that row is a valid PBDB taxon name (non-missing, non-empty,
 and found in the database).
 
-The result can be used directly with `df[mask, :]` or `subset`.
+The result can be used directly with `df[mask, :]` or passed to
+[`drop_unrecognized_names`](@ref).
 
 ## Keyword arguments
 
-- `validation_authority` — passed to [`isvalid_taxon`](@ref).
+- `validation_authority` — passed to [`istaxon`](@ref).
 - `validate_correct_rank` — when `true`, the expected rank is inferred from
   `taxon_field` (e.g. `:family` → checks `taxon_rank == "family"`).
 
@@ -148,7 +150,6 @@ The result can be used directly with `df[mask, :]` or `subset`.
 
 ```julia
 mask = audit_taxonomy(df, :family)
-# or, with rank validation:
 mask = audit_taxonomy(df, :family; validate_correct_rank = true)
 df[mask, :]
 ```
@@ -168,7 +169,7 @@ function audit_taxonomy(
         if !ismissing(v) && !isempty(strip(string(v)))
     )
     validity = Dict(
-        n => isvalid_taxon(n; validation_authority, validate_correct_rank = rank_check)
+        n => istaxon(n; validation_authority, validate_correct_rank = rank_check)
         for n in unique_names
     )
 
@@ -181,19 +182,22 @@ function audit_taxonomy(
 end
 
 """
-    filter_valid_taxon_names(df, taxon_field; validation_authority=:snapshot, validate_correct_rank=false)
+    drop_unrecognized_names(df, taxon_field; validation_authority=:snapshot, validate_correct_rank=false)
 
 Return a filtered copy of `df` keeping only rows where `taxon_field` contains a
-valid PBDB taxon name.  Accepts the same keyword arguments as
-[`audit_taxonomy`](@ref).
+PBDB-recognised taxon name (non-missing, non-empty, found in the database).
+
+See [`audit_taxonomy`](@ref) for keyword argument semantics.
+See also [`drop_unrecognized_names!`](@ref) for the in-place variant.
 
 ## Example
 
 ```julia
-df_clean = filter_valid_taxon_names(df, :family)
+df_clean = drop_unrecognized_names(df, :family)
+df_clean = drop_unrecognized_names(df, :family; validate_correct_rank = true)
 ```
 """
-function filter_valid_taxon_names(
+function drop_unrecognized_names(
     df::DataFrame,
     taxon_field::Symbol;
     validation_authority::Symbol = :snapshot,
@@ -201,4 +205,28 @@ function filter_valid_taxon_names(
 )::DataFrame
     mask = audit_taxonomy(df, taxon_field; validation_authority, validate_correct_rank)
     df[mask, :]
+end
+
+"""
+    drop_unrecognized_names!(df, taxon_field; validation_authority=:snapshot, validate_correct_rank=false)
+
+In-place variant of [`drop_unrecognized_names`](@ref).  Removes rows from `df`
+where `taxon_field` is missing, empty, or not found in the PBDB taxonomy.
+Returns `df`.
+
+## Example
+
+```julia
+drop_unrecognized_names!(df, :family)
+```
+"""
+function drop_unrecognized_names!(
+    df::DataFrame,
+    taxon_field::Symbol;
+    validation_authority::Symbol = :snapshot,
+    validate_correct_rank::Bool = false,
+)::DataFrame
+    mask = audit_taxonomy(df, taxon_field; validation_authority, validate_correct_rank)
+    deleteat!(df, findall(!, mask))
+    df
 end
