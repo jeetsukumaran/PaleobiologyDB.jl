@@ -50,7 +50,7 @@ function _ensure_taxa_index(; force::Bool = false)
     if isnothing(_TAXA_NAME_SET[]) || force
         _ensure_populated!(_TAXA_LIST_STORE; force = force)
         path = _store_path(_TAXA_LIST_STORE)
-        @info "PBDB taxa list: loading snapshot into memory …" path=path
+        @debug "PBDB taxonomic authority: loading snapshot into memory …" path=path
         df = CSV.read(
             path, DataFrame;
             missingstring = ["", "missing"],
@@ -65,7 +65,7 @@ function _ensure_taxa_index(; force::Bool = false)
         end
         _TAXA_NAME_SET[]   = names_set
         _TAXA_RANK_INDEX[] = rank_idx
-        @info "PBDB taxa list: index ready" unique_names=length(names_set)
+        @debug "PBDB taxonomic authority: index ready" unique_names=length(names_set)
     end
 end
 
