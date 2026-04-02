@@ -8,6 +8,10 @@ import HTTP
 const _build_url = PaleobiologyDB._build_url
 const _joinvals  = PaleobiologyDB._joinvals
 
+# Live tests hit the real API and are disabled by default.
+# Enable by running with:  ENV["PBDB_LIVE"]="1"  (e.g., `PBDB_LIVE=1 julia --project -e 'using Pkg; Pkg.test()'`)
+const LIVE = get(ENV, "PBDB_LIVE", "") == "1"
+
 include("curator_taxonomic_resolution.jl")
 include("curator_taxonomy_namevalidation.jl")
 
@@ -42,10 +46,6 @@ end
         @test occursin("id=1001", url_json)
     end
 end
-
-# Live tests hit the real API and are disabled by default.
-# Enable by running with:  ENV["PBDB_LIVE"]="1"  (e.g., `PBDB_LIVE=1 julia --project -e 'using Pkg; Pkg.test()'`)
-const LIVE = get(ENV, "PBDB_LIVE", "") == "1"
 
 @testset "PaleobiologyDB — live" begin
     if !LIVE
