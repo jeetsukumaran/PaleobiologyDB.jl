@@ -43,9 +43,6 @@ _register_store!(_TAXA_LIST_STORE)
 # Set of all taxon_name strings — for fast existence checks.
 const _TAXA_NAME_SET = Ref{Union{Nothing, Set{String}}}(nothing)
 
-# name → set of ranks — for validate_correct_rank checks.
-const _TAXA_RANK_INDEX = Ref{Union{Nothing, Dict{String, Set{String}}}}(nothing)
-
 function _ensure_taxa_index(; force::Bool = false)
     if isnothing(_TAXA_NAME_SET[]) || force
         _ensure_populated!(_TAXA_LIST_STORE; force = force)
@@ -54,18 +51,12 @@ function _ensure_taxa_index(; force::Bool = false)
         df = CSV.read(
             path, DataFrame;
             missingstring = ["", "missing"],
-            types = Dict("taxon_name" => String, "taxon_rank" => String),
+            types = Dict("taxon_name" => String),
             silencewarnings = true,
         )
-        df_valid = dropmissing(df, ["taxon_name", "taxon_rank"])
-        names_set = Set{String}(df_valid.taxon_name)
-        rank_idx  = Dict{String, Set{String}}()
-        for row in eachrow(df_valid)
-            push!(get!(Set{String}, rank_idx, row.taxon_name), row.taxon_rank)
-        end
-        _TAXA_NAME_SET[]   = names_set
-        _TAXA_RANK_INDEX[] = rank_idx
-        @debug "PBDB taxonomic authority: index ready" unique_names=length(names_set)
+        df_valid = dropmissing(df, ["taxon_name"])
+        _TAXA_NAME_SET[] = Set{String}(df_valid.taxon_name)
+        @debug "PBDB taxonomic authority: index ready" unique_names=length(_TAXA_NAME_SET[])
     end
 end
 
@@ -74,7 +65,7 @@ end
 # ---------------------------------------------------------------------------
 
 """
-    istaxon(taxon_name; validation_authority=:snapshot, validate_correct_rank=nothing)
+    istaxon(taxon_name; validation_authority=:snapshot)
 
 Return `true` if `taxon_name` is a non-empty string recognised by the PBDB taxonomy.
 
@@ -89,34 +80,24 @@ Return `true` if `taxon_name` is a non-empty string recognised by the PBDB taxon
   - `:query`: calls `pbdb_taxon(; name = taxon_name)` directly.  Results for valid
     names are cached by DataCaches.  Slower for bulk use but always current.
 
-- `validate_correct_rank` — `nothing` (default, rank not checked) or a `Symbol`
-  such as `:family`, `:genus`.  When given, the name must also be listed at that
-  rank in PBDB.
-
 ## Examples
 
 ```julia
-istaxon("Pliosauridae")                                      # → true
-istaxon("NO_FAMILY_SPECIFIED")                               # → false
-istaxon("Pliosauridae"; validate_correct_rank = :family)    # → true
-istaxon("Pliosauridae"; validate_correct_rank = :genus)     # → false
-istaxon("Pliosauridae"; validation_authority = :query)      # live API call
+istaxon("Pliosauridae")                                  # → true
+istaxon("NO_FAMILY_SPECIFIED")                           # → false
+istaxon("Pliosauridae"; validation_authority = :query)  # live API call
 ```
 """
 function istaxon(
     taxon_name::AbstractString;
     validation_authority::Symbol = :snapshot,
-    validate_correct_rank::Union{Nothing, Symbol} = nothing,
 )::Bool
     isempty(strip(taxon_name)) && return false
 
     if validation_authority == :query
         try
             result = pbdb_taxon(; name = taxon_name)
-            isnothing(validate_correct_rank) && return true
-            return !isempty(result) &&
-                   hasproperty(result, :taxon_rank) &&
-                   result[1, :taxon_rank] == String(validate_correct_rank)
+            return !isempty(result)
         catch
             return false
         end
@@ -124,14 +105,11 @@ function istaxon(
 
     # :snapshot path
     _ensure_taxa_index()
-    taxon_name in _TAXA_NAME_SET[] || return false
-    isnothing(validate_correct_rank) && return true
-    rank_str = String(validate_correct_rank)
-    rank_str in get(_TAXA_RANK_INDEX[], taxon_name, Set{String}())
+    taxon_name in _TAXA_NAME_SET[]
 end
 
 """
-    audit_taxonomy(df, taxon_field; validation_authority=:snapshot, validate_correct_rank=false)
+    audit_taxonomy(df, taxon_field; validation_authority=:snapshot)
 
 Return a `Vector{Bool}` of length `nrow(df)` where `true` means the value in
 `taxon_field` for that row is a valid PBDB taxon name (non-missing, non-empty,
@@ -143,14 +121,11 @@ The result can be used directly with `df[mask, :]` or passed to
 ## Keyword arguments
 
 - `validation_authority` — passed to [`istaxon`](@ref).
-- `validate_correct_rank` — when `true`, the expected rank is inferred from
-  `taxon_field` (e.g. `:family` → checks `taxon_rank == "family"`).
 
 ## Example
 
 ```julia
 mask = audit_taxonomy(df, :family)
-mask = audit_taxonomy(df, :family; validate_correct_rank = true)
 df[mask, :]
 ```
 """
@@ -158,9 +133,7 @@ function audit_taxonomy(
     df::DataFrame,
     taxon_field::Symbol;
     validation_authority::Symbol = :snapshot,
-    validate_correct_rank::Bool = false,
 )::Vector{Bool}
-    rank_check = validate_correct_rank ? taxon_field : nothing
     col = df[:, taxon_field]
 
     # Deduplicate: validate each unique non-missing, non-empty name once.
@@ -169,7 +142,7 @@ function audit_taxonomy(
         if !ismissing(v) && !isempty(strip(string(v)))
     )
     validity = Dict(
-        n => istaxon(n; validation_authority, validate_correct_rank = rank_check)
+        n => istaxon(n; validation_authority)
         for n in unique_names
     )
 
@@ -182,7 +155,7 @@ function audit_taxonomy(
 end
 
 """
-    drop_unrecognized_taxonomy(df, taxon_field; validation_authority=:snapshot, validate_correct_rank=false)
+    drop_unrecognized_taxonomy(df, taxon_field; validation_authority=:snapshot)
 
 Return a filtered copy of `df` keeping only rows where `taxon_field` contains a
 PBDB-recognised taxon name (non-missing, non-empty, found in the database).
@@ -194,21 +167,19 @@ See also [`drop_unrecognized_taxonomy!`](@ref) for the in-place variant.
 
 ```julia
 df_clean = drop_unrecognized_taxonomy(df, :family)
-df_clean = drop_unrecognized_taxonomy(df, :family; validate_correct_rank = true)
 ```
 """
 function drop_unrecognized_taxonomy(
     df::DataFrame,
     taxon_field::Symbol;
     validation_authority::Symbol = :snapshot,
-    validate_correct_rank::Bool = false,
 )::DataFrame
-    mask = audit_taxonomy(df, taxon_field; validation_authority, validate_correct_rank)
+    mask = audit_taxonomy(df, taxon_field; validation_authority)
     df[mask, :]
 end
 
 """
-    drop_unrecognized_taxonomy!(df, taxon_field; validation_authority=:snapshot, validate_correct_rank=false)
+    drop_unrecognized_taxonomy!(df, taxon_field; validation_authority=:snapshot)
 
 In-place variant of [`drop_unrecognized_taxonomy`](@ref).  Removes rows from `df`
 where `taxon_field` is missing, empty, or not found in the PBDB taxonomy.
@@ -224,9 +195,8 @@ function drop_unrecognized_taxonomy!(
     df::DataFrame,
     taxon_field::Symbol;
     validation_authority::Symbol = :snapshot,
-    validate_correct_rank::Bool = false,
 )::DataFrame
-    mask = audit_taxonomy(df, taxon_field; validation_authority, validate_correct_rank)
+    mask = audit_taxonomy(df, taxon_field; validation_authority)
     deleteat!(df, findall(!, mask))
     df
 end

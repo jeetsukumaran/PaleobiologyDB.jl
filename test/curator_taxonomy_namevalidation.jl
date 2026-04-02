@@ -22,34 +22,27 @@ const _drop!     = PaleobiologyDB.DataCurator.drop_unrecognized_taxonomy!
 # ---------------------------------------------------------------------------
 
 const _NAME_SET_REF = PaleobiologyDB.DataCurator._TAXA_NAME_SET
-const _RANK_IDX_REF = PaleobiologyDB.DataCurator._TAXA_RANK_INDEX
 
-function _inject_mock_index!(names_with_ranks::Dict{String, String})
-    name_set  = Set{String}(keys(names_with_ranks))
-    rank_idx  = Dict{String, Set{String}}(
-        n => Set{String}([r]) for (n, r) in names_with_ranks
-    )
-    _NAME_SET_REF[]  = name_set
-    _RANK_IDX_REF[]  = rank_idx
+function _inject_mock_index!(names::AbstractVector{String})
+    _NAME_SET_REF[] = Set{String}(names)
 end
 
 function _clear_mock_index!()
-    _NAME_SET_REF[]  = nothing
-    _RANK_IDX_REF[]  = nothing
+    _NAME_SET_REF[] = nothing
 end
 
 # Mock data mirroring a Plesiosauria family-level dataset
-const _MOCK_TAXA = Dict(
-    "Pliosauridae"     => "family",
-    "Polycotylidae"    => "family",
-    "Elasmosauridae"   => "family",
-    "Leptocleididae"   => "family",
-    "Cryptoclididae"   => "family",
-    "Plesiosauridae"   => "family",
-    "Microcleididae"   => "family",
-    "Rhomaleosauridae" => "family",
-    "Plesiosauria"     => "order",   # valid name but wrong rank for :family checks
-)
+const _MOCK_TAXA = [
+    "Pliosauridae",
+    "Polycotylidae",
+    "Elasmosauridae",
+    "Leptocleididae",
+    "Cryptoclididae",
+    "Plesiosauridae",
+    "Microcleididae",
+    "Rhomaleosauridae",
+    "Plesiosauria",
+]
 
 # ---------------------------------------------------------------------------
 # istaxon — offline (snapshot mode with mock index)
@@ -66,13 +59,6 @@ const _MOCK_TAXA = Dict(
 
     # InlineStrings compatibility: AbstractString subtypes should work
     @test _istaxon(SubString("Pliosauridae", 1)) == true
-
-    # validate_correct_rank checks
-    @test _istaxon("Pliosauridae";  validate_correct_rank = :family) == true
-    @test _istaxon("Pliosauridae";  validate_correct_rank = :genus)  == false
-    @test _istaxon("Plesiosauria";  validate_correct_rank = :order)  == true
-    @test _istaxon("Plesiosauria";  validate_correct_rank = :family) == false
-    @test _istaxon("NO_FAMILY_SPECIFIED"; validate_correct_rank = :family) == false
 
     _clear_mock_index!()
 end
@@ -100,13 +86,6 @@ end
     @test mask isa Vector{Bool}
     @test length(mask) == nrow(df)
     @test mask == [true, false, false, true, false, true]
-
-    # validate_correct_rank: Plesiosauria is :order, not :family → false
-    df2 = DataFrame(
-        family = Union{Missing, String}["Pliosauridae", "Plesiosauria", missing]
-    )
-    mask2 = _audit(df2, :family; validate_correct_rank = true)
-    @test mask2 == [true, false, false]
 
     _clear_mock_index!()
 end
@@ -137,7 +116,7 @@ end
     @test nrow(df) == 5  # original unchanged
 
     # Edge cases
-    @test nrow(_drop(DataFrame(family = Union{Missing,String}[]), :family)) == 0
+    @test nrow(_drop(DataFrame(family = Union{Missing,String}[]),             :family)) == 0
     @test nrow(_drop(DataFrame(family = Union{Missing,String}[missing, missing]), :family)) == 0
 
     _clear_mock_index!()
@@ -203,11 +182,9 @@ end
         return
     end
 
-    @test _istaxon("Pliosauridae")                                    == true
-    @test _istaxon("NO_FAMILY_SPECIFIED")                             == false
-    @test _istaxon("")                                                == false
-    @test _istaxon("Pliosauridae"; validate_correct_rank = :family)  == true
-    @test _istaxon("Pliosauridae"; validate_correct_rank = :genus)   == false
+    @test _istaxon("Pliosauridae")        == true
+    @test _istaxon("NO_FAMILY_SPECIFIED") == false
+    @test _istaxon("")                    == false
 
     # Query authority (live API, DataCaches-backed)
     @test _istaxon("Pliosauridae";        validation_authority = :query) == true
@@ -231,7 +208,4 @@ end
     filtered = _drop(df, :family)
     @test nrow(filtered) == 2
     @test Set(filtered.family) == Set(["Pliosauridae", "Elasmosauridae"])
-
-    filtered_rank = _drop(df, :family; validate_correct_rank = true)
-    @test nrow(filtered_rank) == 2
 end
