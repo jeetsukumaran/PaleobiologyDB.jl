@@ -2,6 +2,8 @@ module Curator
 
 using CSV, DataFrames, Downloads, Scratch
 
+import ..pbdb_taxon
+
 include("_localstore.jl")
 include("_taxonomy.jl")
 include("_taxonomy_namevalidation.jl")
