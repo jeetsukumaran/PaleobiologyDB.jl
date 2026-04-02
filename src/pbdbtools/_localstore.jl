@@ -10,7 +10,7 @@
 # time via `_register_store!` and populated lazily on first access.
 #
 # Management functions (_refresh_store!, _delete_store!, _store_info,
-# _list_stores) are exposed to users through the Curator.Store submodule.
+# _list_stores) are exposed to users through the DataCurator.Store submodule.
 # ---------------------------------------------------------------------------
 
 using Scratch, Downloads
@@ -129,7 +129,7 @@ function _ensure_populated!(store::LocalStore; force::Bool = false)
 end
 
 # ---------------------------------------------------------------------------
-# Management functions (surfaced via Curator.Store submodule)
+# Management functions (surfaced via DataCurator.Store submodule)
 # ---------------------------------------------------------------------------
 
 function _refresh_store!(name::Symbol; force::Bool = true)

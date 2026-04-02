@@ -1,5 +1,5 @@
 # test/curator_taxonomy_namevalidation.jl
-# Tests for PaleobiologyDB.Curator taxonomy name-validation functions:
+# Tests for PaleobiologyDB.DataCurator taxonomy name-validation functions:
 #   istaxon, audit_taxonomy, drop_unrecognized_taxonomy, drop_unrecognized_taxonomy!
 #
 # Offline tests inject a mock taxa-list index directly into the module-level
@@ -12,17 +12,17 @@ using Test
 using DataFrames
 using PaleobiologyDB
 
-const _istaxon   = PaleobiologyDB.Curator.istaxon
-const _audit     = PaleobiologyDB.Curator.audit_taxonomy
-const _drop      = PaleobiologyDB.Curator.drop_unrecognized_taxonomy
-const _drop!     = PaleobiologyDB.Curator.drop_unrecognized_taxonomy!
+const _istaxon   = PaleobiologyDB.DataCurator.istaxon
+const _audit     = PaleobiologyDB.DataCurator.audit_taxonomy
+const _drop      = PaleobiologyDB.DataCurator.drop_unrecognized_taxonomy
+const _drop!     = PaleobiologyDB.DataCurator.drop_unrecognized_taxonomy!
 
 # ---------------------------------------------------------------------------
 # Helpers: inject a mock taxa index so offline tests never touch the network
 # ---------------------------------------------------------------------------
 
-const _NAME_SET_REF = PaleobiologyDB.Curator._TAXA_NAME_SET
-const _RANK_IDX_REF = PaleobiologyDB.Curator._TAXA_RANK_INDEX
+const _NAME_SET_REF = PaleobiologyDB.DataCurator._TAXA_NAME_SET
+const _RANK_IDX_REF = PaleobiologyDB.DataCurator._TAXA_RANK_INDEX
 
 function _inject_mock_index!(names_with_ranks::Dict{String, String})
     name_set  = Set{String}(keys(names_with_ranks))
@@ -172,11 +172,11 @@ end
 end
 
 # ---------------------------------------------------------------------------
-# Curator.Store metadata — always available (no network)
+# DataCurator.Store metadata — always available (no network)
 # ---------------------------------------------------------------------------
 
-@testset "Curator.Store metadata" begin
-    info = PaleobiologyDB.Curator.Store.info(:pbdb_taxa)
+@testset "DataCurator.Store metadata" begin
+    info = PaleobiologyDB.DataCurator.Store.info(:pbdb_taxa)
 
     @test info isa NamedTuple
     @test info.name         == :pbdb_taxa
@@ -188,7 +188,7 @@ end
     @test haskey(info, :is_fresh)
     @test haskey(info, :description)
 
-    stores = PaleobiologyDB.Curator.Store.list()
+    stores = PaleobiologyDB.DataCurator.Store.list()
     @test stores isa Vector
     @test any(s.name == :pbdb_taxa for s in stores)
 end

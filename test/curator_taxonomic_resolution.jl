@@ -1,15 +1,15 @@
 # test/curator_taxonomic_resolution.jl
-# Tests for PaleobiologyDB.Curator.drop_unresolved_taxonomy
+# Tests for PaleobiologyDB.DataCurator.drop_unresolved_taxonomy
 
 using Test
 using DataFrames
 using PaleobiologyDB
 
-const _filter_res  = PaleobiologyDB.Curator.drop_unresolved_taxonomy
-const _filter_res! = PaleobiologyDB.Curator.drop_unresolved_taxonomy!
-const _rank_index  = PaleobiologyDB.Curator._pbdb_rank_index
-const _ranks_finer = PaleobiologyDB.Curator._pbdb_ranks_at_or_finer_than
-const RANK_HIERARCHY = PaleobiologyDB.Curator.PBDB_RANK_HIERARCHY
+const _filter_res  = PaleobiologyDB.DataCurator.drop_unresolved_taxonomy
+const _filter_res! = PaleobiologyDB.DataCurator.drop_unresolved_taxonomy!
+const _rank_index  = PaleobiologyDB.DataCurator._pbdb_rank_index
+const _ranks_finer = PaleobiologyDB.DataCurator._pbdb_ranks_at_or_finer_than
+const RANK_HIERARCHY = PaleobiologyDB.DataCurator.PBDB_RANK_HIERARCHY
 
 # ---------------------------------------------------------------------------
 # Local test-data helper
@@ -29,7 +29,7 @@ end
 
 # ---------------------------------------------------------------------------
 
-@testset "Curator.drop_unresolved_taxonomy" begin
+@testset "DataCurator.drop_unresolved_taxonomy" begin
 
     # -----------------------------------------------------------------------
     @testset "internal helpers" begin

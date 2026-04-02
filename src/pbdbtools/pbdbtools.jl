@@ -1,4 +1,4 @@
-module Curator
+module DataCurator
 
 using CSV, DataFrames, Downloads, Scratch
 
@@ -9,12 +9,12 @@ include("_taxonomy.jl")
 include("_taxonomy_namevalidation.jl")
 
 """
-    PaleobiologyDB.Curator.Store
+    PaleobiologyDB.DataCurator.Store
 
-Management interface for Curator's Scratch-backed local data stores (snapshots).
+Management interface for DataCurator's Scratch-backed local data stores (snapshots).
 
-These functions are intentionally **not exported** from `Curator`; access them via
-the full namespace `PaleobiologyDB.Curator.Store.*`.
+These functions are intentionally **not exported** from `DataCurator`; access them via
+the full namespace `PaleobiologyDB.DataCurator.Store.*`.
 
 ## Functions
 
@@ -26,14 +26,14 @@ the full namespace `PaleobiologyDB.Curator.Store.*`.
 ## Example
 
 ```julia
-PaleobiologyDB.Curator.Store.list()
-PaleobiologyDB.Curator.Store.info(:pbdb_taxa)
-PaleobiologyDB.Curator.Store.refresh!(:pbdb_taxa)
-PaleobiologyDB.Curator.Store.delete!(:pbdb_taxa)
+PaleobiologyDB.DataCurator.Store.list()
+PaleobiologyDB.DataCurator.Store.info(:pbdb_taxa)
+PaleobiologyDB.DataCurator.Store.refresh!(:pbdb_taxa)
+PaleobiologyDB.DataCurator.Store.delete!(:pbdb_taxa)
 ```
 """
 module Store
-    # parentmodule(@__MODULE__) resolves to Curator at call time, avoiding the
+    # parentmodule(@__MODULE__) resolves to DataCurator at call time, avoiding the
     # need for an explicit import from the enclosing module.
     _curator() = parentmodule(@__MODULE__)
 
