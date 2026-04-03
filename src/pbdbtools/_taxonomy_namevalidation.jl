@@ -46,8 +46,8 @@ const _TAXA_NAME_SET = Ref{Union{Nothing, Set{String}}}(nothing)
 
 function _ensure_taxa_index(; force::Bool = false)
     if isnothing(_TAXA_NAME_SET[]) || force
-        _ensure_populated!(_TAXA_LIST_STORE; force = force)
-        path = _store_path(_TAXA_LIST_STORE)
+        Store._ensure_populated!(_TAXA_LIST_STORE; force = force)
+        path = Store._store_path(_TAXA_LIST_STORE)
         @debug "PBDB taxonomic authority: loading snapshot into memory …" path=path
         df = CSV.read(
             path, DataFrame;
