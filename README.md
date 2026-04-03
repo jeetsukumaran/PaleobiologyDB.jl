@@ -31,6 +31,38 @@ canis = pbdb_taxon(name = "Canis", show = ["attr", "app", "size"])
 coll = pbdb_collection("col:1003", show = ["loc", "stratext"], extids = true)
 ```
 
+## Data cleaning with DataCurator
+
+The `DataCurator` submodule provides tools for validating and cleaning
+occurrence DataFrames against the PBDB taxonomic authority.
+
+```julia
+using PaleobiologyDB, PaleobiologyDB.DataCurator
+
+df = pbdb_occurrences(base_name = "Canidae", interval = "Miocene", show = "full")
+
+# Drop rows that are not resolved AND recognized at genus level.
+# Combines two checks:
+#   1. accepted_rank must be "genus", "species", or "subspecies"
+#   2. the genus name must exist in the PBDB taxonomy
+df_genus = drop_unqualified_taxa(df, :genus)
+
+# Same for species level — uses the accepted_name column for the name check
+# (PBDB stores the full binomial there, not in a column called "species")
+df_species = drop_unqualified_taxa(df, :species)
+
+# In-place variant
+drop_unqualified_taxa!(df, :family)
+
+# Run the two checks independently:
+df_resolved   = drop_unresolved_taxa(df, :genus)       # resolution only
+df_recognized = drop_unrecognized_taxa(df, :genus)     # name validity only
+
+# Single-name lookup
+istaxon("Pliosauridae")            # → true
+istaxon("NO_FAMILY_SPECIFIED")     # → false
+```
+
 ## Key features
 
 - **DataFrame results** — all queries return a `DataFrame` for immediate use with the Julia data ecosystem.
