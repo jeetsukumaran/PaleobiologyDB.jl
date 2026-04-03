@@ -86,16 +86,30 @@ end
 """
     drop_unresolved_taxa(df, taxon_field::Symbol) -> DataFrame
 
-Convenience form where `taxon_field` names a DataFrame column that holds the
-identification result (e.g. `:genus`, `:family`). Strictly speaking, the
-taxonomic rank is a data value stored in `:accepted_rank` — but when an
-occurrence is resolved to genus level, `:accepted_rank` will equal `"genus"`
-*and* the `:genus` column will carry the actual name. This form is a shortcut
-for "ensure resolution is at least as fine as the rank corresponding to
-`taxon_field`": `drop_unresolved_taxa(df, String(taxon_field))`.
+Convenience form that accepts a DataFrame column name instead of a rank string.
 
-`:accepted_name` is the exception — it holds the full species binomial, so it
-maps to `"species"` resolution.
+The taxonomic rank is technically a data value (`:accepted_rank == "genus"`),
+while `taxon_field` is the column that carries the identification result for
+that rank (`:genus == "Tyrannosaurus"`). Passing `:genus` here is therefore a
+shortcut for `drop_unresolved_taxa(df, "genus")`: keep rows resolved to the same 
+taxonomic level as the data in the given `taxon_field`
+
+The one special case is `:accepted_name`, which holds the full species binomial
+and so maps to `"species"` resolution.
+
+# Examples
+```julia
+
+# Same as: df_clean = drop_unresolved_taxa(df, "genus")
+df_clean = drop_unresolved_taxa(df, :genus)
+
+# Same as: df_clean = drop_unresolved_taxa(df, "family")
+df_clean = drop_unresolved_taxa(df, :family)
+
+# Same as: df_clean = drop_unresolved_taxa(df, "species")
+df_clean = drop_unresolved_taxa(df, :accepted_name)
+
+```
 """
 function drop_unresolved_taxa(df::DataFrame, taxon_field::Symbol)::DataFrame
     if taxon_field == :accepted_name
