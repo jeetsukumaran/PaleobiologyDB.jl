@@ -22,19 +22,20 @@
 # ---------------------------------------------------------------------------
 
 using DataFrames, CSV
+using .Store
 
 # ---------------------------------------------------------------------------
 # Taxa-list store registration
 # ---------------------------------------------------------------------------
 
-const _TAXA_LIST_STORE = LocalStore(
+const _TAXA_LIST_STORE = Store.LocalStore(
     :pbdb_taxa,
     "https://paleobiodb.org/data1.2/taxa/list.csv?all_records&vocab=pbdb",
     "pbdb_taxa.csv",
     30,
     "PBDB taxa list",
 )
-_register_store!(_TAXA_LIST_STORE)
+Store._register_store!(_TAXA_LIST_STORE)
 
 # ---------------------------------------------------------------------------
 # Lazy in-memory indices (built from the snapshot on first use)
