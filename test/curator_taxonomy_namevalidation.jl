@@ -1,6 +1,6 @@
 # test/curator_taxonomy_namevalidation.jl
 # Tests for PaleobiologyDB.DataCurator taxonomy name-validation functions:
-#   istaxon, audit_taxonomy, drop_unrecognized_taxonomy, drop_unrecognized_taxonomy!
+#   istaxon, audit_taxonomy, drop_unrecognized_taxa, drop_unrecognized_taxa!
 #
 # Offline tests inject a mock taxa-list index directly into the module-level
 # Refs so no network access is required.
@@ -14,8 +14,8 @@ using PaleobiologyDB
 
 const _istaxon   = PaleobiologyDB.DataCurator.istaxon
 const _audit     = PaleobiologyDB.DataCurator.audit_taxonomy
-const _drop      = PaleobiologyDB.DataCurator.drop_unrecognized_taxonomy
-const _drop!     = PaleobiologyDB.DataCurator.drop_unrecognized_taxonomy!
+const _drop      = PaleobiologyDB.DataCurator.drop_unrecognized_taxa
+const _drop!     = PaleobiologyDB.DataCurator.drop_unrecognized_taxa!
 
 # ---------------------------------------------------------------------------
 # Helpers: inject a mock taxa index so offline tests never touch the network
@@ -91,10 +91,10 @@ end
 end
 
 # ---------------------------------------------------------------------------
-# drop_unrecognized_taxonomy (non-mutating) — offline
+# drop_unrecognized_taxa (non-mutating) — offline
 # ---------------------------------------------------------------------------
 
-@testset "drop_unrecognized_taxonomy — offline mock" begin
+@testset "drop_unrecognized_taxa — offline mock" begin
     _inject_mock_index!(_MOCK_TAXA)
 
     df = DataFrame(
@@ -123,10 +123,10 @@ end
 end
 
 # ---------------------------------------------------------------------------
-# drop_unrecognized_taxonomy! (in-place) — offline
+# drop_unrecognized_taxa! (in-place) — offline
 # ---------------------------------------------------------------------------
 
-@testset "drop_unrecognized_taxonomy! — offline mock" begin
+@testset "drop_unrecognized_taxa! — offline mock" begin
     _inject_mock_index!(_MOCK_TAXA)
 
     df = DataFrame(
@@ -191,7 +191,7 @@ end
     @test _istaxon("NO_FAMILY_SPECIFIED"; validation_authority = :query) == false
 end
 
-@testset "drop_unrecognized_taxonomy — live snapshot" begin
+@testset "drop_unrecognized_taxa — live snapshot" begin
     if !LIVE
         return
     end

@@ -53,7 +53,7 @@ end
 # ---------------------------------------------------------------------------
 
 """
-    drop_unresolved_taxonomy(df, taxonomic_rank) -> DataFrame
+    drop_unresolved_taxa(df, taxonomic_rank) -> DataFrame
 
 Return a filtered copy of `df` containing only rows that meet the minimum
 taxonomic resolution specified by `taxonomic_rank`.
@@ -70,26 +70,26 @@ Two criteria are applied:
 # Examples
 ```julia
 # Keep only rows identified to genus level or finer
-df_clean = drop_unresolved_taxonomy(df, "genus")
+df_clean = drop_unresolved_taxa(df, "genus")
 
 # Keep only rows identified to family level or finer
-df_clean = drop_unresolved_taxonomy(df, "family")
+df_clean = drop_unresolved_taxa(df, "family")
 
 # Works for any rank in the Linnaean hierarchy
-df_clean = drop_unresolved_taxonomy(df, "order")
+df_clean = drop_unresolved_taxa(df, "order")
 ```
 """
-function drop_unresolved_taxonomy(df::DataFrame, taxonomic_rank::AbstractString)::DataFrame
-    drop_unresolved_taxonomy!(copy(df), taxonomic_rank)
+function drop_unresolved_taxa(df::DataFrame, taxonomic_rank::AbstractString)::DataFrame
+    drop_unresolved_taxa!(copy(df), taxonomic_rank)
 end
 
 """
-    drop_unresolved_taxonomy!(df, taxonomic_rank) -> DataFrame
+    drop_unresolved_taxa!(df, taxonomic_rank) -> DataFrame
 
-In-place version of [`drop_unresolved_taxonomy`](@ref).
+In-place version of [`drop_unresolved_taxa`](@ref).
 Modifies `df` directly and returns it.
 """
-function drop_unresolved_taxonomy!(df::DataFrame, taxonomic_rank::AbstractString)::DataFrame
+function drop_unresolved_taxa!(df::DataFrame, taxonomic_rank::AbstractString)::DataFrame
     valid_ranks = _pbdb_ranks_at_or_finer_than(taxonomic_rank)
 
     # 1. Filter by accepted_rank; rows with missing accepted_rank are dropped.
