@@ -84,11 +84,41 @@ function drop_unresolved_taxa(df::DataFrame, taxonomic_rank::AbstractString)::Da
 end
 
 """
+    drop_unresolved_taxa(df, taxon_field::Symbol) -> DataFrame
+
+Convenience form where `taxon_field` names a DataFrame column that holds the
+identification result (e.g. `:genus`, `:family`). Strictly speaking, the
+taxonomic rank is a data value stored in `:accepted_rank` — but when an
+occurrence is resolved to genus level, `:accepted_rank` will equal `"genus"`
+*and* the `:genus` column will carry the actual name. This form is a shortcut
+for "ensure resolution is at least as fine as the rank corresponding to
+`taxon_field`": `drop_unresolved_taxa(df, String(taxon_field))`.
+
+`:accepted_name` is the exception — it holds the full species binomial, so it
+maps to `"species"` resolution.
+"""
+function drop_unresolved_taxa(df::DataFrame, taxon_field::Symbol)::DataFrame
+    if taxon_field == :accepted_name
+        drop_unresolved_taxa(df, "species")
+    else
+        drop_unresolved_taxa(df, String(taxon_field))
+    end
+end
+
+"""
     drop_unresolved_taxa!(df, taxonomic_rank) -> DataFrame
 
 In-place version of [`drop_unresolved_taxa`](@ref).
 Modifies `df` directly and returns it.
 """
+function drop_unresolved_taxa!(df::DataFrame, taxon_field::Symbol)::DataFrame  # see drop_unresolved_taxa(df, ::Symbol) for rationale
+    if taxon_field == :accepted_name
+        drop_unresolved_taxa!(df, "species")
+    else
+        drop_unresolved_taxa!(df, String(taxon_field))
+    end
+end
+
 function drop_unresolved_taxa!(df::DataFrame, taxonomic_rank::AbstractString)::DataFrame
     valid_ranks = _pbdb_ranks_at_or_finer_than(taxonomic_rank)
 
