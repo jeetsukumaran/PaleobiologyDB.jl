@@ -15,6 +15,7 @@ makedocs(
         "Guide" => [
             "Quick Start"      => "guide/quickstart.md",
             "Caching"          => "guide/caching.md",
+            "Contributing"     => "guide/contributing.md",
         ],
         "API Reference" => [
             "Occurrences"      => "api/occurrences.md",
