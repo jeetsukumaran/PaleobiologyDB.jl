@@ -13,8 +13,9 @@ Results survive Julia restarts and can be retrieved by a human-readable label.
 using PaleobiologyDB
 using PaleobiologyDB.DataCaches
 
-cache = DataCache()                          # uses default path ("~/.caches/DataCaches/_DEFAULT")
-cache = DataCache("/my/project/pbdb_cache")  # custom path
+cache = DataCache()                          # lifecycle-managed default store (~/.julia/scratchspaces/…)
+cache = DataCache(:myproject)               # named lifecycle-managed store
+cache = DataCache("/my/project/pbdb_cache")  # explicit path, portable/shareable
 
 # Store
 occs = pbdb_occurrences(base_name = "Canidae", interval = "Miocene", show = "full")
@@ -25,14 +26,19 @@ cache["Carnivora families"] = pbdb_taxa(name = "Carnivora", rel = "children")
 occs = read(cache, "Canidae Miocene occurrences")
 occs = cache["Canidae Miocene occurrences"]
 occs = cache[key]
+occs = cache[1]                             # by sequence number (shown in showcache output)
 
 # Inspect
 keys(cache)        # → Vector{CacheKey}
 keylabels(cache)   # → Vector{String}
-describe(cache)    # pretty-printed table
+showcache(cache)   # pretty-printed table
 
 # Manage
+relabel!(cache, "Canidae Miocene occurrences", "canidae-miocene")
+relabel!(cache, 1, "canidae-miocene")       # by sequence number
 delete!(cache, "Canidae Miocene occurrences")
+delete!(cache, 1)                           # by sequence number
+reindexcache!(cache)                        # compact gaps left by deletions
 clear!(cache)
 ```
 
@@ -44,7 +50,7 @@ clear!(cache)
 every subsequent call with the same arguments loads it from disk without touching the network.
 
 ```julia
-# Uses the module-level default cache (~/.cache/PaleobiologyDB/)
+# Uses the lifecycle-managed default cache (~/.julia/scratchspaces/…)
 occs = @filecache pbdb_occurrences(base_name = "Canidae", interval = "Miocene", show = "full")
 
 # Use a specific DataCache
@@ -52,7 +58,7 @@ my_cache = DataCache("/data/pbdb_cache")
 taxa = @filecache my_cache pbdb_taxa(name = "Carnivora", rel = "children")
 
 # Inspect/manage the default cache
-describe(PaleobiologyDB.default_filecache())
+showcache(PaleobiologyDB.default_filecache())
 clear!(PaleobiologyDB.default_filecache())
 
 # Point the default at a different cache
