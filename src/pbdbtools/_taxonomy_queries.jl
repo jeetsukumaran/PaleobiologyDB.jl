@@ -215,3 +215,297 @@ function ls_parent_taxa(
 
     results
 end
+
+# ---------------------------------------------------------------------------
+# Rank enumeration
+# ---------------------------------------------------------------------------
+
+"""
+    ls_taxonomic_ranks() -> Vector{String}
+
+Return all taxonomic rank names recognised by the PBDB, ordered from most
+specific (subspecies) to most general (kingdom).
+
+The returned vector is a copy of [`PBDB_RANK_HIERARCHY`](@ref); mutating it
+has no effect on the package's internal state.
+
+## Returns
+
+A `Vector{String}` of 19 ranks:
+
+    "subspecies" "species" "genus" "subtribe" "tribe" "subfamily"
+    "family" "superfamily" "infraorder" "suborder" "order"
+    "superorder" "infraclass" "subclass" "class" "superclass"
+    "subphylum" "phylum" "kingdom"
+
+## Examples
+
+```julia
+using PaleobiologyDB, PaleobiologyDB.DataCurator
+
+ls_taxonomic_ranks()
+# → ["subspecies", "species", "genus", …, "kingdom"]
+
+# Enumerate from coarsest to finest
+reverse(ls_taxonomic_ranks())
+```
+
+See also [`PBDB_RANK_HIERARCHY`](@ref), [`ls_registered_taxa`](@ref),
+[`ls_child_taxa`](@ref), [`ls_parent_taxa`](@ref).
+"""
+function ls_taxonomic_ranks()::Vector{String}
+    copy(PBDB_RANK_HIERARCHY)
+end
+
+# ---------------------------------------------------------------------------
+# Registered taxa listing
+# ---------------------------------------------------------------------------
+
+"""
+    ls_registered_taxa(taxon_name=nothing) -> Vector{String}
+
+Return accepted taxon names from the Scratch-cached PBDB taxa list snapshot
+that match the given filter.
+
+## Arguments
+
+- `taxon_name` — filter criterion; one of:
+  - `nothing` (default) — return **all** accepted names.
+  - `Regex` — return names where `occursin(taxon_name, name)` is true.
+  - `AbstractVector{<:Regex}` — return names matching **any** pattern
+    (union semantics).
+
+Only accepted (non-synonym) names are included, consistent with
+[`ls_child_taxa`](@ref) and [`ls_parent_taxa`](@ref).
+
+## Returns
+
+A sorted `Vector{String}`.  Returns an empty vector when no names match.
+
+## Examples
+
+```julia
+using PaleobiologyDB, PaleobiologyDB.DataCurator
+
+# All accepted names (tens of thousands of entries)
+all_taxa = ls_registered_taxa()
+
+# Names containing "Canis" (case-sensitive)
+ls_registered_taxa(r"Canis")
+# → ["Canis", "Canis aureus", "Canis lupus", …]
+
+# Case-insensitive search
+ls_registered_taxa(r"canid"i)
+
+# Union of two patterns
+ls_registered_taxa([r"^Canis\b", r"^Vulpes\b"])
+# → ["Canis", "Canis aureus", …, "Vulpes", "Vulpes vulpes", …]
+```
+
+See also [`ls_taxonomic_ranks`](@ref), [`ls_child_taxa`](@ref),
+[`ls_parent_taxa`](@ref), [`istaxon`](@ref).
+"""
+function ls_registered_taxa(
+    taxon_name::Union{Nothing, Regex, AbstractVector{<:Regex}} = nothing,
+)::Vector{String}
+    _ensure_hierarchy_index()
+    name_to_no = _TAXA_HIERARCHY_NAME_INDEX[]
+
+    if isnothing(taxon_name)
+        return sort!(collect(keys(name_to_no)))
+    elseif taxon_name isa Regex
+        pattern = taxon_name
+        return sort!([name for name in keys(name_to_no) if occursin(pattern, name)])
+    else
+        # AbstractVector{<:Regex} — union match
+        patterns = taxon_name
+        return sort!([name for name in keys(name_to_no) if any(r -> occursin(r, name), patterns)])
+    end
+end
+
+# ---------------------------------------------------------------------------
+# taxon_occursin — internals
+# ---------------------------------------------------------------------------
+
+# Column symbols produced by augment_taxonomy (default prefix "taxon_")
+const _AUGMENTED_TAXON_COLS = let
+    cols = [Symbol("taxon_" * r) for r in PBDB_RANK_HIERARCHY]
+    push!(cols, :taxon_taxonomy)
+    cols
+end
+
+# Original taxon columns from the PBDB API response (rank names + accepted_name)
+const _ORIGINAL_TAXON_COLS = let
+    cols = [Symbol(r) for r in PBDB_RANK_HIERARCHY]
+    push!(cols, :accepted_name)
+    cols
+end
+
+# Return (working_df, search_cols) for taxon_occursin.
+#
+# Priority:
+#   1. Any augmented column (taxon_<rank>, taxon_taxonomy) already present → use df as-is.
+#   2. autoaugment=true and :accepted_name present → call augment_taxonomy, use augmented cols.
+#   3. Fallback → use original taxon columns present in df.
+function _taxonomy_search_setup(df::DataFrame; autoaugment::Bool = true)
+    present_augmented = filter(col -> hasproperty(df, col), _AUGMENTED_TAXON_COLS)
+    if !isempty(present_augmented)
+        return df, present_augmented
+    end
+
+    if autoaugment && hasproperty(df, :accepted_name)
+        df_work = augment_taxonomy(df)
+        search_cols = filter(col -> hasproperty(df_work, col), _AUGMENTED_TAXON_COLS)
+        return df_work, search_cols
+    end
+
+    present_original = filter(col -> hasproperty(df, col), _ORIGINAL_TAXON_COLS)
+    return df, present_original
+end
+
+# Return true if any non-missing, non-empty value in `row` for `cols` satisfies
+# `criterion(val::String)`.  Short-circuits on first match.
+function _row_matches_any(row, cols::Vector{Symbol}, criterion)::Bool
+    for col in cols
+        val = row[col]
+        ismissing(val) && continue
+        s = string(val)
+        isempty(s) && continue
+        criterion(s) && return true
+    end
+    return false
+end
+
+# ---------------------------------------------------------------------------
+# taxon_occursin — public API
+# ---------------------------------------------------------------------------
+
+"""
+    taxon_occursin(name, df; autoaugment=true) -> Vector{Bool}
+
+Return a `Vector{Bool}` of length `nrow(df)` indicating which rows contain
+`name` in any relevant taxonomic column.
+
+## Method signatures
+
+```julia
+taxon_occursin(name::Regex,                          df; autoaugment=true)
+taxon_occursin(name::AbstractString,                 df; autoaugment=true)
+taxon_occursin(names::AbstractVector{<:AbstractString}, df; autoaugment=true)
+taxon_occursin(names::AbstractVector{<:Regex},       df; autoaugment=true)
+```
+
+## Matching semantics
+
+- **`Regex`** — `occursin(name, value)` for each column value.
+- **`AbstractString`** — exact equality (`==`), case-sensitive.
+- **`AbstractVector{<:AbstractString}`** — Set membership; a row matches if any
+  column value is an element of `names`.
+- **`AbstractVector{<:Regex}`** — union match; a row matches if any column
+  value satisfies any pattern in `names`.
+
+## Column selection
+
+Columns to search are chosen by the following priority:
+
+1. **Augmented columns already present** — if `df` has any column of the form
+   `taxon_<rank>` or `taxon_taxonomy` (as added by [`augment_taxonomy`](@ref)),
+   those columns are searched regardless of `autoaugment`.
+2. **Auto-augmentation** — if no augmented columns are present and
+   `autoaugment=true` (default) and `df` has an `:accepted_name` column,
+   [`augment_taxonomy`](@ref) is called on a copy of `df` and its augmented
+   columns are searched.
+3. **Fallback** — columns whose name matches a rank in [`PBDB_RANK_HIERARCHY`](@ref)
+   plus `:accepted_name`, restricted to those actually present in `df`.
+
+Note: `:taxon_taxonomy` contains a full hierarchy string such as
+`"Animalia > Chordata > … > Canis"`.  Regex patterns will match it; exact
+strings (e.g. `"Canis"`) will not — use the per-rank column (`taxon_genus`)
+for exact matching.
+
+## Examples
+
+```julia
+using PaleobiologyDB, PaleobiologyDB.DataCurator
+
+df = pbdb_occurrences(base_name = "Canidae", interval = "Miocene", show = "full")
+
+# Exact string match
+mask = taxon_occursin("Canis", df)
+df[mask, :]
+
+# Regex match
+mask = taxon_occursin(r"^Canis\b", df)
+
+# Multiple exact names
+mask = taxon_occursin(["Canis", "Vulpes"], df)
+
+# Multiple patterns (union)
+mask = taxon_occursin([r"^Canis\b", r"^Vulpes\b"], df)
+
+# Suppress auto-augmentation for a pre-augmented DataFrame
+df2 = augment_taxonomy(df)
+mask = taxon_occursin("Canidae", df2; autoaugment=false)
+```
+
+See also [`augment_taxonomy`](@ref), [`ls_child_taxa`](@ref),
+[`ls_parent_taxa`](@ref), [`ls_registered_taxa`](@ref).
+"""
+function taxon_occursin(
+    name::Regex,
+    df::DataFrame;
+    autoaugment::Bool = true,
+)::Vector{Bool}
+    df_work, cols = _taxonomy_search_setup(df; autoaugment)
+    criterion = (s::String) -> occursin(name, s)
+    [_row_matches_any(row, cols, criterion) for row in eachrow(df_work)]
+end
+
+"""
+    taxon_occursin(name::AbstractString, df; autoaugment=true) -> Vector{Bool}
+
+Exact-string variant of [`taxon_occursin`](@ref).  Returns `true` for rows
+where any relevant taxonomic column equals `name` (case-sensitive).
+"""
+function taxon_occursin(
+    name::AbstractString,
+    df::DataFrame;
+    autoaugment::Bool = true,
+)::Vector{Bool}
+    df_work, cols = _taxonomy_search_setup(df; autoaugment)
+    criterion = (s::String) -> s == name
+    [_row_matches_any(row, cols, criterion) for row in eachrow(df_work)]
+end
+
+"""
+    taxon_occursin(names::AbstractVector{<:AbstractString}, df; autoaugment=true) -> Vector{Bool}
+
+Set-membership variant of [`taxon_occursin`](@ref).  Returns `true` for rows
+where any relevant taxonomic column value is contained in `names`.
+"""
+function taxon_occursin(
+    names::AbstractVector{<:AbstractString},
+    df::DataFrame;
+    autoaugment::Bool = true,
+)::Vector{Bool}
+    df_work, cols = _taxonomy_search_setup(df; autoaugment)
+    name_set = Set{String}(names)
+    criterion = (s::String) -> s in name_set
+    [_row_matches_any(row, cols, criterion) for row in eachrow(df_work)]
+end
+
+"""
+    taxon_occursin(names::AbstractVector{<:Regex}, df; autoaugment=true) -> Vector{Bool}
+
+Multi-pattern variant of [`taxon_occursin`](@ref).  Returns `true` for rows
+where any relevant taxonomic column value matches at least one pattern in `names`.
+"""
+function taxon_occursin(
+    names::AbstractVector{<:Regex},
+    df::DataFrame;
+    autoaugment::Bool = true,
+)::Vector{Bool}
+    df_work, cols = _taxonomy_search_setup(df; autoaugment)
+    criterion = (s::String) -> any(r -> occursin(r, s), names)
+    [_row_matches_any(row, cols, criterion) for row in eachrow(df_work)]
+end
