@@ -95,15 +95,54 @@ PaleobiologyDB.DataCurator.drop_unrecognized_taxa
 PaleobiologyDB.DataCurator.drop_unrecognized_taxa!
 ```
 
+## Taxonomy augmentation
+
+`augment_taxonomy` enriches an occurrences DataFrame with the full taxonomic
+hierarchy for each row, resolved from the Scratch-cached PBDB taxa list.
+
+```julia
+using PaleobiologyDB, PaleobiologyDB.DataCurator
+
+df = pbdb_occurrences(base_name = "Carnivora", interval = "Miocene", limit = 500)
+
+# Add taxon_genus, taxon_family, …, taxon_kingdom, taxon_taxonomy columns
+df2 = augment_taxonomy(df)
+
+# Filter for a specific subfamily
+df2[.!ismissing.(df2.taxon_subfamily) .&& df2.taxon_subfamily .== "Borophaginae", :]
+
+# Inspect a taxonomy string
+df2.taxon_taxonomy[1]
+# → "Animalia > Chordata > Mammalia > Carnivora > Canidae > Borophaginae > Epicyon"
+```
+
+```@docs
+PaleobiologyDB.DataCurator.augment_taxonomy
+```
+
 ## Taxonomy tree queries
 
 These functions navigate the PBDB taxonomic hierarchy by name, returning
-descendants or ancestors at a requested rank.  Both functions are backed by the
+descendants or ancestors at a requested rank.  All functions are backed by the
 same Scratch-managed snapshot used by the filters above and build their indices
 on first use (no extra download required).
 
 ```julia
 using PaleobiologyDB.DataCurator
+
+# Valid rank names
+ls_taxonomic_ranks()
+# → ["subspecies", "species", "genus", …, "kingdom"]
+
+# All accepted taxon names (tens of thousands)
+ls_registered_taxa()
+
+# Names matching a pattern
+ls_registered_taxa(r"^Canis\b")
+# → ["Canis", "Canis aureus", "Canis lupus", …]
+
+# Union of patterns
+ls_registered_taxa([r"^Canis\b", r"^Vulpes\b"])
 
 # All families within Carnivora
 ls_child_taxa("Carnivora", "family")
@@ -112,9 +151,6 @@ ls_child_taxa("Carnivora", "family")
 # All genera within Canidae
 ls_child_taxa("Canidae", "genus")
 # → ["Borophagus", "Canis", "Lycaon", "Urocyon", "Vulpes", …]
-
-# All genera across all Carnivora families
-ls_child_taxa("Carnivora", "genus")
 
 # All species within a genus
 ls_child_taxa("Canis", "species")
@@ -130,15 +166,45 @@ ls_parent_taxa("Canis lupus")
 # Only the family
 ls_parent_taxa("Canis lupus", "family")
 # → ["Canidae"]
-
-# Only the order
-ls_parent_taxa("Canis", "order")
-# → ["Carnivora"]
 ```
 
 ```@docs
+PaleobiologyDB.DataCurator.ls_taxonomic_ranks
+PaleobiologyDB.DataCurator.ls_registered_taxa
 PaleobiologyDB.DataCurator.ls_child_taxa
 PaleobiologyDB.DataCurator.ls_parent_taxa
+```
+
+## Taxon occurrence search
+
+`taxon_occursin` returns a `Vector{Bool}` mask indicating which rows of a
+DataFrame contain a given taxon name or pattern in any taxonomic column.  It
+auto-augments the DataFrame if needed (calls `augment_taxonomy` internally).
+
+```julia
+using PaleobiologyDB, PaleobiologyDB.DataCurator
+
+df = pbdb_occurrences(base_name = "Canidae", interval = "Miocene", show = "full")
+
+# Exact name
+df[taxon_occursin("Canis", df), :]
+
+# Regex
+df[taxon_occursin(r"^Canis\b", df), :]
+
+# Multiple exact names
+df[taxon_occursin(["Canis", "Vulpes"], df), :]
+
+# Multiple patterns (union)
+df[taxon_occursin([r"^Canis\b", r"^Vulpes\b"], df), :]
+
+# Suppress auto-augmentation when df is already augmented
+df2 = augment_taxonomy(df)
+df2[taxon_occursin("Canidae", df2; autoaugment=false), :]
+```
+
+```@docs
+PaleobiologyDB.DataCurator.taxon_occursin
 ```
 
 ## Local data store management
