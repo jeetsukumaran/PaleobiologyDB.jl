@@ -5,8 +5,16 @@ using DataFrames
 # Taxonomic rank hierarchy
 # ---------------------------------------------------------------------------
 
-# PBDB `accepted_rank` values ordered from most specific to most general.
-# Used to resolve "at least as specific as X" queries.
+"""
+    PBDB_RANK_HIERARCHY
+
+Vector of PBDB `accepted_rank` values ordered from most specific to most
+general: `"subspecies"`, `"species"`, `"genus"`, …, `"kingdom"`.
+
+Used internally to resolve "at least as specific as X" queries and to define
+the columns added by [`augment_taxonomy`](@ref).  Use
+[`ls_taxonomic_ranks`](@ref) to obtain a mutable copy.
+"""
 const PBDB_RANK_HIERARCHY = [
     "subspecies",
     "species",

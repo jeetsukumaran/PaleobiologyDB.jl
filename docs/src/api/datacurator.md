@@ -120,6 +120,12 @@ df2.taxon_taxonomy[1]
 PaleobiologyDB.DataCurator.augment_taxonomy
 ```
 
+## Taxonomic rank hierarchy
+
+```@docs
+PaleobiologyDB.DataCurator.PBDB_RANK_HIERARCHY
+```
+
 ## Taxonomy tree queries
 
 These functions navigate the PBDB taxonomic hierarchy by name, returning
