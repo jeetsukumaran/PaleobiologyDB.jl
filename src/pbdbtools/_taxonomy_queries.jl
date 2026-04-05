@@ -376,52 +376,81 @@ function _row_matches_any(row, cols::Vector{Symbol}, criterion)::Bool
     return false
 end
 
+# Return true if every criterion in `criteria` is satisfied by at least one
+# non-missing, non-empty column value in `row`.  Short-circuits on first failure.
+function _row_matches_all(row, cols::Vector{Symbol}, criteria)::Bool
+    for criterion in criteria
+        matched = false
+        for col in cols
+            val = row[col]
+            ismissing(val) && continue
+            s = string(val)
+            isempty(s) && continue
+            if criterion(s)
+                matched = true
+                break
+            end
+        end
+        matched || return false
+    end
+    return true
+end
+
 # ---------------------------------------------------------------------------
 # taxon_occursin — public API
 # ---------------------------------------------------------------------------
 
 """
     taxon_occursin(name, df; autoaugment=true) -> Vector{Bool}
+    taxon_occursin(name)                       -> ByRow predicate
 
-Return a `Vector{Bool}` of length `nrow(df)` indicating which rows contain
-`name` in any relevant taxonomic column.
+Two forms:
+
+- **2-arg** `taxon_occursin(pattern, df)` — returns a `Vector{Bool}` of length
+  `nrow(df)` searching across all relevant taxonomic columns in `df`.
+- **1-arg** `taxon_occursin(pattern)` — returns a `ByRow(predicate)` for use
+  directly with `subset(df, :col => taxon_occursin(pattern))`.
 
 ## Method signatures
 
 ```julia
-taxon_occursin(name::Regex,                          df; autoaugment=true)
-taxon_occursin(name::AbstractString,                 df; autoaugment=true)
-taxon_occursin(names::AbstractVector{<:AbstractString}, df; autoaugment=true)
-taxon_occursin(names::AbstractVector{<:Regex},       df; autoaugment=true)
+# 2-arg: multi-column mask
+taxon_occursin(name::Regex,                             df; autoaugment=true)
+taxon_occursin(name::AbstractString,                    df; autoaugment=true)
+taxon_occursin(names::AbstractVector{<:AbstractString}, df; autoaugment=true, matchall=true)
+taxon_occursin(names::AbstractVector{<:Regex},          df; autoaugment=true, matchall=true)
+
+# 1-arg: ByRow predicate for subset
+taxon_occursin(name::Regex)
+taxon_occursin(name::AbstractString)
+taxon_occursin(names::AbstractVector{<:AbstractString}; matchall=true)
+taxon_occursin(names::AbstractVector{<:Regex};          matchall=true)
 ```
 
 ## Matching semantics
 
-- **`Regex`** — `occursin(name, value)` for each column value.
+- **`Regex`** — `occursin(name, value)`.
 - **`AbstractString`** — exact equality (`==`), case-sensitive.
-- **`AbstractVector{<:AbstractString}`** — Set membership; a row matches if any
-  column value is an element of `names`.
-- **`AbstractVector{<:Regex}`** — union match; a row matches if any column
-  value satisfies any pattern in `names`.
+- **`AbstractVector{<:AbstractString}`** — controlled by `matchall`:
+  - `matchall=true` (default) — **AND**: every name must appear in at least one column.
+  - `matchall=false` — **OR**: any name matching any column is sufficient.
+- **`AbstractVector{<:Regex}`** — controlled by `matchall`:
+  - `matchall=true` (default) — **AND**: every pattern must match at least one column.
+  - `matchall=false` — **OR**: any pattern matching any column is sufficient.
 
-## Column selection
+## Column selection (2-arg form)
 
-Columns to search are chosen by the following priority:
+1. **Augmented columns already present** — if `df` has any `taxon_<rank>` or
+   `taxon_taxonomy` column (added by [`augment_taxonomy`](@ref)), those are searched.
+2. **Auto-augmentation** — if no augmented columns exist, `autoaugment=true`
+   (default), and `:accepted_name` is present, [`augment_taxonomy`](@ref) is called
+   on a copy of `df` and its columns are searched.
+3. **Fallback** — any column whose name matches a rank in [`PBDB_RANK_HIERARCHY`](@ref)
+   plus `:accepted_name`, restricted to those present in `df`.
 
-1. **Augmented columns already present** — if `df` has any column of the form
-   `taxon_<rank>` or `taxon_taxonomy` (as added by [`augment_taxonomy`](@ref)),
-   those columns are searched regardless of `autoaugment`.
-2. **Auto-augmentation** — if no augmented columns are present and
-   `autoaugment=true` (default) and `df` has an `:accepted_name` column,
-   [`augment_taxonomy`](@ref) is called on a copy of `df` and its augmented
-   columns are searched.
-3. **Fallback** — columns whose name matches a rank in [`PBDB_RANK_HIERARCHY`](@ref)
-   plus `:accepted_name`, restricted to those actually present in `df`.
-
-Note: `:taxon_taxonomy` contains a full hierarchy string such as
-`"Animalia > Chordata > … > Canis"`.  Regex patterns will match it; exact
-strings (e.g. `"Canis"`) will not — use the per-rank column (`taxon_genus`)
-for exact matching.
+Note: `:taxon_taxonomy` is a composite string (`"Animalia > … > Canis"`).  Regex
+patterns match it; exact strings (e.g. `"Canis"`) do not — use the per-rank column
+(e.g. `taxon_genus`) for exact matching.
 
 ## Examples
 
@@ -430,22 +459,36 @@ using PaleobiologyDB, PaleobiologyDB.DataCurator
 
 df = pbdb_occurrences(base_name = "Canidae", interval = "Miocene", show = "full")
 
-# Exact string match
-mask = taxon_occursin("Canis", df)
-df[mask, :]
+# 2-arg: exact string across all taxonomy columns
+df[taxon_occursin("Canis", df), :]
 
-# Regex match
-mask = taxon_occursin(r"^Canis\b", df)
+# 2-arg: regex
+df[taxon_occursin(r"^Canis\b", df), :]
 
-# Multiple exact names
-mask = taxon_occursin(["Canis", "Vulpes"], df)
+# 2-arg: AND — each name must appear in a separate column
+df[taxon_occursin(["Canis", "Mammalia"], df), :]
 
-# Multiple patterns (union)
-mask = taxon_occursin([r"^Canis\b", r"^Vulpes\b"], df)
+# 2-arg: OR — any name matches any column
+df[taxon_occursin(["Canis", "Vulpes"], df; matchall=false), :]
+
+# 2-arg: AND patterns — each regex must match at least one column
+df[taxon_occursin([r"Canidae", r"Canis"], df), :]
+
+# 1-arg: subset with exact string
+subset(df, :taxon_genus => taxon_occursin("Canis"))
+
+# 1-arg: subset with regex AND (default) on composite column
+subset(df, :taxon_taxonomy => taxon_occursin([r"Canidae", r"lupus"]))
+
+# 1-arg: subset with regex OR
+subset(df, :taxon_taxonomy => taxon_occursin([r"^Canis\b", r"^Vulpes\b"]; matchall=false))
+
+# 1-arg: subset with string OR
+subset(df, :taxon_genus => taxon_occursin(["Canis", "Vulpes"]; matchall=false))
 
 # Suppress auto-augmentation for a pre-augmented DataFrame
 df2 = augment_taxonomy(df)
-mask = taxon_occursin("Canidae", df2; autoaugment=false)
+df2[taxon_occursin("Canidae", df2; autoaugment=false), :]
 ```
 
 See also [`augment_taxonomy`](@ref), [`ls_child_taxa`](@ref),
@@ -478,34 +521,167 @@ function taxon_occursin(
 end
 
 """
-    taxon_occursin(names::AbstractVector{<:AbstractString}, df; autoaugment=true) -> Vector{Bool}
+    taxon_occursin(names::AbstractVector{<:AbstractString}, df; autoaugment=true, matchall=true) -> Vector{Bool}
 
-Set-membership variant of [`taxon_occursin`](@ref).  Returns `true` for rows
-where any relevant taxonomic column value is contained in `names`.
+Multi-name variant of [`taxon_occursin`](@ref).
+
+- `matchall=true` (default) — every name in `names` must appear in at least one
+  relevant column (AND semantics across columns).
+- `matchall=false` — any name matching any column is sufficient (OR/set-membership).
+
+Note: `matchall=true` is only meaningful for the multi-column (2-arg) form.  In a
+single-column `subset` context a single value cannot equal two different strings, so
+`matchall=true` is always `false` for `length(names) > 1`; use `matchall=false` there.
 """
 function taxon_occursin(
     names::AbstractVector{<:AbstractString},
     df::DataFrame;
     autoaugment::Bool = true,
+    matchall::Bool = true,
 )::Vector{Bool}
     df_work, cols = _taxonomy_search_setup(df; autoaugment)
-    name_set = Set{String}(names)
-    criterion = (s::String) -> s in name_set
-    [_row_matches_any(row, cols, criterion) for row in eachrow(df_work)]
+    if matchall
+        criteria = [(s -> s == n) for n in names]
+        [_row_matches_all(row, cols, criteria) for row in eachrow(df_work)]
+    else
+        name_set = Set{String}(names)
+        [_row_matches_any(row, cols, s -> s in name_set) for row in eachrow(df_work)]
+    end
 end
 
 """
-    taxon_occursin(names::AbstractVector{<:Regex}, df; autoaugment=true) -> Vector{Bool}
+    taxon_occursin(names::AbstractVector{<:Regex}, df; autoaugment=true, matchall=true) -> Vector{Bool}
 
-Multi-pattern variant of [`taxon_occursin`](@ref).  Returns `true` for rows
-where any relevant taxonomic column value matches at least one pattern in `names`.
+Multi-pattern variant of [`taxon_occursin`](@ref).
+
+- `matchall=true` (default) — every pattern in `names` must match at least one
+  relevant column value (AND semantics).  Useful for narrowing a search across
+  multiple criteria, e.g. `[r"Canidae", r"Canis"]` finds rows resolved to genus
+  within that family.
+- `matchall=false` — any pattern matching any column is sufficient (OR semantics).
 """
 function taxon_occursin(
     names::AbstractVector{<:Regex},
     df::DataFrame;
     autoaugment::Bool = true,
+    matchall::Bool = true,
 )::Vector{Bool}
     df_work, cols = _taxonomy_search_setup(df; autoaugment)
-    criterion = (s::String) -> any(r -> occursin(r, s), names)
-    [_row_matches_any(row, cols, criterion) for row in eachrow(df_work)]
+    if matchall
+        criteria = [(s -> occursin(r, s)) for r in names]
+        [_row_matches_all(row, cols, criteria) for row in eachrow(df_work)]
+    else
+        [_row_matches_any(row, cols, s -> any(r -> occursin(r, s), names)) for row in eachrow(df_work)]
+    end
+end
+
+# ---------------------------------------------------------------------------
+# taxon_occursin — 1-arg forms (return ByRow predicate for subset compatibility)
+# ---------------------------------------------------------------------------
+
+"""
+    taxon_occursin(name) -> ByRow predicate
+
+Single-argument form of [`taxon_occursin`](@ref) for use with `subset`:
+
+```julia
+subset(df, :col => taxon_occursin(pattern))
+```
+
+`subset(df, :col => f)` passes the whole column vector to `f` and expects
+`Vector{Bool}`.  The returned `ByRow(predicate)` broadcasts a scalar predicate
+element-wise, satisfying that contract.  Missing and empty values always return
+`false`.
+
+## Method signatures
+
+```julia
+taxon_occursin(name::Regex)
+taxon_occursin(name::AbstractString)
+taxon_occursin(names::AbstractVector{<:AbstractString}; matchall=true)
+taxon_occursin(names::AbstractVector{<:Regex};          matchall=true)
+```
+
+## `matchall` keyword (vector forms only)
+
+- `matchall=true` (default) — **AND**: all names/patterns must match the column
+  value.  For strings, always `false` when `length(names) > 1` (a single field
+  value cannot equal two different strings).  For regex, useful on composite
+  columns such as `taxon_taxonomy` (e.g. `[r"Canidae", r"lupus"]` narrows to
+  species within that family).
+- `matchall=false` — **OR**: any name/pattern matching is sufficient.
+
+## Examples
+
+```julia
+using PaleobiologyDB, PaleobiologyDB.DataCurator
+
+df = pbdb_occurrences(base_name = "Carnivora", interval = "Miocene", show = "full")
+df2 = augment_taxonomy(df)
+
+# Exact string on a single column
+subset(df2, :taxon_genus => taxon_occursin("Canis"))
+
+# Regex on a single column
+subset(df2, :taxon_taxonomy => taxon_occursin(r"Borophaginae"))
+
+# Regex AND (default): taxon_taxonomy must contain both patterns
+subset(df2, :taxon_taxonomy => taxon_occursin([r"Canidae", r"lupus"]))
+
+# Regex OR: either pattern matches
+subset(df2, :taxon_taxonomy => taxon_occursin([r"^Canis\b", r"^Vulpes\b"]; matchall=false))
+
+# String OR (matchall=false): genus is Canis or Vulpes
+subset(df2, :taxon_genus => taxon_occursin(["Canis", "Vulpes"]; matchall=false))
+
+# @chain
+using Chain
+@chain df begin
+    augment_taxonomy
+    subset(:taxon_family   => taxon_occursin("Canidae"))
+    subset(:taxon_taxonomy => taxon_occursin([r"Canis", r"lupus"]))
+end
+```
+
+See also [`augment_taxonomy`](@ref), [`ls_child_taxa`](@ref),
+[`ls_parent_taxa`](@ref), [`ls_registered_taxa`](@ref).
+"""
+function taxon_occursin(name::Regex)
+    ByRow(v -> !ismissing(v) && !isempty(string(v)) && occursin(name, string(v)))
+end
+
+"""
+    taxon_occursin(name::AbstractString) -> ByRow predicate
+
+Exact-string 1-arg form of [`taxon_occursin`](@ref).
+"""
+function taxon_occursin(name::AbstractString)
+    ByRow(v -> !ismissing(v) && string(v) == name)
+end
+
+"""
+    taxon_occursin(names::AbstractVector{<:AbstractString}; matchall=true) -> ByRow predicate
+
+Multi-name 1-arg form of [`taxon_occursin`](@ref).  See that docstring for `matchall` semantics.
+"""
+function taxon_occursin(names::AbstractVector{<:AbstractString}; matchall::Bool = true)
+    if matchall
+        ByRow(v -> !ismissing(v) && all(n -> string(v) == n, names))
+    else
+        name_set = Set{String}(names)
+        ByRow(v -> !ismissing(v) && string(v) in name_set)
+    end
+end
+
+"""
+    taxon_occursin(names::AbstractVector{<:Regex}; matchall=true) -> ByRow predicate
+
+Multi-pattern 1-arg form of [`taxon_occursin`](@ref).  See that docstring for `matchall` semantics.
+"""
+function taxon_occursin(names::AbstractVector{<:Regex}; matchall::Bool = true)
+    if matchall
+        ByRow(v -> !ismissing(v) && !isempty(string(v)) && all(r -> occursin(r, string(v)), names))
+    else
+        ByRow(v -> !ismissing(v) && !isempty(string(v)) && any(r -> occursin(r, string(v)), names))
+    end
 end

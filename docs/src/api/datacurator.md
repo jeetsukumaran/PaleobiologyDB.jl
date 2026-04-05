@@ -177,30 +177,57 @@ PaleobiologyDB.DataCurator.ls_parent_taxa
 
 ## Taxon occurrence search
 
-`taxon_occursin` returns a `Vector{Bool}` mask indicating which rows of a
-DataFrame contain a given taxon name or pattern in any taxonomic column.  It
-auto-augments the DataFrame if needed (calls `augment_taxonomy` internally).
+`taxon_occursin` comes in two forms:
+
+- **2-arg** `taxon_occursin(pattern, df)` → `Vector{Bool}` — searches across all
+  taxonomy columns; use for `df[mask, :]` filtering.
+- **1-arg** `taxon_occursin(pattern)` → `ByRow` predicate — for use directly with
+  `subset(df, :col => taxon_occursin(pattern))`.
+
+Vector inputs (`AbstractVector{<:AbstractString}` or `AbstractVector{<:Regex}`) accept
+a `matchall` keyword (`true` by default): `matchall=true` requires **all** elements to
+match (AND); `matchall=false` requires **any** to match (OR).
 
 ```julia
 using PaleobiologyDB, PaleobiologyDB.DataCurator
 
 df = pbdb_occurrences(base_name = "Canidae", interval = "Miocene", show = "full")
 
-# Exact name
+# 2-arg: multi-column boolean mask
 df[taxon_occursin("Canis", df), :]
-
-# Regex
 df[taxon_occursin(r"^Canis\b", df), :]
 
-# Multiple exact names
-df[taxon_occursin(["Canis", "Vulpes"], df), :]
+# 2-arg: AND — every name must appear in some column (default matchall=true)
+df[taxon_occursin(["Canis", "Mammalia"], df), :]
 
-# Multiple patterns (union)
-df[taxon_occursin([r"^Canis\b", r"^Vulpes\b"], df), :]
+# 2-arg: OR — any name matches any column
+df[taxon_occursin(["Canis", "Vulpes"], df; matchall=false), :]
 
-# Suppress auto-augmentation when df is already augmented
+# 2-arg: AND patterns — each regex must match at least one column
+df[taxon_occursin([r"Canidae", r"Canis"], df), :]
+
+# 1-arg: use directly with subset
 df2 = augment_taxonomy(df)
-df2[taxon_occursin("Canidae", df2; autoaugment=false), :]
+subset(df2, :taxon_genus => taxon_occursin("Canis"))
+subset(df2, :taxon_taxonomy => taxon_occursin(r"Borophaginae"))
+
+# 1-arg: regex AND on composite column (default matchall=true)
+# rows where taxon_taxonomy contains BOTH patterns
+subset(df2, :taxon_taxonomy => taxon_occursin([r"Canidae", r"lupus"]))
+
+# 1-arg: regex OR
+subset(df2, :taxon_taxonomy => taxon_occursin([r"^Canis\b", r"^Vulpes\b"]; matchall=false))
+
+# 1-arg: string OR
+subset(df2, :taxon_genus => taxon_occursin(["Canis", "Vulpes"]; matchall=false))
+
+# Chain with subset (Chain.jl)
+using Chain
+@chain df begin
+    augment_taxonomy
+    subset(:taxon_family   => taxon_occursin("Canidae"))
+    subset(:taxon_taxonomy => taxon_occursin([r"Canis", r"lupus"]))
+end
 ```
 
 ```@docs

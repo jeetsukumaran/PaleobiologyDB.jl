@@ -31,36 +31,68 @@ canis = pbdb_taxon(name = "Canis", show = ["attr", "app", "size"])
 coll = pbdb_collection("col:1003", show = ["loc", "stratext"], extids = true)
 ```
 
-## Data cleaning with DataCurator
+## Data cleaning and taxonomy with DataCurator
 
-The `DataCurator` submodule provides tools for validating and cleaning
-occurrence DataFrames against the PBDB taxonomic authority.
+The `DataCurator` submodule provides tools for validating, cleaning, and
+exploring occurrence DataFrames against the PBDB taxonomic authority.
 
 ```julia
 using PaleobiologyDB, PaleobiologyDB.DataCurator
 
 df = pbdb_occurrences(base_name = "Canidae", interval = "Miocene", show = "full")
 
-# Drop rows that are not resolved AND recognized at genus level.
-# Combines two checks:
-#   1. accepted_rank must be "genus", "species", or "subspecies"
-#   2. the genus name must exist in the PBDB taxonomy
+# ── Quality filters ────────────────────────────────────────────────────────
+
+# Drop rows not resolved AND recognized at genus level
 df_genus = drop_unqualified_taxa(df, :genus)
 
-# Same for species level — uses the accepted_name column for the name check
-# (PBDB stores the full binomial there, not in a column called "species")
+# Same for species (uses accepted_name column — PBDB stores the binomial there)
 df_species = drop_unqualified_taxa(df, :species)
 
-# In-place variant
-drop_unqualified_taxa!(df, :family)
-
-# Run the two checks independently:
-df_resolved   = drop_unresolved_taxa(df, :genus)       # resolution only
-df_recognized = drop_unrecognized_taxa(df, :genus)     # name validity only
+# Run the two checks independently
+df_resolved   = drop_unresolved_taxa(df, :genus)    # resolution only
+df_recognized = drop_unrecognized_taxa(df, :genus)  # name validity only
 
 # Single-name lookup
-istaxon("Pliosauridae")            # → true
-istaxon("NO_FAMILY_SPECIFIED")     # → false
+istaxon("Pliosauridae")         # → true
+istaxon("NO_FAMILY_SPECIFIED")  # → false
+
+# ── Taxonomy augmentation ──────────────────────────────────────────────────
+
+# Add taxon_genus, taxon_family, …, taxon_kingdom, taxon_taxonomy columns
+df2 = augment_taxonomy(df)
+df2.taxon_taxonomy[1]
+# → "Animalia > Chordata > Mammalia > Carnivora > Canidae > Borophaginae > Epicyon"
+
+# ── Taxonomy queries ───────────────────────────────────────────────────────
+
+# Valid rank names
+ls_taxonomic_ranks()
+# → ["subspecies", "species", "genus", …, "kingdom"]
+
+# Search accepted PBDB taxon names
+ls_registered_taxa(r"^Canis\b")            # → ["Canis", "Canis aureus", "Canis lupus", …]
+ls_registered_taxa([r"^Canis\b", r"^Vulpes\b"])  # union of patterns
+
+# Navigate the hierarchy
+ls_child_taxa("Carnivora", "family")       # → ["Ailuridae", "Canidae", "Felidae", …]
+ls_parent_taxa("Canis lupus", "family")    # → ["Canidae"]
+
+# ── Row filtering ──────────────────────────────────────────────────────────
+
+# 2-arg: boolean mask across all taxonomy columns (auto-augments if needed)
+df2[taxon_occursin("Canis", df2), :]
+df2[taxon_occursin(r"^Canis\b", df2), :]
+
+# Vector inputs: matchall=true (AND, default) / matchall=false (OR)
+df2[taxon_occursin(["Canis", "Mammalia"], df2), :]          # AND: both must appear
+df2[taxon_occursin(["Canis", "Vulpes"], df2; matchall=false), :]  # OR: either matches
+
+# 1-arg: ByRow predicate for use with subset
+subset(df2, :taxon_genus    => taxon_occursin("Canis"))
+subset(df2, :taxon_taxonomy => taxon_occursin(r"Borophaginae"))
+subset(df2, :taxon_taxonomy => taxon_occursin([r"Canidae", r"lupus"]))  # AND on composite column
+subset(df2, :taxon_genus    => taxon_occursin(["Canis", "Vulpes"]; matchall=false))  # OR
 ```
 
 ## Key features
