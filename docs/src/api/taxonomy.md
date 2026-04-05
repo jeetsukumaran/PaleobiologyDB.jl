@@ -1,10 +1,10 @@
-# Data Curator
+# Taxonomy
 
-The `DataCurator` submodule provides tools for validating and cleaning
-paleobiological data against the PBDB taxonomic authority.
+The `Taxonomy` submodule provides tools for validating and cleaning
+palaeobiological data against the PBDB taxonomic authority.
 
 ```julia
-using PaleobiologyDB.DataCurator
+using PaleobiologyDB.Taxonomy
 ```
 
 ## Combined taxonomic quality filter
@@ -15,7 +15,7 @@ check (is the identification specific enough?) and a *name-validity* check (is
 the name actually in the PBDB taxonomy?).
 
 ```julia
-using PaleobiologyDB, PaleobiologyDB.DataCurator
+using PaleobiologyDB, PaleobiologyDB.Taxonomy
 
 df = pbdb_occurrences(base_name = "Canidae", interval = "Miocene", show = "full")
 
@@ -34,8 +34,8 @@ df_clean = drop_unqualified_taxa(df, :genus; validation_authority = :query)
 ```
 
 ```@docs
-PaleobiologyDB.DataCurator.drop_unqualified_taxa
-PaleobiologyDB.DataCurator.drop_unqualified_taxa!
+PaleobiologyDB.Taxonomy.drop_unqualified_taxa
+PaleobiologyDB.Taxonomy.drop_unqualified_taxa!
 ```
 
 ## Taxonomy resolution filter
@@ -44,7 +44,7 @@ These functions check that each row is identified to at least a given
 taxonomic rank, based on the `accepted_rank` column.
 
 ```julia
-using PaleobiologyDB.DataCurator
+using PaleobiologyDB.Taxonomy
 
 # Keep rows where accepted_rank is "genus", "species", or "subspecies"
 df_resolved = drop_unresolved_taxa(df, "genus")
@@ -60,8 +60,8 @@ drop_unresolved_taxa!(df, "family")
 ```
 
 ```@docs
-PaleobiologyDB.DataCurator.drop_unresolved_taxa
-PaleobiologyDB.DataCurator.drop_unresolved_taxa!
+PaleobiologyDB.Taxonomy.drop_unresolved_taxa
+PaleobiologyDB.Taxonomy.drop_unresolved_taxa!
 ```
 
 ## Taxonomy name-validity filter
@@ -71,7 +71,7 @@ local Scratch-managed snapshot (default, O(1) lookups after the initial
 download) or live API queries.
 
 ```julia
-using PaleobiologyDB.DataCurator
+using PaleobiologyDB.Taxonomy
 
 # Single-name check
 istaxon("Pliosauridae")            # → true
@@ -89,10 +89,10 @@ drop_unrecognized_taxa!(df, :family)
 ```
 
 ```@docs
-PaleobiologyDB.DataCurator.istaxon
-PaleobiologyDB.DataCurator.audit_taxonomy
-PaleobiologyDB.DataCurator.drop_unrecognized_taxa
-PaleobiologyDB.DataCurator.drop_unrecognized_taxa!
+PaleobiologyDB.Taxonomy.istaxon
+PaleobiologyDB.Taxonomy.audit_taxonomy
+PaleobiologyDB.Taxonomy.drop_unrecognized_taxa
+PaleobiologyDB.Taxonomy.drop_unrecognized_taxa!
 ```
 
 ## Taxonomy augmentation
@@ -101,7 +101,7 @@ PaleobiologyDB.DataCurator.drop_unrecognized_taxa!
 hierarchy for each row, resolved from the Scratch-cached PBDB taxa list.
 
 ```julia
-using PaleobiologyDB, PaleobiologyDB.DataCurator
+using PaleobiologyDB, PaleobiologyDB.Taxonomy
 
 df = pbdb_occurrences(base_name = "Carnivora", interval = "Miocene", limit = 500)
 
@@ -117,13 +117,13 @@ df2.taxon_taxonomy[1]
 ```
 
 ```@docs
-PaleobiologyDB.DataCurator.augment_taxonomy
+PaleobiologyDB.Taxonomy.augment_taxonomy
 ```
 
 ## Taxonomic rank hierarchy
 
 ```@docs
-PaleobiologyDB.DataCurator.PBDB_RANK_HIERARCHY
+PaleobiologyDB.Taxonomy.PBDB_RANK_HIERARCHY
 ```
 
 ## Taxonomy tree queries
@@ -134,7 +134,7 @@ same Scratch-managed snapshot used by the filters above and build their indices
 on first use (no extra download required).
 
 ```julia
-using PaleobiologyDB.DataCurator
+using PaleobiologyDB.Taxonomy
 
 # Valid rank names
 ls_taxonomic_ranks()
@@ -175,10 +175,10 @@ ls_parent_taxa("Canis lupus", "family")
 ```
 
 ```@docs
-PaleobiologyDB.DataCurator.ls_taxonomic_ranks
-PaleobiologyDB.DataCurator.ls_registered_taxa
-PaleobiologyDB.DataCurator.ls_child_taxa
-PaleobiologyDB.DataCurator.ls_parent_taxa
+PaleobiologyDB.Taxonomy.ls_taxonomic_ranks
+PaleobiologyDB.Taxonomy.ls_registered_taxa
+PaleobiologyDB.Taxonomy.ls_child_taxa
+PaleobiologyDB.Taxonomy.ls_parent_taxa
 ```
 
 ## Taxon occurrence search
@@ -195,7 +195,7 @@ a `matchall` keyword (`true` by default): `matchall=true` requires **all** eleme
 match (AND); `matchall=false` requires **any** to match (OR).
 
 ```julia
-using PaleobiologyDB, PaleobiologyDB.DataCurator
+using PaleobiologyDB, PaleobiologyDB.Taxonomy
 
 df = pbdb_occurrences(base_name = "Canidae", interval = "Miocene", show = "full")
 
@@ -237,7 +237,7 @@ end
 ```
 
 ```@docs
-PaleobiologyDB.DataCurator.taxon_occursin
+PaleobiologyDB.Taxonomy.taxon_occursin
 ```
 
 ## Local data store management
@@ -246,21 +246,21 @@ The `Store` submodule manages the Scratch-backed local snapshots used by the
 taxonomy validation functions. Access via the full namespace:
 
 ```julia
-using PaleobiologyDB.DataCurator
+using PaleobiologyDB.Taxonomy
 
 # List all registered stores and their status
-PaleobiologyDB.DataCurator.Store.list()
+PaleobiologyDB.Taxonomy.Store.list()
 
 # Metadata for a specific store
-PaleobiologyDB.DataCurator.Store.info(:pbdb_taxa)
+PaleobiologyDB.Taxonomy.Store.info(:pbdb_taxa)
 
 # Force re-download of a snapshot
-PaleobiologyDB.DataCurator.Store.refresh!(:pbdb_taxa)
+PaleobiologyDB.Taxonomy.Store.refresh!(:pbdb_taxa)
 
 # Delete the local snapshot (will be re-downloaded on next use)
-PaleobiologyDB.DataCurator.Store.delete!(:pbdb_taxa)
+PaleobiologyDB.Taxonomy.Store.delete!(:pbdb_taxa)
 ```
 
 ```@docs
-PaleobiologyDB.DataCurator.Store
+PaleobiologyDB.Taxonomy.Store
 ```

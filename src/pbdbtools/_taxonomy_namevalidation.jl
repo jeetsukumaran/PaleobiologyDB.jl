@@ -14,7 +14,7 @@
 #              here.  Use when you need the most current data or want to avoid
 #              the large one-time download.
 #
-# Public API (all live in PaleobiologyDB.DataCurator namespace):
+# Public API (all live in PaleobiologyDB.Taxonomy namespace):
 #   istaxon                  — single-name predicate
 #   audit_taxonomy           — Bool mask for a DataFrame column
 #   drop_unrecognized_taxa  — filtered DataFrame copy (non-mutating)

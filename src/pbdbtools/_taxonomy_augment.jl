@@ -153,7 +153,7 @@ all new columns for that row are set to `nodata`.
 ## Examples
 
 ```julia
-using PaleobiologyDB, PaleobiologyDB.DataCurator
+using PaleobiologyDB, PaleobiologyDB.Taxonomy
 
 df = pbdb_occurrences(base_name = "Carnivora", interval = "Miocene", limit = 500)
 

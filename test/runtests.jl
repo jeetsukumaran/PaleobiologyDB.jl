@@ -12,9 +12,9 @@ const _joinvals  = PaleobiologyDB._joinvals
 # Enable by running with:  ENV["PBDB_LIVE"]="1"  (e.g., `PBDB_LIVE=1 julia --project -e 'using Pkg; Pkg.test()'`)
 const LIVE = get(ENV, "PBDB_LIVE", "") == "1"
 
-include("curator_taxonomic_resolution.jl")
-include("curator_taxonomy_namevalidation.jl")
-include("curator_taxonomy_queries.jl")
+include("taxonomy_resolution.jl")
+include("taxonomy_namevalidation.jl")
+include("taxonomy_queries.jl")
 
 if isnothing(Base.find_package("Aqua")) 
     println("Aqua package not available in this environment: skipping Aqua tests")

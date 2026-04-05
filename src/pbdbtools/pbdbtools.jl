@@ -1,4 +1,4 @@
-module DataCurator
+module Taxonomy
 
 using CSV, DataFrames, Downloads
 

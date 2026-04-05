@@ -62,7 +62,11 @@ The one exception is `:species`, where the PBDB stores the full binomial in the
 ## Examples
 
 ```julia
-using PaleobiologyDB, PaleobiologyDB.DataCurator
+
+
+```julia
+```julia
+using PaleobiologyDB, PaleobiologyDB.Taxonomy
 
 df = pbdb_occurrences(base_name = "Canidae", interval = "Miocene", show = "full")
 
@@ -75,6 +79,7 @@ df_species = drop_unqualified_taxa(df, :species)
 
 # Keep only rows resolved to family level, using live API validation
 df_family = drop_unqualified_taxa(df, :family; validation_authority = :query)
+```
 ```
 
 See also [`drop_unqualified_taxa!`](@ref) for the in-place variant,
@@ -122,7 +127,11 @@ column of the same name (e.g. `:genus` → `:genus`).
 ## Examples
 
 ```julia
-using PaleobiologyDB, PaleobiologyDB.DataCurator
+
+
+```julia
+```julia
+using PaleobiologyDB, PaleobiologyDB.Taxonomy
 
 df = pbdb_occurrences(base_name = "Felidae", interval = "Pleistocene", show = "full")
 
@@ -131,6 +140,7 @@ drop_unqualified_taxa!(df, :genus)
 
 # Filter in-place to species-level (uses accepted_name column for name check)
 drop_unqualified_taxa!(df, :species)
+```
 ```
 
 See also [`drop_unqualified_taxa`](@ref) for the non-mutating variant.

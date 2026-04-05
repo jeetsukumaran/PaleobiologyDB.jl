@@ -70,7 +70,7 @@ when `taxon_name` is not found in the PBDB snapshot.
 ## Examples
 
 ```julia
-using PaleobiologyDB, PaleobiologyDB.DataCurator
+using PaleobiologyDB, PaleobiologyDB.Taxonomy
 
 ls_child_taxa("Carnivora", "family")   # → ["Ailuridae", "Canidae", "Felidae", …]
 ls_child_taxa("Canidae", "genus")      # → ["Canis", "Lycaon", "Vulpes", …]
@@ -162,7 +162,7 @@ Returns an empty vector when `taxon_name` is not found in the PBDB snapshot.
 ## Examples
 
 ```julia
-using PaleobiologyDB, PaleobiologyDB.DataCurator
+using PaleobiologyDB, PaleobiologyDB.Taxonomy
 
 ls_parent_taxa("Canis lupus")            # → ["Canis", "Canidae", …, "Animalia"]
 ls_parent_taxa("Canis", "family")        # → ["Canidae"]
@@ -241,7 +241,7 @@ A `Vector{String}` of 19 ranks:
 ## Examples
 
 ```julia
-using PaleobiologyDB, PaleobiologyDB.DataCurator
+using PaleobiologyDB, PaleobiologyDB.Taxonomy
 
 ls_taxonomic_ranks()
 # → ["subspecies", "species", "genus", …, "kingdom"]
@@ -285,7 +285,7 @@ A sorted `Vector{String}`.  Returns an empty vector when no names match.
 ## Examples
 
 ```julia
-using PaleobiologyDB, PaleobiologyDB.DataCurator
+using PaleobiologyDB, PaleobiologyDB.Taxonomy
 
 # All accepted names (tens of thousands of entries)
 all_taxa = ls_registered_taxa()
@@ -455,7 +455,7 @@ patterns match it; exact strings (e.g. `"Canis"`) do not — use the per-rank co
 ## Examples
 
 ```julia
-using PaleobiologyDB, PaleobiologyDB.DataCurator
+using PaleobiologyDB, PaleobiologyDB.Taxonomy
 
 df = pbdb_occurrences(base_name = "Canidae", interval = "Miocene", show = "full")
 
@@ -614,7 +614,7 @@ taxon_occursin(names::AbstractVector{<:Regex};          matchall=true)
 ## Examples
 
 ```julia
-using PaleobiologyDB, PaleobiologyDB.DataCurator
+using PaleobiologyDB, PaleobiologyDB.Taxonomy
 
 df = pbdb_occurrences(base_name = "Carnivora", interval = "Miocene", show = "full")
 df2 = augment_taxonomy(df)

@@ -1,12 +1,12 @@
 using Documenter
 using PaleobiologyDB
 using PaleobiologyDB.ApiHelp
-using PaleobiologyDB.DataCurator
+using PaleobiologyDB.Taxonomy
 
 makedocs(
     sitename = "PaleobiologyDB.jl",
     authors = "Jeet Sukumaran",
-    modules = [PaleobiologyDB, PaleobiologyDB.ApiHelp, PaleobiologyDB.DataCurator, PaleobiologyDB.DataCurator.Store],
+    modules = [PaleobiologyDB, PaleobiologyDB.ApiHelp, PaleobiologyDB.Taxonomy, PaleobiologyDB.Taxonomy.Store],
     format = Documenter.HTML(
         prettyurls = get(ENV, "CI", nothing) == "true",
         canonical = "https://jeetsukumaran.github.io/PaleobiologyDB.jl",
@@ -25,7 +25,7 @@ makedocs(
             "Specimens"        => "api/specimens.md",
             "Other"            => "api/other.md",
             "Interactive Help" => "api/apihelp.md",
-            "Data Curator"     => "api/datacurator.md",
+            "Taxonomy"         => "api/taxonomy.md",
         ],
     ],
     checkdocs = :exports,

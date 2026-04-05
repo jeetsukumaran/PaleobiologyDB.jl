@@ -1,10 +1,10 @@
 """
-    PaleobiologyDB.DataCurator.Store
+    PaleobiologyDB.Taxonomy.Store
 
-Management interface for DataCurator's Scratch-backed local data stores (snapshots).
+Management interface for Taxonomy's Scratch-backed local data stores (snapshots).
 
-These functions are intentionally **not exported** from `DataCurator`; access them via
-the full namespace `PaleobiologyDB.DataCurator.Store.*`.
+These functions are intentionally **not exported** from `Taxonomy`; access them via
+the full namespace `PaleobiologyDB.Taxonomy.Store.*`.
 
 ## Functions
 
@@ -16,10 +16,10 @@ the full namespace `PaleobiologyDB.DataCurator.Store.*`.
 ## Example
 
 ```julia
-PaleobiologyDB.DataCurator.Store.list()
-PaleobiologyDB.DataCurator.Store.info(:pbdb_taxa)
-PaleobiologyDB.DataCurator.Store.refresh!(:pbdb_taxa)
-PaleobiologyDB.DataCurator.Store.delete!(:pbdb_taxa)
+PaleobiologyDB.Taxonomy.Store.list()
+PaleobiologyDB.Taxonomy.Store.info(:pbdb_taxa)
+PaleobiologyDB.Taxonomy.Store.refresh!(:pbdb_taxa)
+PaleobiologyDB.Taxonomy.Store.delete!(:pbdb_taxa)
 ```
 """
 module Store
@@ -35,7 +35,7 @@ module Store
 # time via `_register_store!` and populated lazily on first access.
 #
 # Management functions (_refresh_store!, _delete_store!, _store_info,
-# _list_stores) are exposed to users through the DataCurator.Store submodule.
+# _list_stores) are exposed to users through the Taxonomy.Store submodule.
 # ---------------------------------------------------------------------------
 
 using Scratch, Downloads
@@ -158,7 +158,7 @@ function _ensure_populated!(store::LocalStore; force::Bool = false)
 end
 
 # ---------------------------------------------------------------------------
-# Management functions (surfaced via DataCurator.Store submodule)
+# Management functions (surfaced via Taxonomy.Store submodule)
 # ---------------------------------------------------------------------------
 
 function _refresh_store!(name::Symbol; force::Bool = true)
@@ -221,7 +221,7 @@ end
 
 
 
-    # parentmodule(@__MODULE__) resolves to DataCurator at call time, avoiding the
+    # parentmodule(@__MODULE__) resolves to Taxonomy at call time, avoiding the
     # need for an explicit import from the enclosing module.
     # _curator() = parentmodule(@__MODULE__)
 

@@ -1,5 +1,5 @@
-# test/curator_taxonomy_queries.jl
-# Tests for PaleobiologyDB.DataCurator taxonomy tree-query functions:
+# test/taxonomy_queries.jl
+# Tests for PaleobiologyDB.Taxonomy taxonomy tree-query functions:
 #   ls_taxonomic_ranks, ls_registered_taxa,
 #   ls_child_taxa, ls_parent_taxa,
 #   taxon_occursin (2-arg and 1-arg ByRow forms)
@@ -26,21 +26,21 @@ using Test
 using DataFrames
 using PaleobiologyDB
 
-const _ls_ranks    = PaleobiologyDB.DataCurator.ls_taxonomic_ranks
-const _ls_regtaxa  = PaleobiologyDB.DataCurator.ls_registered_taxa
-const _ls_children = PaleobiologyDB.DataCurator.ls_child_taxa
-const _ls_parents  = PaleobiologyDB.DataCurator.ls_parent_taxa
-const _taxon_in    = PaleobiologyDB.DataCurator.taxon_occursin
-const _PBDB_RANKS  = PaleobiologyDB.DataCurator.PBDB_RANK_HIERARCHY
+const _ls_ranks    = PaleobiologyDB.Taxonomy.ls_taxonomic_ranks
+const _ls_regtaxa  = PaleobiologyDB.Taxonomy.ls_registered_taxa
+const _ls_children = PaleobiologyDB.Taxonomy.ls_child_taxa
+const _ls_parents  = PaleobiologyDB.Taxonomy.ls_parent_taxa
+const _taxon_in    = PaleobiologyDB.Taxonomy.taxon_occursin
+const _PBDB_RANKS  = PaleobiologyDB.Taxonomy.PBDB_RANK_HIERARCHY
 
 # ---------------------------------------------------------------------------
 # Helpers: inject and clear mock hierarchy indices
 # ---------------------------------------------------------------------------
 
-const _NAME_IDX_REF     = PaleobiologyDB.DataCurator._TAXA_HIERARCHY_NAME_INDEX
-const _NO_IDX_REF       = PaleobiologyDB.DataCurator._TAXA_HIERARCHY_NO_INDEX
-const _CHILDREN_IDX_REF = PaleobiologyDB.DataCurator._TAXA_CHILDREN_INDEX
-const _TaxonInfo        = PaleobiologyDB.DataCurator._TaxonInfo
+const _NAME_IDX_REF     = PaleobiologyDB.Taxonomy._TAXA_HIERARCHY_NAME_INDEX
+const _NO_IDX_REF       = PaleobiologyDB.Taxonomy._TAXA_HIERARCHY_NO_INDEX
+const _CHILDREN_IDX_REF = PaleobiologyDB.Taxonomy._TAXA_CHILDREN_INDEX
+const _TaxonInfo        = PaleobiologyDB.Taxonomy._TaxonInfo
 
 function _inject_mock_hierarchy!()
     name_to_no = Dict{String, Int}(

@@ -31,13 +31,13 @@ canis = pbdb_taxon(name = "Canis", show = ["attr", "app", "size"])
 coll = pbdb_collection("col:1003", show = ["loc", "stratext"], extids = true)
 ```
 
-## Data cleaning and taxonomy with DataCurator
+## Data cleaning and taxonomy with Taxonomy
 
-The `DataCurator` submodule provides tools for validating, cleaning, and
+The `Taxonomy` submodule provides tools for validating, cleaning, and
 exploring occurrence DataFrames against the PBDB taxonomic authority.
 
 ```julia
-using PaleobiologyDB, PaleobiologyDB.DataCurator
+using PaleobiologyDB, PaleobiologyDB.Taxonomy
 
 df = pbdb_occurrences(base_name = "Canidae", interval = "Miocene", show = "full")
 

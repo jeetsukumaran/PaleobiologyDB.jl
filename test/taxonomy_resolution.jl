@@ -1,15 +1,15 @@
-# test/curator_taxonomic_resolution.jl
-# Tests for PaleobiologyDB.DataCurator.drop_unresolved_taxa
+# test/taxonomy_resolution.jl
+# Tests for PaleobiologyDB.Taxonomy.drop_unresolved_taxa
 
 using Test
 using DataFrames
 using PaleobiologyDB
 
-const _filter_res  = PaleobiologyDB.DataCurator.drop_unresolved_taxa
-const _filter_res! = PaleobiologyDB.DataCurator.drop_unresolved_taxa!
-const _rank_index  = PaleobiologyDB.DataCurator._pbdb_rank_index
-const _ranks_finer = PaleobiologyDB.DataCurator._pbdb_ranks_at_or_finer_than
-const RANK_HIERARCHY = PaleobiologyDB.DataCurator.PBDB_RANK_HIERARCHY
+const _filter_res  = PaleobiologyDB.Taxonomy.drop_unresolved_taxa
+const _filter_res! = PaleobiologyDB.Taxonomy.drop_unresolved_taxa!
+const _rank_index  = PaleobiologyDB.Taxonomy._pbdb_rank_index
+const _ranks_finer = PaleobiologyDB.Taxonomy._pbdb_ranks_at_or_finer_than
+const RANK_HIERARCHY = PaleobiologyDB.Taxonomy.PBDB_RANK_HIERARCHY
 
 # ---------------------------------------------------------------------------
 # Local test-data helper
@@ -29,7 +29,7 @@ end
 
 # ---------------------------------------------------------------------------
 
-@testset "DataCurator.drop_unresolved_taxa" begin
+@testset "Taxonomy.drop_unresolved_taxa" begin
 
     # -----------------------------------------------------------------------
     @testset "internal helpers" begin
