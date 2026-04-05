@@ -14,6 +14,7 @@ const LIVE = get(ENV, "PBDB_LIVE", "") == "1"
 
 include("curator_taxonomic_resolution.jl")
 include("curator_taxonomy_namevalidation.jl")
+include("curator_taxonomy_queries.jl")
 
 if isnothing(Base.find_package("Aqua")) 
     println("Aqua package not available in this environment: skipping Aqua tests")

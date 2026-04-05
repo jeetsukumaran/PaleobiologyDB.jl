@@ -95,6 +95,52 @@ PaleobiologyDB.DataCurator.drop_unrecognized_taxa
 PaleobiologyDB.DataCurator.drop_unrecognized_taxa!
 ```
 
+## Taxonomy tree queries
+
+These functions navigate the PBDB taxonomic hierarchy by name, returning
+descendants or ancestors at a requested rank.  Both functions are backed by the
+same Scratch-managed snapshot used by the filters above and build their indices
+on first use (no extra download required).
+
+```julia
+using PaleobiologyDB.DataCurator
+
+# All families within Carnivora
+ls_child_taxa("Carnivora", "family")
+# → ["Ailuridae", "Amphicyonidae", "Canidae", "Felidae", …]
+
+# All genera within Canidae
+ls_child_taxa("Canidae", "genus")
+# → ["Borophagus", "Canis", "Lycaon", "Urocyon", "Vulpes", …]
+
+# All genera across all Carnivora families
+ls_child_taxa("Carnivora", "genus")
+
+# All species within a genus
+ls_child_taxa("Canis", "species")
+# → ["Canis aureus", "Canis lupus", "Canis mesomelas", …]
+
+# Every descendant at any rank (no filter)
+ls_child_taxa("Canidae")
+
+# Full ancestor chain of a species, child → root
+ls_parent_taxa("Canis lupus")
+# → ["Canis", "Canidae", "Carnivora", "Mammalia", …, "Animalia"]
+
+# Only the family
+ls_parent_taxa("Canis lupus", "family")
+# → ["Canidae"]
+
+# Only the order
+ls_parent_taxa("Canis", "order")
+# → ["Carnivora"]
+```
+
+```@docs
+PaleobiologyDB.DataCurator.ls_child_taxa
+PaleobiologyDB.DataCurator.ls_parent_taxa
+```
+
 ## Local data store management
 
 The `Store` submodule manages the Scratch-backed local snapshots used by the

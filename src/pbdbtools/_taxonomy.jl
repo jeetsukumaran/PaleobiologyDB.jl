@@ -2,6 +2,7 @@
 include("_taxonomy_resolution.jl")
 include("_taxonomy_namevalidation.jl")
 include("_taxonomy_augment.jl")
+include("_taxonomy_queries.jl")
 
 
 # Applies both `drop_unresolved_taxa` and `drop_unrecognized_taxa` to `df`, after first mapping taxonomic_resolution to the correct String value and PBDB database field value (:genus => ("genus", :genus), but :species => ("species", :accepted_name)
