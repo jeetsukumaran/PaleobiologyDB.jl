@@ -31,14 +31,14 @@ canis = pbdb_taxon(name = "Canis", show = ["attr", "app", "size"])
 coll = pbdb_collection("col:1003", show = ["loc", "stratext"], extids = true)
 ```
 
-## Data cleaning and taxonomy with Taxonomy
+## The Taxonomy data curation and exploration submodule
 
 The `Taxonomy` submodule provides tools for validating, cleaning, and
 exploring occurrence DataFrames against the PBDB taxonomic authority.
 
 ```julia
 using PaleobiologyDB
-using PaleobiologyDB.Taxonomy # 
+using PaleobiologyDB.Taxonomy
 
 df = pbdb_occurrences(base_name = "Canidae", interval = "Miocene", show = "full")
 
@@ -82,9 +82,7 @@ ls_parent_taxa("Canis lupus", "family")    # → ["Canidae"]
 # ── Row filtering ──────────────────────────────────────────────────────────
 
 # 2-arg: boolean mask across all taxonomy columns (auto-augments if needed)
-# Pattern-first syntax (functional style)
-using PaleobiologyDB.Taxonomy: taxon_occursin, contains_taxon
-
+# Pattern-first syntax (functional style)using PaleobiologyDB.Taxonomy: taxon_occursin, contains_taxon
 df2[taxon_occursin("Canis", df2), :]
 df2[taxon_occursin(r"^Canis\b", df2), :]
 
