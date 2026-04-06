@@ -685,3 +685,137 @@ function taxon_occursin(names::AbstractVector{<:Regex}; matchall::Bool = true)
         ByRow(v -> !ismissing(v) && !isempty(string(v)) && any(r -> occursin(r, string(v)), names))
     end
 end
+
+# ---------------------------------------------------------------------------
+# contains_taxon — inverse of taxon_occursin (DataFrame first, pattern second)
+# ---------------------------------------------------------------------------
+
+"""
+    contains_taxon(df, name; autoaugment=true) -> Vector{Bool}
+    contains_taxon(name)                       -> ByRow predicate
+
+Inverse argument order of [`taxon_occursin`](@ref): DataFrame (haystack) comes first,
+pattern (needle) comes second.  All matching semantics, column selection logic, and
+keywords are identical to `taxon_occursin`.
+
+Two forms:
+
+- **2-arg** `contains_taxon(df, pattern)` — returns a `Vector{Bool}` of length
+  `nrow(df)` searching across all relevant taxonomic columns in `df`.
+- **1-arg** `contains_taxon(pattern)` — returns a `ByRow(predicate)` for use
+  directly with `subset(df, :col => contains_taxon(pattern))`.
+
+## Method signatures
+
+\`\`\`julia
+# 2-arg: multi-column mask (DataFrame first)
+contains_taxon(df, name::Regex;                             autoaugment=true)
+contains_taxon(df, name::AbstractString;                    autoaugment=true)
+contains_taxon(df, names::AbstractVector{<:AbstractString}; autoaugment=true, matchall=true)
+contains_taxon(df, names::AbstractVector{<:Regex};          autoaugment=true, matchall=true)
+
+# 1-arg: ByRow predicate for subset
+contains_taxon(name::Regex)
+contains_taxon(name::AbstractString)
+contains_taxon(names::AbstractVector{<:AbstractString}; matchall=true)
+contains_taxon(names::AbstractVector{<:Regex};          matchall=true)
+\`\`\`
+
+## Comparison with taxon_occursin
+
+All functionality is identical; only the argument order differs:
+
+| Task | taxon_occursin | contains_taxon |
+|------|---|---|
+| 2-arg exact string | \`taxon_occursin("Canis", df)\` | \`contains_taxon(df, "Canis")\` |
+| 2-arg regex | \`taxon_occursin(r"^Canis", df)\` | \`contains_taxon(df, r"^Canis")\` |
+| 1-arg in subset | \`subset(df, :col => taxon_occursin("Canis"))\` | \`subset(df, :col => contains_taxon("Canis"))\` |
+
+\`contains_taxon(df, pattern)\` is semantically equivalent to \`taxon_occursin(pattern, df)\`.
+
+## Examples
+
+\`\`\`julia
+using PaleobiologyDB, PaleobiologyDB.Taxonomy
+
+df = pbdb_occurrences(base_name = "Canidae", interval = "Miocene", show = "full")
+
+# 2-arg: exact string across all taxonomy columns (DataFrame first)
+df[contains_taxon(df, "Canis"), :]
+
+# 2-arg: regex
+df[contains_taxon(df, r"^Canis\\\\b"), :]
+
+# 2-arg: AND — each name must appear in a separate column
+df[contains_taxon(df, ["Canis", "Mammalia"]), :]
+
+# 2-arg: OR — any name matches any column
+df[contains_taxon(df, ["Canis", "Vulpes"]; matchall=false), :]
+
+# 1-arg: subset with exact string
+subset(df, :taxonomy_genus => contains_taxon("Canis"))
+
+# 1-arg: subset with regex AND on composite column
+subset(df, :taxonomy_clades => contains_taxon([r"Canidae", r"lupus"]))
+
+# 1-arg: subset with regex OR
+subset(df, :taxonomy_clades => contains_taxon([r"^Canis\\\\b", r"^Vulpes\\\\b"]; matchall=false))
+\`\`\`
+
+See also [`taxon_occursin`](@ref), [`augment_taxonomy`](@ref),
+[`ls_child_taxa`](@ref), [`ls_parent_taxa`](@ref), [`ls_registered_taxa`](@ref).
+"""
+
+# 2-arg forms (delegate to taxon_occursin with arguments swapped)
+
+function contains_taxon(
+    df::DataFrame,
+    name::Regex;
+    autoaugment::Bool = true,
+)::Vector{Bool}
+    taxon_occursin(name, df; autoaugment)
+end
+
+function contains_taxon(
+    df::DataFrame,
+    name::AbstractString;
+    autoaugment::Bool = true,
+)::Vector{Bool}
+    taxon_occursin(name, df; autoaugment)
+end
+
+function contains_taxon(
+    df::DataFrame,
+    names::AbstractVector{<:AbstractString};
+    autoaugment::Bool = true,
+    matchall::Bool = true,
+)::Vector{Bool}
+    taxon_occursin(names, df; autoaugment, matchall)
+end
+
+function contains_taxon(
+    df::DataFrame,
+    names::AbstractVector{<:Regex};
+    autoaugment::Bool = true,
+    matchall::Bool = true,
+)::Vector{Bool}
+    taxon_occursin(names, df; autoaugment, matchall)
+end
+
+# 1-arg forms (identical to taxon_occursin 1-arg)
+
+function contains_taxon(name::Regex)
+    taxon_occursin(name)
+end
+
+function contains_taxon(name::AbstractString)
+    taxon_occursin(name)
+end
+
+function contains_taxon(names::AbstractVector{<:AbstractString}; matchall::Bool = true)
+    taxon_occursin(names; matchall)
+end
+
+function contains_taxon(names::AbstractVector{<:Regex}; matchall::Bool = true)
+    taxon_occursin(names; matchall)
+end

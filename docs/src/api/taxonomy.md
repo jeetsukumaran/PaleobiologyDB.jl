@@ -240,6 +240,34 @@ end
 PaleobiologyDB.Taxonomy.taxon_occursin
 ```
 
+## Reverse taxon search: contains_taxon
+
+`contains_taxon(df, pattern)` provides the inverse argument order of [`taxon_occursin`](@ref).
+The DataFrame (haystack) is the first argument, and the search pattern (needle) is the second.
+All matching semantics, column selection, and keywords are identical.
+
+```julia
+using PaleobiologyDB, PaleobiologyDB.Taxonomy
+
+df = pbdb_occurrences(base_name = "Canidae", interval = "Miocene", show = "full")
+
+# Both syntaxes are equivalent — choose your preference:
+df[taxon_occursin("Canis", df), :]
+df[contains_taxon(df, "Canis"), :]
+
+# Support all same patterns and keywords
+df[contains_taxon(df, r"^Canis\\b"), :]
+df[contains_taxon(df, ["Canis", "Vulpes"]; matchall=false), :]
+
+# 1-arg ByRow form for subset()
+subset(df, :taxonomy_genus => contains_taxon("Canis"))
+subset(df, :taxonomy_clades => contains_taxon([r"Canidae", r"lupus"]))
+```
+
+```@docs
+PaleobiologyDB.Taxonomy.contains_taxon
+```
+
 ## Local data store management
 
 The `Store` submodule manages the Scratch-backed local snapshots used by the

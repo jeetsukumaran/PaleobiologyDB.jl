@@ -524,3 +524,93 @@ end
 
     @test _ls_parents("INVALID_TAXON_NAME_XYZ", "family") == String[]
 end
+
+const _contains = PaleobiologyDB.Taxonomy.contains_taxon
+
+@testset "contains_taxon 2-arg — DataFrame first, pattern second" begin
+    df = _mock_augmented_df()
+
+    @testset "Regex — multi-column search" begin
+        result = _contains(df, r"Canis")
+        @test result isa Vector{Bool}
+        @test length(result) == nrow(df)
+        @test result[1]  == true  # Row 1: Canis in taxonomy_genus and accepted_name
+        @test result[2]  == false # Row 2: Vulpes, not Canis
+        @test result[3]  == false # Row 3: Felis, not Canis
+    end
+
+    @testset "String — exact match" begin
+        result = _contains(df, "Canis")
+        @test result[1]  == true  # taxonomy_genus = "Canis"
+        @test result[2]  == false # taxonomy_genus = "Vulpes"
+    end
+
+    @testset "Vector{String} AND" begin
+        result = _contains(df, ["Canis", "Carnivora"])
+        @test result[1]  == true  # Has both Canis and Carnivora
+        @test result[2]  == false # Has Carnivora but not Canis
+    end
+
+    @testset "Vector{String} OR" begin
+        result = _contains(df, ["Canis", "Vulpes"]; matchall=false)
+        @test result[1]  == true  # Has Canis
+        @test result[2]  == true  # Has Vulpes
+        @test result[3]  == false # Has neither
+    end
+
+    @testset "Vector{Regex} AND" begin
+        result = _contains(df, [r"Canis", r"idae"])
+        @test result[1]  == true  # Has "Canis" in taxonomy_genus and "idae" in taxonomy_family (Canidae)
+        @test result[2]  == false # Has "idae" in taxonomy_family but not "Canis"
+    end
+
+    @testset "Vector{Regex} OR" begin
+        result = _contains(df, [r"^Canis", r"^Vulpes"]; matchall=false)
+        @test result[1]  == true  # Matches Canis
+        @test result[2]  == true  # Matches Vulpes
+        @test result[3]  == false # Matches neither
+    end
+
+    @testset "autoaugment behavior" begin
+        df_orig = _mock_original_df()
+        result = _contains(df_orig, "Canis"; autoaugment=false)
+        @test result isa Vector{Bool}
+        @test result[1] == true
+    end
+end
+
+@testset "contains_taxon 1-arg — ByRow predicates" begin
+    df = _mock_augmented_df()
+
+    @testset "Regex ByRow" begin
+        result = subset(df, :taxonomy_genus => _contains(r"anis"))
+        @test nrow(result) >= 1
+    end
+
+    @testset "String ByRow" begin
+        result = subset(df, :taxonomy_genus => _contains("Canis"))
+        @test nrow(result) == 1
+    end
+
+    @testset "Vector{String} OR ByRow" begin
+        result = subset(df, :taxonomy_genus => _contains(["Canis", "Vulpes"]; matchall=false))
+        @test nrow(result) >= 2
+    end
+
+    @testset "Vector{Regex} AND on composite column" begin
+        result = subset(df, :taxonomy_clades => _contains([r"Carnivora", r"lupus"]))
+        @test nrow(result) >= 1
+    end
+
+    @testset "Vector{Regex} OR on composite column" begin
+        result = subset(df, :taxonomy_clades => _contains([r"Canidae", r"Felidae"]; matchall=false))
+        @test nrow(result) >= 2
+    end
+end
+
+@testset "contains_taxon equivalence with taxon_occursin" begin
+    df = _mock_augmented_df()
+    @test _taxon_in("Canis", df) == _contains(df, "Canis")
+    @test _taxon_in(["Canis", "Vulpes"], df; matchall=false) == _contains(df, ["Canis", "Vulpes"]; matchall=false)
+    @test _taxon_in(r"ana", df) == _contains(df, r"ana")
+end
