@@ -105,14 +105,14 @@ using PaleobiologyDB, PaleobiologyDB.Taxonomy
 
 df = pbdb_occurrences(base_name = "Carnivora", interval = "Miocene", limit = 500)
 
-# Add taxon_genus, taxon_family, …, taxon_kingdom, taxon_taxonomy columns
+# Add taxonomy_genus, taxonomy_family, …, taxonomy_kingdom, taxonomy_clades columns
 df2 = augment_taxonomy(df)
 
 # Filter for a specific subfamily
-df2[.!ismissing.(df2.taxon_subfamily) .&& df2.taxon_subfamily .== "Borophaginae", :]
+df2[.!ismissing.(df2.taxonomy_subfamily) .&& df2.taxonomy_subfamily .== "Borophaginae", :]
 
 # Inspect a taxonomy string
-df2.taxon_taxonomy[1]
+df2.taxonomy_clades[1]
 # → "Animalia > Chordata > Mammalia > Carnivora > Canidae > Borophaginae > Epicyon"
 ```
 
@@ -214,25 +214,25 @@ df[taxon_occursin([r"Canidae", r"Canis"], df), :]
 
 # 1-arg: use directly with subset
 df2 = augment_taxonomy(df)
-subset(df2, :taxon_genus => taxon_occursin("Canis"))
-subset(df2, :taxon_taxonomy => taxon_occursin(r"Borophaginae"))
+subset(df2, :taxonomy_genus => taxon_occursin("Canis"))
+subset(df2, :taxonomy_clades => taxon_occursin(r"Borophaginae"))
 
 # 1-arg: regex AND on composite column (default matchall=true)
-# rows where taxon_taxonomy contains BOTH patterns
-subset(df2, :taxon_taxonomy => taxon_occursin([r"Canidae", r"lupus"]))
+# rows where taxonomy_clades contains BOTH patterns
+subset(df2, :taxonomy_clades => taxon_occursin([r"Canidae", r"lupus"]))
 
 # 1-arg: regex OR
-subset(df2, :taxon_taxonomy => taxon_occursin([r"^Canis\b", r"^Vulpes\b"]; matchall=false))
+subset(df2, :taxonomy_clades => taxon_occursin([r"^Canis\b", r"^Vulpes\b"]; matchall=false))
 
 # 1-arg: string OR
-subset(df2, :taxon_genus => taxon_occursin(["Canis", "Vulpes"]; matchall=false))
+subset(df2, :taxonomy_genus => taxon_occursin(["Canis", "Vulpes"]; matchall=false))
 
 # Chain with subset (Chain.jl)
 using Chain
 @chain df begin
     augment_taxonomy
-    subset(:taxon_family   => taxon_occursin("Canidae"))
-    subset(:taxon_taxonomy => taxon_occursin([r"Canis", r"lupus"]))
+    subset(:taxonomy_family   => taxon_occursin("Canidae"))
+    subset(:taxonomy_clades   => taxon_occursin([r"Canis", r"lupus"]))
 end
 ```
 

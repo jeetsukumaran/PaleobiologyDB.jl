@@ -155,10 +155,10 @@ end
 function _mock_augmented_df()
     DataFrame(
         accepted_name  = ["Canis lupus", "Vulpes vulpes", "Felis catus", missing, ""],
-        taxon_genus    = Union{String,Missing}["Canis",    "Vulpes",   "Felis",   missing, ""],
-        taxon_family   = Union{String,Missing}["Canidae",  "Canidae",  "Felidae", missing, ""],
-        taxon_order    = Union{String,Missing}["Carnivora","Carnivora","Carnivora",missing,""],
-        taxon_taxonomy = [
+        taxonomy_genus    = Union{String,Missing}["Canis",    "Vulpes",   "Felis",   missing, ""],
+        taxonomy_family   = Union{String,Missing}["Canidae",  "Canidae",  "Felidae", missing, ""],
+        taxonomy_order    = Union{String,Missing}["Carnivora","Carnivora","Carnivora",missing,""],
+        taxonomy_clades = [
             "Animalia > Carnivora > Canidae > Canis > Canis lupus",
             "Animalia > Carnivora > Canidae > Vulpes > Vulpes vulpes",
             "Animalia > Carnivora > Felidae > Felis > Felis catus",
@@ -168,7 +168,7 @@ function _mock_augmented_df()
     )
 end
 
-# Build a DataFrame with original-style columns (no taxon_ prefix) for fallback path.
+# Build a DataFrame with original-style columns (no taxonomy_ prefix) for fallback path.
 function _mock_original_df()
     DataFrame(
         genus   = Union{String,Missing}["Canis", "Vulpes", "Felis", missing],
@@ -195,12 +195,12 @@ end
 
     @testset "Regex — match in rank column" begin
         mask = _taxon_in(r"^Canis\b", df)
-        @test mask[1] == true    # taxon_genus = "Canis"
+        @test mask[1] == true    # taxonomy_genus = "Canis"
         @test mask[2] == false
         @test mask[3] == false
     end
 
-    @testset "Regex — match in taxon_taxonomy" begin
+    @testset "Regex — match in taxonomy_clades" begin
         mask = _taxon_in(r"Canidae", df)
         @test mask[1] == true   # Canis lupus
         @test mask[2] == true   # Vulpes vulpes (also in Canidae)
@@ -321,14 +321,14 @@ end
     @testset "predicate usable with subset" begin
         df = _mock_augmented_df()
         # subset(df, :col => pred) calls pred(column_vector) → Vector{Bool}
-        result = subset(df, :taxon_genus => _taxon_in("Canis"))
+        result = subset(df, :taxonomy_genus => _taxon_in("Canis"))
         @test nrow(result) == 1
-        @test result.taxon_genus[1] == "Canis"
+        @test result.taxonomy_genus[1] == "Canis"
 
-        result2 = subset(df, :taxon_genus => _taxon_in(["Canis", "Vulpes"]; matchall=false))
+        result2 = subset(df, :taxonomy_genus => _taxon_in(["Canis", "Vulpes"]; matchall=false))
         @test nrow(result2) == 2
 
-        result3 = subset(df, :taxon_taxonomy => _taxon_in([r"Canidae", r"lupus"]))
+        result3 = subset(df, :taxonomy_clades => _taxon_in([r"Canidae", r"lupus"]))
         @test nrow(result3) == 1   # only "Canis lupus" matches both
     end
 end

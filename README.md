@@ -59,9 +59,9 @@ istaxon("NO_FAMILY_SPECIFIED")  # → false
 
 # ── Taxonomy augmentation ──────────────────────────────────────────────────
 
-# Add taxon_genus, taxon_family, …, taxon_kingdom, taxon_taxonomy columns
+# Add taxonomy_genus, taxonomy_family, …, taxonomy_kingdom, taxonomy_clades columns
 df2 = augment_taxonomy(df)
-df2.taxon_taxonomy[1]
+df2.taxonomy_clades[1]
 # → "Animalia > Chordata > Mammalia > Carnivora > Canidae > Borophaginae > Epicyon"
 
 # ── Taxonomy queries ───────────────────────────────────────────────────────
@@ -89,10 +89,10 @@ df2[taxon_occursin(["Canis", "Mammalia"], df2), :]          # AND: both must app
 df2[taxon_occursin(["Canis", "Vulpes"], df2; matchall=false), :]  # OR: either matches
 
 # 1-arg: ByRow predicate for use with subset
-subset(df2, :taxon_genus    => taxon_occursin("Canis"))
-subset(df2, :taxon_taxonomy => taxon_occursin(r"Borophaginae"))
-subset(df2, :taxon_taxonomy => taxon_occursin([r"Canidae", r"lupus"]))  # AND on composite column
-subset(df2, :taxon_genus    => taxon_occursin(["Canis", "Vulpes"]; matchall=false))  # OR
+subset(df2, :taxonomy_genus    => taxon_occursin("Canis"))
+subset(df2, :taxonomy_clades   => taxon_occursin(r"Borophaginae"))
+subset(df2, :taxonomy_clades   => taxon_occursin([r"Canidae", r"lupus"]))  # AND on composite column
+subset(df2, :taxonomy_genus    => taxon_occursin(["Canis", "Vulpes"]; matchall=false))  # OR
 ```
 
 ## Key features

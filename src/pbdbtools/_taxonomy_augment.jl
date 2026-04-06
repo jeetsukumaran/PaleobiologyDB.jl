@@ -116,25 +116,25 @@ end
 # ---------------------------------------------------------------------------
 
 """
-    augment_taxonomy(df; nodata=missing, fieldname_prefix="taxon_", taxonomy_separator=" > ") -> DataFrame
+    augment_taxonomy(df; nodata=missing, fieldname_prefix="taxonomy_", taxonomy_separator=" > ") -> DataFrame
 
 Return a copy of `df` with one column per taxonomic rank in [`PBDB_RANK_HIERARCHY`](@ref) and a
 combined taxonomy string column, all resolved from the Scratch-cached PBDB taxa list snapshot.
 
-## New columns (using default prefix `"taxon_"`)
+## New columns (using default prefix `"taxonomy_"`)
 
 One column per rank, from most specific to most general:
 
-    taxon_subspecies  taxon_species  taxon_genus  taxon_subtribe  taxon_tribe
-    taxon_subfamily   taxon_family   taxon_superfamily  taxon_infraorder
-    taxon_suborder    taxon_order    taxon_superorder  taxon_infraclass
-    taxon_subclass    taxon_class    taxon_superclass  taxon_subphylum
-    taxon_phylum      taxon_kingdom
+    taxonomy_subspecies  taxonomy_species  taxonomy_genus  taxonomy_subtribe  taxonomy_tribe
+    taxonomy_subfamily   taxonomy_family   taxonomy_superfamily  taxonomy_infraorder
+    taxonomy_suborder    taxonomy_order    taxonomy_superorder  taxonomy_infraclass
+    taxonomy_subclass    taxonomy_class    taxonomy_superclass  taxonomy_subphylum
+    taxonomy_phylum      taxonomy_kingdom
 
 Plus a summary column:
 
-    taxon_taxonomy — non-missing/non-empty rank values joined by `taxonomy_separator`,
-                     ordered from most general (kingdom) to most specific (subspecies).
+    taxonomy_clades — non-missing/non-empty rank values joined by `taxonomy_separator`,
+                      ordered from most general (kingdom) to most specific (subspecies).
 
 ## Data source
 
@@ -147,7 +147,7 @@ all new columns for that row are set to `nodata`.
 ## Keyword arguments
 
 - `nodata`              — value written for unknown/unresolvable ranks (default: `missing`)
-- `fieldname_prefix`    — prefix applied to every new column name (default: `"taxon_"`)
+- `fieldname_prefix`    — prefix applied to every new column name (default: `"taxonomy_"`)
 - `taxonomy_separator`  — string used to join rank values in the taxonomy column (default: `" > "`)
 
 ## Examples
@@ -161,12 +161,12 @@ df2 = augment_taxonomy(df)
 
 # Filter for a specific subfamily
 borophaginae = df2[
-    .!ismissing.(df2.taxon_subfamily) .&& df2.taxon_subfamily .== "Borophaginae",
+    .!ismissing.(df2.taxonomy_subfamily) .&& df2.taxonomy_subfamily .== "Borophaginae",
     :,
 ]
 
 # Inspect a taxonomy string
-df2.taxon_taxonomy[1]
+df2.taxonomy_clades[1]
 # → "Animalia > Chordata > Mammalia > Carnivora > Canidae > Borophaginae > Epicyon"
 
 # Use a different fill value
@@ -178,7 +178,7 @@ See also [`PBDB_RANK_HIERARCHY`](@ref).
 function augment_taxonomy(
     df::DataFrame;
     nodata::Any          = missing,
-    fieldname_prefix::String = "taxon_",
+    fieldname_prefix::String = "taxonomy_",
     taxonomy_separator::String = " > ",
 )::DataFrame
     hasproperty(df, :accepted_name) ||
@@ -215,7 +215,7 @@ function augment_taxonomy(
     end
 
     # Add taxonomy string column (most general → most specific)
-    tax_col = Symbol(fieldname_prefix * "taxonomy")
+    tax_col = Symbol(fieldname_prefix * "clades")
     result[!, tax_col] = map(df.accepted_name) do accepted_name
         ismissing(accepted_name) && return ""
         h = get(hierarchy_cache, string(accepted_name), nothing)

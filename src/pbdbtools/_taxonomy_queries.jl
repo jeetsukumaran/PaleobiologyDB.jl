@@ -327,10 +327,10 @@ end
 # taxon_occursin — internals
 # ---------------------------------------------------------------------------
 
-# Column symbols produced by augment_taxonomy (default prefix "taxon_")
+# Column symbols produced by augment_taxonomy (default prefix "taxonomy_")
 const _AUGMENTED_TAXON_COLS = let
-    cols = [Symbol("taxon_" * r) for r in PBDB_RANK_HIERARCHY]
-    push!(cols, :taxon_taxonomy)
+    cols = [Symbol("taxonomy_" * r) for r in PBDB_RANK_HIERARCHY]
+    push!(cols, :taxonomy_clades)
     cols
 end
 
@@ -344,7 +344,7 @@ end
 # Return (working_df, search_cols) for taxon_occursin.
 #
 # Priority:
-#   1. Any augmented column (taxon_<rank>, taxon_taxonomy) already present → use df as-is.
+#   1. Any augmented column (taxonomy_<rank>, taxonomy_clades) already present → use df as-is.
 #   2. autoaugment=true and :accepted_name present → call augment_taxonomy, use augmented cols.
 #   3. Fallback → use original taxon columns present in df.
 function _taxonomy_search_setup(df::DataFrame; autoaugment::Bool = true)
@@ -440,17 +440,17 @@ taxon_occursin(names::AbstractVector{<:Regex};          matchall=true)
 
 ## Column selection (2-arg form)
 
-1. **Augmented columns already present** — if `df` has any `taxon_<rank>` or
-   `taxon_taxonomy` column (added by [`augment_taxonomy`](@ref)), those are searched.
+1. **Augmented columns already present** — if `df` has any `taxonomy_<rank>` or
+   `taxonomy_clades` column (added by [`augment_taxonomy`](@ref)), those are searched.
 2. **Auto-augmentation** — if no augmented columns exist, `autoaugment=true`
    (default), and `:accepted_name` is present, [`augment_taxonomy`](@ref) is called
    on a copy of `df` and its columns are searched.
 3. **Fallback** — any column whose name matches a rank in [`PBDB_RANK_HIERARCHY`](@ref)
    plus `:accepted_name`, restricted to those present in `df`.
 
-Note: `:taxon_taxonomy` is a composite string (`"Animalia > … > Canis"`).  Regex
+Note: `:taxonomy_clades` is a composite string (`"Animalia > … > Canis"`).  Regex
 patterns match it; exact strings (e.g. `"Canis"`) do not — use the per-rank column
-(e.g. `taxon_genus`) for exact matching.
+(e.g. `taxonomy_genus`) for exact matching.
 
 ## Examples
 
@@ -475,16 +475,16 @@ df[taxon_occursin(["Canis", "Vulpes"], df; matchall=false), :]
 df[taxon_occursin([r"Canidae", r"Canis"], df), :]
 
 # 1-arg: subset with exact string
-subset(df, :taxon_genus => taxon_occursin("Canis"))
+subset(df, :taxonomy_genus => taxon_occursin("Canis"))
 
 # 1-arg: subset with regex AND (default) on composite column
-subset(df, :taxon_taxonomy => taxon_occursin([r"Canidae", r"lupus"]))
+subset(df, :taxonomy_clades => taxon_occursin([r"Canidae", r"lupus"]))
 
 # 1-arg: subset with regex OR
-subset(df, :taxon_taxonomy => taxon_occursin([r"^Canis\b", r"^Vulpes\b"]; matchall=false))
+subset(df, :taxonomy_clades => taxon_occursin([r"^Canis\b", r"^Vulpes\b"]; matchall=false))
 
 # 1-arg: subset with string OR
-subset(df, :taxon_genus => taxon_occursin(["Canis", "Vulpes"]; matchall=false))
+subset(df, :taxonomy_genus => taxon_occursin(["Canis", "Vulpes"]; matchall=false))
 
 # Suppress auto-augmentation for a pre-augmented DataFrame
 df2 = augment_taxonomy(df)
@@ -607,7 +607,7 @@ taxon_occursin(names::AbstractVector{<:Regex};          matchall=true)
 - `matchall=true` (default) — **AND**: all names/patterns must match the column
   value.  For strings, always `false` when `length(names) > 1` (a single field
   value cannot equal two different strings).  For regex, useful on composite
-  columns such as `taxon_taxonomy` (e.g. `[r"Canidae", r"lupus"]` narrows to
+  columns such as `taxonomy_clades` (e.g. `[r"Canidae", r"lupus"]` narrows to
   species within that family).
 - `matchall=false` — **OR**: any name/pattern matching is sufficient.
 
@@ -620,26 +620,26 @@ df = pbdb_occurrences(base_name = "Carnivora", interval = "Miocene", show = "ful
 df2 = augment_taxonomy(df)
 
 # Exact string on a single column
-subset(df2, :taxon_genus => taxon_occursin("Canis"))
+subset(df2, :taxonomy_genus => taxon_occursin("Canis"))
 
 # Regex on a single column
-subset(df2, :taxon_taxonomy => taxon_occursin(r"Borophaginae"))
+subset(df2, :taxonomy_clades => taxon_occursin(r"Borophaginae"))
 
-# Regex AND (default): taxon_taxonomy must contain both patterns
-subset(df2, :taxon_taxonomy => taxon_occursin([r"Canidae", r"lupus"]))
+# Regex AND (default): taxonomy_clades must contain both patterns
+subset(df2, :taxonomy_clades => taxon_occursin([r"Canidae", r"lupus"]))
 
 # Regex OR: either pattern matches
-subset(df2, :taxon_taxonomy => taxon_occursin([r"^Canis\b", r"^Vulpes\b"]; matchall=false))
+subset(df2, :taxonomy_clades => taxon_occursin([r"^Canis\b", r"^Vulpes\b"]; matchall=false))
 
 # String OR (matchall=false): genus is Canis or Vulpes
-subset(df2, :taxon_genus => taxon_occursin(["Canis", "Vulpes"]; matchall=false))
+subset(df2, :taxonomy_genus => taxon_occursin(["Canis", "Vulpes"]; matchall=false))
 
 # @chain
 using Chain
 @chain df begin
     augment_taxonomy
-    subset(:taxon_family   => taxon_occursin("Canidae"))
-    subset(:taxon_taxonomy => taxon_occursin([r"Canis", r"lupus"]))
+    subset(:taxonomy_family   => taxon_occursin("Canidae"))
+    subset(:taxonomy_clades   => taxon_occursin([r"Canis", r"lupus"]))
 end
 ```
 
