@@ -176,7 +176,7 @@ df3 = augment_taxonomy(df; nodata = "")
 See also [`PBDB_RANK_HIERARCHY`](@ref).
 """
 function augment_taxonomy(
-    df::DataFrame;
+    df::AbstractDataFrame;
     nodata::Any          = missing,
     fieldname_prefix::String = "taxonomy_",
     taxonomy_separator::String = " > ",

@@ -87,7 +87,7 @@ df_clean = drop_unresolved_taxa(df, "family")
 df_clean = drop_unresolved_taxa(df, "order")
 ```
 """
-function drop_unresolved_taxa(df::DataFrame, taxonomic_rank::AbstractString)::DataFrame
+function drop_unresolved_taxa(df::AbstractDataFrame, taxonomic_rank::AbstractString)::DataFrame
     drop_unresolved_taxa!(copy(df), taxonomic_rank)
 end
 
@@ -119,7 +119,7 @@ df_clean = drop_unresolved_taxa(df, :accepted_name)
 
 ```
 """
-function drop_unresolved_taxa(df::DataFrame, taxon_field::Symbol)::DataFrame
+function drop_unresolved_taxa(df::AbstractDataFrame, taxon_field::Symbol)::DataFrame
     if taxon_field == :accepted_name
         drop_unresolved_taxa(df, "species")
     else
@@ -133,7 +133,7 @@ end
 In-place version of [`drop_unresolved_taxa`](@ref).
 Modifies `df` directly and returns it.
 """
-function drop_unresolved_taxa!(df::DataFrame, taxon_field::Symbol)::DataFrame  # see drop_unresolved_taxa(df, ::Symbol) for rationale
+function drop_unresolved_taxa!(df::AbstractDataFrame, taxon_field::Symbol)::DataFrame  # see drop_unresolved_taxa(df, ::Symbol) for rationale
     if taxon_field == :accepted_name
         drop_unresolved_taxa!(df, "species")
     else
@@ -141,7 +141,7 @@ function drop_unresolved_taxa!(df::DataFrame, taxon_field::Symbol)::DataFrame  #
     end
 end
 
-function drop_unresolved_taxa!(df::DataFrame, taxonomic_rank::AbstractString)::DataFrame
+function drop_unresolved_taxa!(df::AbstractDataFrame, taxonomic_rank::AbstractString)::DataFrame
     valid_ranks = _pbdb_ranks_at_or_finer_than(taxonomic_rank)
 
     # 1. Filter by accepted_rank; rows with missing accepted_rank are dropped.

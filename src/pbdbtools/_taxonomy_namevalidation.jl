@@ -131,7 +131,7 @@ df[mask, :]
 ```
 """
 function audit_taxonomy(
-    df::DataFrame,
+    df::AbstractDataFrame,
     taxon_field::Symbol;
     validation_authority::Symbol = :snapshot,
 )::Vector{Bool}
@@ -171,7 +171,7 @@ df_clean = drop_unrecognized_taxa(df, :family)
 ```
 """
 function drop_unrecognized_taxa(
-    df::DataFrame,
+    df::AbstractDataFrame,
     taxon_field::Symbol;
     validation_authority::Symbol = :snapshot,
 )::DataFrame
@@ -193,7 +193,7 @@ drop_unrecognized_taxa!(df, :family)
 ```
 """
 function drop_unrecognized_taxa!(
-    df::DataFrame,
+    df::AbstractDataFrame,
     taxon_field::Symbol;
     validation_authority::Symbol = :snapshot,
 )::DataFrame

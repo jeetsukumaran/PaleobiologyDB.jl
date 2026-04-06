@@ -86,7 +86,7 @@ See also [`drop_unqualified_taxa!`](@ref) for the in-place variant,
 [`drop_unresolved_taxa`](@ref), [`drop_unrecognized_taxa`](@ref).
 """
 function drop_unqualified_taxa(
-    df::DataFrame,
+    df::AbstractDataFrame,
     taxonomic_resolution::AbstractString;
     validation_authority::Symbol = :snapshot,
 )::DataFrame
@@ -146,7 +146,7 @@ drop_unqualified_taxa!(df, "species")
 See also [`drop_unqualified_taxa`](@ref) for the non-mutating variant.
 """
 function drop_unqualified_taxa!(
-    df::DataFrame,
+    df::AbstractDataFrame,
     taxonomic_resolution::AbstractString;
     validation_authority::Symbol = :snapshot,
 )::DataFrame

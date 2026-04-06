@@ -1,6 +1,13 @@
 ## PaleobiologyDB.jl v2.0.0 (Upcoming)
 
+### Breaking Changes
 
+- **Type signatures** — All `pbdbtools` taxonomy functions now accept `AbstractDataFrame` instead of concrete `DataFrame` type. This includes:
+  - All filtering and augmentation functions: `drop_unresolved_taxa`, `drop_unrecognized_taxa`, `drop_unqualified_taxa`, and their in-place (`!`) variants
+  - All taxonomy query functions: `taxon_occursin`, `contains_taxon`, and their variants
+  - Helper function `augment_taxonomy`
+  - Return types remain concrete `DataFrame` for predictability
+  - **Impact**: Existing code using `DataFrame` is unaffected (DataFrame ⊂ AbstractDataFrame). This change future-proofs the API for other table implementations in the Julia ecosystem.
 
 ### Changed
 

@@ -347,7 +347,7 @@ end
 #   1. Any augmented column (taxonomy_<rank>, taxonomy_clades) already present → use df as-is.
 #   2. autoaugment=true and :accepted_name present → call augment_taxonomy, use augmented cols.
 #   3. Fallback → use original taxon columns present in df.
-function _taxonomy_search_setup(df::DataFrame; autoaugment::Bool = true)
+function _taxonomy_search_setup(df::AbstractDataFrame; autoaugment::Bool = true)
     present_augmented = filter(col -> hasproperty(df, col), _AUGMENTED_TAXON_COLS)
     if !isempty(present_augmented)
         return df, present_augmented
@@ -507,7 +507,7 @@ See also [`augment_taxonomy`](@ref), [`ls_child_taxa`](@ref),
 """
 function taxon_occursin(
     name::Regex,
-    df::DataFrame;
+    df::AbstractDataFrame;
     autoaugment::Bool = true,
 )::Vector{Bool}
     df_work, cols = _taxonomy_search_setup(df; autoaugment)
@@ -523,7 +523,7 @@ where any relevant taxonomic column equals `name` (case-sensitive).
 """
 function taxon_occursin(
     name::AbstractString,
-    df::DataFrame;
+    df::AbstractDataFrame;
     autoaugment::Bool = true,
 )::Vector{Bool}
     df_work, cols = _taxonomy_search_setup(df; autoaugment)
@@ -546,7 +546,7 @@ single-column `subset` context a single value cannot equal two different strings
 """
 function taxon_occursin(
     names::AbstractVector{<:AbstractString},
-    df::DataFrame;
+    df::AbstractDataFrame;
     autoaugment::Bool = true,
     combine = all,
 )::Vector{Bool}
@@ -567,7 +567,7 @@ Multi-pattern variant of [`taxon_occursin`](@ref).
 """
 function taxon_occursin(
     names::AbstractVector{<:Regex},
-    df::DataFrame;
+    df::AbstractDataFrame;
     autoaugment::Bool = true,
     combine = all,
 )::Vector{Bool}
@@ -768,7 +768,7 @@ See also [`taxon_occursin`](@ref), [`augment_taxonomy`](@ref),
 # 2-arg forms (delegate to taxon_occursin with arguments swapped)
 
 function contains_taxon(
-    df::DataFrame,
+    df::AbstractDataFrame,
     name::Regex;
     autoaugment::Bool = true,
 )::Vector{Bool}
@@ -776,7 +776,7 @@ function contains_taxon(
 end
 
 function contains_taxon(
-    df::DataFrame,
+    df::AbstractDataFrame,
     name::AbstractString;
     autoaugment::Bool = true,
 )::Vector{Bool}
@@ -784,7 +784,7 @@ function contains_taxon(
 end
 
 function contains_taxon(
-    df::DataFrame,
+    df::AbstractDataFrame,
     names::AbstractVector{<:AbstractString};
     autoaugment::Bool = true,
     combine = all,
@@ -793,7 +793,7 @@ function contains_taxon(
 end
 
 function contains_taxon(
-    df::DataFrame,
+    df::AbstractDataFrame,
     names::AbstractVector{<:Regex};
     autoaugment::Bool = true,
     combine = all,
