@@ -37,7 +37,8 @@ The `Taxonomy` submodule provides tools for validating, cleaning, and
 exploring occurrence DataFrames against the PBDB taxonomic authority.
 
 ```julia
-using PaleobiologyDB, PaleobiologyDB.Taxonomy
+using PaleobiologyDB
+using PaleobiologyDB.Taxonomy # 
 
 df = pbdb_occurrences(base_name = "Canidae", interval = "Miocene", show = "full")
 
@@ -81,7 +82,9 @@ ls_parent_taxa("Canis lupus", "family")    # → ["Canidae"]
 # ── Row filtering ──────────────────────────────────────────────────────────
 
 # 2-arg: boolean mask across all taxonomy columns (auto-augments if needed)
-# Pattern-first syntax (functional style)using PaleobiologyDB.Taxonomy: taxon_occursin, contains_taxon
+# Pattern-first syntax (functional style)
+using PaleobiologyDB.Taxonomy: taxon_occursin, contains_taxon
+
 df2[taxon_occursin("Canis", df2), :]
 df2[taxon_occursin(r"^Canis\b", df2), :]
 
