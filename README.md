@@ -91,18 +91,18 @@ df2[contains_taxon(df2, r"^Canis\b"), :]
 
 # Both syntaxes are equivalent — choose based on your style preference
 
-# Vector inputs: matchall=true (AND, default) / matchall=false (OR)
+# Vector inputs: combine=all (AND, default) / combine=any (OR)
 df2[taxon_occursin(["Canis", "Mammalia"], df2), :]          # AND: both must appear
 df2[contains_taxon(df2, ["Canis", "Mammalia"]), :]          # Same, DataFrame-first
 
-df2[taxon_occursin(["Canis", "Vulpes"], df2; matchall=false), :]  # OR: either matches
-df2[contains_taxon(df2, ["Canis", "Vulpes"]; matchall=false), :]  # Same, DataFrame-first
+df2[taxon_occursin(["Canis", "Vulpes"], df2; combine=any), :]  # OR: either matches
+df2[contains_taxon(df2, ["Canis", "Vulpes"]; combine=any), :]  # Same, DataFrame-first
 
 # 1-arg: ByRow predicate for use with subset
 subset(df2, :taxonomy_genus    => taxon_occursin("Canis"))
 subset(df2, :taxonomy_clades   => taxon_occursin(r"Borophaginae"))
 subset(df2, :taxonomy_clades   => taxon_occursin([r"Canidae", r"lupus"]))  # AND on composite column
-subset(df2, :taxonomy_genus    => taxon_occursin(["Canis", "Vulpes"]; matchall=false))  # OR
+subset(df2, :taxonomy_genus    => taxon_occursin(["Canis", "Vulpes"]; combine=any))  # OR
 ```
 
 ## Key features

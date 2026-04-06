@@ -213,7 +213,7 @@ end
         @test mask[5] == false  # empty-string row
     end
 
-    @testset "AbstractVector{String} — matchall=true (AND, default)" begin
+    @testset "AbstractVector{String} — combine=all (AND, default)" begin
         # "Canis" must be in one column AND "Canidae" in another
         mask = _taxon_in(["Canis", "Canidae"], df)
         @test mask[1] == true   # genus=Canis, family=Canidae ✓
@@ -221,14 +221,14 @@ end
         @test mask[3] == false
     end
 
-    @testset "AbstractVector{String} — matchall=false (OR)" begin
-        mask = _taxon_in(["Canis", "Vulpes"], df; matchall=false)
+    @testset "AbstractVector{String} — combine=any (OR)" begin
+        mask = _taxon_in(["Canis", "Vulpes"], df; combine=any)
         @test mask[1] == true   # genus=Canis
         @test mask[2] == true   # genus=Vulpes
         @test mask[3] == false
     end
 
-    @testset "AbstractVector{Regex} — matchall=true (AND, default)" begin
+    @testset "AbstractVector{Regex} — combine=all (AND, default)" begin
         # Each pattern must match at least one column
         mask = _taxon_in([r"Canidae", r"^Canis$"], df)
         @test mask[1] == true   # family=Canidae AND genus=Canis ✓
@@ -236,8 +236,8 @@ end
         @test mask[3] == false
     end
 
-    @testset "AbstractVector{Regex} — matchall=false (OR)" begin
-        mask = _taxon_in([r"^Canis$", r"^Vulpes$"], df; matchall=false)
+    @testset "AbstractVector{Regex} — combine=any (OR)" begin
+        mask = _taxon_in([r"^Canis$", r"^Vulpes$"], df; combine=any)
         @test mask[1] == true   # genus=Canis
         @test mask[2] == true   # genus=Vulpes
         @test mask[3] == false
@@ -283,20 +283,20 @@ end
         @test result[5] == false  # ""
     end
 
-    @testset "AbstractVector{String} — matchall=true (AND, default)" begin
+    @testset "AbstractVector{String} — combine=all (AND, default)" begin
         # Single value can't equal two different strings → always false for length > 1
         pred = _taxon_in(["Canis", "Vulpes"])
         result = pred(col)
         @test all(!, result)
     end
 
-    @testset "AbstractVector{String} — matchall=false (OR)" begin
-        pred = _taxon_in(["Canis", "Vulpes"]; matchall=false)
+    @testset "AbstractVector{String} — combine=any (OR)" begin
+        pred = _taxon_in(["Canis", "Vulpes"]; combine=any)
         result = pred(col)
         @test result == [true, true, false, false, false]
     end
 
-    @testset "AbstractVector{Regex} — matchall=true (AND, default)" begin
+    @testset "AbstractVector{Regex} — combine=all (AND, default)" begin
         # Both patterns must match the same single value
         taxonomy_col = [
             "Animalia > Carnivora > Canidae > Canis",
@@ -312,8 +312,8 @@ end
         @test result[4] == false  # empty
     end
 
-    @testset "AbstractVector{Regex} — matchall=false (OR)" begin
-        pred = _taxon_in([r"^Canis$", r"^Vulpes$"]; matchall=false)
+    @testset "AbstractVector{Regex} — combine=any (OR)" begin
+        pred = _taxon_in([r"^Canis$", r"^Vulpes$"]; combine=any)
         result = pred(col)
         @test result == [true, true, false, false, false]
     end
@@ -325,7 +325,7 @@ end
         @test nrow(result) == 1
         @test result.taxonomy_genus[1] == "Canis"
 
-        result2 = subset(df, :taxonomy_genus => _taxon_in(["Canis", "Vulpes"]; matchall=false))
+        result2 = subset(df, :taxonomy_genus => _taxon_in(["Canis", "Vulpes"]; combine=any))
         @test nrow(result2) == 2
 
         result3 = subset(df, :taxonomy_clades => _taxon_in([r"Canidae", r"lupus"]))
@@ -552,7 +552,7 @@ const _contains = PaleobiologyDB.Taxonomy.contains_taxon
     end
 
     @testset "Vector{String} OR" begin
-        result = _contains(df, ["Canis", "Vulpes"]; matchall=false)
+        result = _contains(df, ["Canis", "Vulpes"]; combine=any)
         @test result[1]  == true  # Has Canis
         @test result[2]  == true  # Has Vulpes
         @test result[3]  == false # Has neither
@@ -565,7 +565,7 @@ const _contains = PaleobiologyDB.Taxonomy.contains_taxon
     end
 
     @testset "Vector{Regex} OR" begin
-        result = _contains(df, [r"^Canis", r"^Vulpes"]; matchall=false)
+        result = _contains(df, [r"^Canis", r"^Vulpes"]; combine=any)
         @test result[1]  == true  # Matches Canis
         @test result[2]  == true  # Matches Vulpes
         @test result[3]  == false # Matches neither
@@ -593,7 +593,7 @@ end
     end
 
     @testset "Vector{String} OR ByRow" begin
-        result = subset(df, :taxonomy_genus => _contains(["Canis", "Vulpes"]; matchall=false))
+        result = subset(df, :taxonomy_genus => _contains(["Canis", "Vulpes"]; combine=any))
         @test nrow(result) >= 2
     end
 
@@ -603,7 +603,7 @@ end
     end
 
     @testset "Vector{Regex} OR on composite column" begin
-        result = subset(df, :taxonomy_clades => _contains([r"Canidae", r"Felidae"]; matchall=false))
+        result = subset(df, :taxonomy_clades => _contains([r"Canidae", r"Felidae"]; combine=any))
         @test nrow(result) >= 2
     end
 end
@@ -611,6 +611,6 @@ end
 @testset "contains_taxon equivalence with taxon_occursin" begin
     df = _mock_augmented_df()
     @test _taxon_in("Canis", df) == _contains(df, "Canis")
-    @test _taxon_in(["Canis", "Vulpes"], df; matchall=false) == _contains(df, ["Canis", "Vulpes"]; matchall=false)
+    @test _taxon_in(["Canis", "Vulpes"], df; combine=any) == _contains(df, ["Canis", "Vulpes"]; combine=any)
     @test _taxon_in(r"ana", df) == _contains(df, r"ana")
 end
