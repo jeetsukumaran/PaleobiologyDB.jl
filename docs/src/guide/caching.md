@@ -11,7 +11,7 @@ Results survive Julia restarts and can be retrieved by a human-readable label.
 
 ```julia
 using PaleobiologyDB
-using PaleobiologyDB.DataCaches
+using PaleobiologyDB.DataCaches  # re-exports DataCache, write!, read, etc.
 
 cache = DataCache()                          # lifecycle-managed default store (~/.julia/scratchspaces/…)
 cache = DataCache(:myproject)               # named lifecycle-managed store
@@ -72,37 +72,36 @@ PaleobiologyDB.set_default_filecache!(DataCache("/project/cache"))
 
 ```julia
 using PaleobiologyDB
-using PaleobiologyDB.DataCaches
 
 # Enable for ALL pbdb_* functions
-DataCaches.set_autocaching!(true)
+PaleobiologyDB.set_autocaching!(true)
 
 occs = pbdb_occurrences(base_name = "Canidae", interval = "Miocene")  # live fetch + cached
 occs = pbdb_occurrences(base_name = "Canidae", interval = "Miocene")  # instant cache hit
 
 # Disable
-DataCaches.set_autocaching!(false)
+PaleobiologyDB.set_autocaching!(false)
 ```
 
 **Per-function control:**
 
 ```julia
 # Cache only occurrence queries
-DataCaches.set_autocaching!(true, pbdb_occurrences)
+PaleobiologyDB.set_autocaching!(true, pbdb_occurrences)
 
 # Cache occurrences and taxa
-DataCaches.set_autocaching!(true, [pbdb_occurrences, pbdb_taxa])
+PaleobiologyDB.set_autocaching!(true, [pbdb_occurrences, pbdb_taxa])
 
 # Remove a function from the autocache list
-DataCaches.set_autocaching!(false, pbdb_occurrences)
+PaleobiologyDB.set_autocaching!(false, pbdb_occurrences)
 ```
 
 **Custom cache store:**
 
 ```julia
 my_cache = DataCache("/data/project_cache")
-DataCaches.set_autocaching!(true; cache = my_cache)
-DataCaches.set_autocaching!(true, pbdb_occurrences; cache = my_cache)
+PaleobiologyDB.set_autocaching!(true; cache = my_cache)
+PaleobiologyDB.set_autocaching!(true, pbdb_occurrences; cache = my_cache)
 ```
 
 Using `@filecache` explicitly while autocache is on is safe — autocache is suppressed
