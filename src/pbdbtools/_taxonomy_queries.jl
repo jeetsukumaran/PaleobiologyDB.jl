@@ -466,7 +466,7 @@ patterns match it; exact strings (e.g. `"Canis"`) do not — use the per-rank co
 ## Examples
 
 ```julia
-using PaleobiologyDB, PaleobiologyDB.Taxonomy
+using PaleobiologyDB, PaleobiologyDB.Taxonomy: taxon_occursin
 
 df = pbdb_occurrences(base_name = "Canidae", interval = "Miocene", show = "full")
 
@@ -735,7 +735,7 @@ All functionality is identical; only the argument order differs:
 ## Examples
 
 \`\`\`julia
-using PaleobiologyDB, PaleobiologyDB.Taxonomy
+using PaleobiologyDB, PaleobiologyDB.Taxonomy: contains_taxon
 
 df = pbdb_occurrences(base_name = "Canidae", interval = "Miocene", show = "full")
 

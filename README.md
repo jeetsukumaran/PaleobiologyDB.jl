@@ -81,7 +81,7 @@ ls_parent_taxa("Canis lupus", "family")    # → ["Canidae"]
 # ── Row filtering ──────────────────────────────────────────────────────────
 
 # 2-arg: boolean mask across all taxonomy columns (auto-augments if needed)
-# Pattern-first syntax (functional style)
+# Pattern-first syntax (functional style)using PaleobiologyDB.Taxonomy: taxon_occursin, contains_taxon
 df2[taxon_occursin("Canis", df2), :]
 df2[taxon_occursin(r"^Canis\b", df2), :]
 

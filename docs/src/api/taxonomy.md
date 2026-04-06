@@ -197,7 +197,7 @@ a `combine` keyword (`all` by default): `combine=all` requires **all** elements 
 match (AND); `combine=any` requires **any** to match (OR).
 
 ```julia
-using PaleobiologyDB, PaleobiologyDB.Taxonomy
+using PaleobiologyDB, PaleobiologyDB.Taxonomy: taxon_occursin
 
 df = pbdb_occurrences(base_name = "Canidae", interval = "Miocene", show = "full")
 
@@ -258,7 +258,7 @@ method calls where data flows from left to right.
 All matching semantics, column selection, and keywords are identical to `taxon_occursin`.
 
 ```julia
-using PaleobiologyDB, PaleobiologyDB.Taxonomy
+using PaleobiologyDB, PaleobiologyDB.Taxonomy: contains_taxon
 
 df = pbdb_occurrences(base_name = "Canidae", interval = "Miocene", show = "full")
 
