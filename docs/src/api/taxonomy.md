@@ -181,14 +181,16 @@ PaleobiologyDB.Taxonomy.ls_child_taxa
 PaleobiologyDB.Taxonomy.ls_parent_taxa
 ```
 
-## Taxon occurrence search
+## Taxon occurrence search: taxon_occursin
 
-`taxon_occursin` comes in two forms:
+`taxon_occursin` searches for taxonomic patterns across multiple columns. It comes in two forms:
 
 - **2-arg** `taxon_occursin(pattern, df)` → `Vector{Bool}` — searches across all
   taxonomy columns; use for `df[mask, :]` filtering.
 - **1-arg** `taxon_occursin(pattern)` → `ByRow` predicate — for use directly with
   `subset(df, :col => taxon_occursin(pattern))`.
+
+By placing the pattern first, this function works naturally with piping and functional composition.
 
 Vector inputs (`AbstractVector{<:AbstractString}` or `AbstractVector{<:Regex}`) accept
 a `matchall` keyword (`true` by default): `matchall=true` requires **all** elements to
@@ -240,33 +242,78 @@ end
 PaleobiologyDB.Taxonomy.taxon_occursin
 ```
 
-## Reverse taxon search: contains_taxon
+## Taxon occurrence search: contains_taxon
 
-`contains_taxon(df, pattern)` provides the inverse argument order of [`taxon_occursin`](@ref).
-The DataFrame (haystack) is the first argument, and the search pattern (needle) is the second.
-All matching semantics, column selection, and keywords are identical.
+`contains_taxon` provides an alternative syntax to [`taxon_occursin`](@ref) with the DataFrame
+as the first argument. It comes in the same two forms:
+
+- **2-arg** `contains_taxon(df, pattern)` → `Vector{Bool}` — searches across all
+  taxonomy columns; use for `df[mask, :]` filtering.
+- **1-arg** `contains_taxon(pattern)` → `ByRow` predicate — for use directly with
+  `subset(df, :col => contains_taxon(pattern))`.
+
+By placing the DataFrame first, this function is more natural for statement chaining and
+method calls where data flows from left to right.
+
+All matching semantics, column selection, and keywords are identical to `taxon_occursin`.
 
 ```julia
 using PaleobiologyDB, PaleobiologyDB.Taxonomy
 
 df = pbdb_occurrences(base_name = "Canidae", interval = "Miocene", show = "full")
 
-# Both syntaxes are equivalent — choose your preference:
-df[taxon_occursin("Canis", df), :]
+# 2-arg: multi-column boolean mask (DataFrame first)
 df[contains_taxon(df, "Canis"), :]
+df[contains_taxon(df, r"^Canis\b"), :]
 
-# Support all same patterns and keywords
-df[contains_taxon(df, r"^Canis\\b"), :]
+# 2-arg: AND — every name must appear in some column (default matchall=true)
+df[contains_taxon(df, ["Canis", "Mammalia"]), :]
+
+# 2-arg: OR — any name matches any column
 df[contains_taxon(df, ["Canis", "Vulpes"]; matchall=false), :]
 
-# 1-arg ByRow form for subset()
-subset(df, :taxonomy_genus => contains_taxon("Canis"))
-subset(df, :taxonomy_clades => contains_taxon([r"Canidae", r"lupus"]))
+# 2-arg: AND patterns — each regex must match at least one column
+df[contains_taxon(df, [r"Canidae", r"Canis"]), :]
+
+# 1-arg: use directly with subset
+df2 = augment_taxonomy(df)
+subset(df2, :taxonomy_genus => contains_taxon("Canis"))
+subset(df2, :taxonomy_clades => contains_taxon(r"Borophaginae"))
+
+# 1-arg: regex AND on composite column (default matchall=true)
+# rows where taxonomy_clades contains BOTH patterns
+subset(df2, :taxonomy_clades => contains_taxon([r"Canidae", r"lupus"]))
+
+# 1-arg: regex OR
+subset(df2, :taxonomy_clades => contains_taxon([r"^Canis\b", r"^Vulpes\b"]; matchall=false))
+
+# 1-arg: string OR
+subset(df2, :taxonomy_genus => contains_taxon(["Canis", "Vulpes"]; matchall=false))
+
+# Chain with subset (Chain.jl)
+using Chain
+@chain df begin
+    augment_taxonomy
+    subset(:taxonomy_family   => contains_taxon(df, "Canidae"))
+    subset(:taxonomy_clades   => contains_taxon(df, "Canidae", "lupus"); matchall=true)
+end
 ```
 
 ```@docs
 PaleobiologyDB.Taxonomy.contains_taxon
 ```
+
+## Choosing between taxon_occursin and contains_taxon
+
+Both `taxon_occursin` and `contains_taxon` are functionally identical and support all the same
+patterns, keywords, and use cases. The choice is purely stylistic:
+
+| Preference | Function | Usage |
+|-----------|----------|--------|
+| Pattern-first (functional style) | `taxon_occursin` | `df[taxon_occursin("Canis", df), :]` |
+| DataFrame-first (method chaining style) | `contains_taxon` | `df[contains_taxon(df, "Canis"), :]` |
+
+Use whichever feels more natural for your workflow. Both are equally idiomatic and supported.
 
 ## Local data store management
 

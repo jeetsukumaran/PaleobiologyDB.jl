@@ -404,12 +404,23 @@ end
     taxon_occursin(name, df; autoaugment=true) -> Vector{Bool}
     taxon_occursin(name)                       -> ByRow predicate
 
+Search for patterns in taxonomic columns. This function searches across multiple
+taxonomic rank columns to find rows matching specified patterns in the Paleobiology
+Database taxonomy columns.
+
+## Pattern-First Argument Order
+
+By placing the search pattern first, this function works naturally with piping and
+partial application, allowing easy composition of multiple pattern searches in data
+processing workflows.
+
 Two forms:
 
 - **2-arg** `taxon_occursin(pattern, df)` — returns a `Vector{Bool}` of length
-  `nrow(df)` searching across all relevant taxonomic columns in `df`.
-- **1-arg** `taxon_occursin(pattern)` — returns a `ByRow(predicate)` for use
-  directly with `subset(df, :col => taxon_occursin(pattern))`.
+  `nrow(df)` where each element indicates whether the corresponding row matches
+  the pattern across all relevant taxonomic columns in `df`.
+- **1-arg** `taxon_occursin(pattern)` — returns a `ByRow(predicate)` function for
+  use directly with `subset()`: `subset(df, :column => taxon_occursin(pattern))`.
 
 ## Method signatures
 
@@ -694,16 +705,24 @@ end
     contains_taxon(df, name; autoaugment=true) -> Vector{Bool}
     contains_taxon(name)                       -> ByRow predicate
 
-Inverse argument order of [`taxon_occursin`](@ref): DataFrame (haystack) comes first,
-pattern (needle) comes second.  All matching semantics, column selection logic, and
-keywords are identical to `taxon_occursin`.
+Search for patterns in taxonomic columns with DataFrame as the first argument.
+This provides an alternative to [`taxon_occursin`](@ref) with haystack-first
+argument order: the DataFrame being searched comes first, and the pattern (needle)
+to search for comes second.
+
+## DataFrame-First Argument Order
+
+Unlike [`taxon_occursin`](@ref) which places the search pattern first, `contains_taxon`
+puts the DataFrame first, making it more natural for method chaining and piping operations
+where data transformations flow from left to right.
 
 Two forms:
 
 - **2-arg** `contains_taxon(df, pattern)` — returns a `Vector{Bool}` of length
-  `nrow(df)` searching across all relevant taxonomic columns in `df`.
-- **1-arg** `contains_taxon(pattern)` — returns a `ByRow(predicate)` for use
-  directly with `subset(df, :col => contains_taxon(pattern))`.
+  `nrow(df)` where each element indicates whether the corresponding row matches
+  the pattern across all relevant taxonomic columns in `df`.
+- **1-arg** `contains_taxon(pattern)` — returns a `ByRow(predicate)` function for
+  use directly with `subset()`: `subset(df, :column => contains_taxon(pattern))`.
 
 ## Method signatures
 

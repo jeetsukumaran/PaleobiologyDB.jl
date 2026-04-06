@@ -81,12 +81,22 @@ ls_parent_taxa("Canis lupus", "family")    # → ["Canidae"]
 # ── Row filtering ──────────────────────────────────────────────────────────
 
 # 2-arg: boolean mask across all taxonomy columns (auto-augments if needed)
+# Pattern-first syntax (functional style)
 df2[taxon_occursin("Canis", df2), :]
 df2[taxon_occursin(r"^Canis\b", df2), :]
 
+# DataFrame-first syntax (method chaining style)
+df2[contains_taxon(df2, "Canis"), :]
+df2[contains_taxon(df2, r"^Canis\b"), :]
+
+# Both syntaxes are equivalent — choose based on your style preference
+
 # Vector inputs: matchall=true (AND, default) / matchall=false (OR)
 df2[taxon_occursin(["Canis", "Mammalia"], df2), :]          # AND: both must appear
+df2[contains_taxon(df2, ["Canis", "Mammalia"]), :]          # Same, DataFrame-first
+
 df2[taxon_occursin(["Canis", "Vulpes"], df2; matchall=false), :]  # OR: either matches
+df2[contains_taxon(df2, ["Canis", "Vulpes"]; matchall=false), :]  # Same, DataFrame-first
 
 # 1-arg: ByRow predicate for use with subset
 subset(df2, :taxonomy_genus    => taxon_occursin("Canis"))
