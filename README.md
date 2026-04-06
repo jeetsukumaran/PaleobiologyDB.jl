@@ -45,10 +45,10 @@ df = pbdb_occurrences(base_name = "Canidae", interval = "Miocene", show = "full"
 # ── Quality filters ────────────────────────────────────────────────────────
 
 # Drop rows not resolved AND recognized at genus level
-df_genus = drop_unqualified_taxa(df, :genus)
+df_genus = drop_unqualified_taxa(df, "genus")
 
 # Same for species (uses accepted_name column — PBDB stores the binomial there)
-df_species = drop_unqualified_taxa(df, :species)
+df_species = drop_unqualified_taxa(df, "species")
 
 # Run the two checks independently
 df_resolved   = drop_unresolved_taxa(df, :genus)    # resolution only

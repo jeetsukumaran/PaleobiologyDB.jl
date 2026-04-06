@@ -20,17 +20,17 @@ using PaleobiologyDB, PaleobiologyDB.Taxonomy
 df = pbdb_occurrences(base_name = "Canidae", interval = "Miocene", show = "full")
 
 # Keep rows resolved and recognized at genus level
-df_genus = drop_unqualified_taxa(df, :genus)
+df_genus = drop_unqualified_taxa(df, "genus")
 
 # Keep rows resolved and recognized at species level
-# (:species maps to the accepted_name column for the name check)
-df_species = drop_unqualified_taxa(df, :species)
+# ("species" maps to the accepted_name column for the name check)
+df_species = drop_unqualified_taxa(df, "species")
 
 # In-place variant (modifies df directly)
-drop_unqualified_taxa!(df, :family)
+drop_unqualified_taxa!(df, "family")
 
 # Use live API validation instead of the local snapshot
-df_clean = drop_unqualified_taxa(df, :genus; validation_authority = :query)
+df_clean = drop_unqualified_taxa(df, "genus"; validation_authority = :query)
 ```
 
 ```@docs
