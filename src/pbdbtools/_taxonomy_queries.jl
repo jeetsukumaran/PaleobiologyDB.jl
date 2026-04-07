@@ -2,7 +2,7 @@
 # Taxonomy tree queries
 #
 # Provides functions to navigate the PBDB taxonomic hierarchy by name,
-# walking either downward (ls_child_taxa) or upward (ls_parent_taxa).
+# walking either downward (child_taxa) or upward (parent_taxa).
 #
 # Both functions are backed by the same Scratch-cached PBDB taxa list
 # snapshot used by augment_taxonomy and drop_unrecognized_taxa.
@@ -15,8 +15,8 @@
 #   _TAXA_CHILDREN_INDEX        orig_no    → Vector{Int} of child orig_nos
 #
 # Public API:
-#   ls_child_taxa  — names of descendants at a given rank (or all descendants)
-#   ls_parent_taxa — names of ancestors at a given rank (or all ancestors)
+#   child_taxa  — names of descendants at a given rank (or all descendants)
+#   parent_taxa — names of ancestors at a given rank (or all ancestors)
 # ---------------------------------------------------------------------------
 
 # ---------------------------------------------------------------------------
@@ -44,7 +44,7 @@ end
 # ---------------------------------------------------------------------------
 
 """
-    ls_child_taxa(taxon_name, taxonomic_rank=nothing) -> Vector{String}
+    child_taxa(taxon_name, taxonomic_rank=nothing) -> Vector{String}
 
 Return the names of all descendants of `taxon_name` at the given
 `taxonomic_rank`, resolved from the Scratch-cached PBDB taxa list snapshot.
@@ -72,16 +72,16 @@ when `taxon_name` is not found in the PBDB snapshot.
 ```julia
 using PaleobiologyDB, PaleobiologyDB.Taxonomy
 
-ls_child_taxa("Carnivora", "family")   # → ["Ailuridae", "Canidae", "Felidae", …]
-ls_child_taxa("Canidae", "genus")      # → ["Canis", "Lycaon", "Vulpes", …]
-ls_child_taxa("Canis", "species")      # → ["Canis aureus", "Canis lupus", …]
-ls_child_taxa("Carnivora")             # → all descendants at every rank
-ls_child_taxa("INVALID", "genus")      # → String[]
+child_taxa("Carnivora", "family")   # → ["Ailuridae", "Canidae", "Felidae", …]
+child_taxa("Canidae", "genus")      # → ["Canis", "Lycaon", "Vulpes", …]
+child_taxa("Canis", "species")      # → ["Canis aureus", "Canis lupus", …]
+child_taxa("Carnivora")             # → all descendants at every rank
+child_taxa("INVALID", "genus")      # → String[]
 ```
 
-See also [`ls_parent_taxa`](@ref), [`augment_taxonomy`](@ref).
+See also [`parent_taxa`](@ref), [`augment_taxonomy`](@ref).
 """
-function ls_child_taxa(
+function child_taxa(
     taxon_name::AbstractString,
     taxonomic_rank::Union{AbstractString, Nothing} = nothing,
 )::Vector{String}
@@ -135,7 +135,7 @@ function ls_child_taxa(
 end
 
 """
-    ls_parent_taxa(taxon_name, taxonomic_rank=nothing) -> Vector{String}
+    parent_taxa(taxon_name, taxonomic_rank=nothing) -> Vector{String}
 
 Return the names of all ancestors of `taxon_name` at the given
 `taxonomic_rank`, resolved from the Scratch-cached PBDB taxa list snapshot.
@@ -164,16 +164,16 @@ Returns an empty vector when `taxon_name` is not found in the PBDB snapshot.
 ```julia
 using PaleobiologyDB, PaleobiologyDB.Taxonomy
 
-ls_parent_taxa("Canis lupus")            # → ["Canis", "Canidae", …, "Animalia"]
-ls_parent_taxa("Canis", "family")        # → ["Canidae"]
-ls_parent_taxa("Canis", "order")         # → ["Carnivora"]
-ls_parent_taxa("Canis", nothing)         # → all ancestors, child → root
-ls_parent_taxa("INVALID", "family")      # → String[]
+parent_taxa("Canis lupus")            # → ["Canis", "Canidae", …, "Animalia"]
+parent_taxa("Canis", "family")        # → ["Canidae"]
+parent_taxa("Canis", "order")         # → ["Carnivora"]
+parent_taxa("Canis", nothing)         # → all ancestors, child → root
+parent_taxa("INVALID", "family")      # → String[]
 ```
 
-See also [`ls_child_taxa`](@ref), [`augment_taxonomy`](@ref).
+See also [`child_taxa`](@ref), [`augment_taxonomy`](@ref).
 """
-function ls_parent_taxa(
+function parent_taxa(
     taxon_name::AbstractString,
     taxonomic_rank::Union{AbstractString, Nothing} = nothing,
 )::Vector{String}
@@ -221,7 +221,7 @@ end
 # ---------------------------------------------------------------------------
 
 """
-    ls_taxonomic_ranks() -> Vector{String}
+    taxonomic_ranks() -> Vector{String}
 
 Return all taxonomic rank names recognised by the PBDB, ordered from most
 specific (subspecies) to most general (kingdom).
@@ -243,17 +243,17 @@ A `Vector{String}` of 19 ranks:
 ```julia
 using PaleobiologyDB, PaleobiologyDB.Taxonomy
 
-ls_taxonomic_ranks()
+taxonomic_ranks()
 # → ["subspecies", "species", "genus", …, "kingdom"]
 
 # Enumerate from coarsest to finest
-reverse(ls_taxonomic_ranks())
+reverse(taxonomic_ranks())
 ```
 
-See also [`PBDB_RANK_HIERARCHY`](@ref), [`ls_registered_taxa`](@ref),
-[`ls_child_taxa`](@ref), [`ls_parent_taxa`](@ref).
+See also [`PBDB_RANK_HIERARCHY`](@ref), [`registered_taxa`](@ref),
+[`child_taxa`](@ref), [`parent_taxa`](@ref).
 """
-function ls_taxonomic_ranks()::Vector{String}
+function taxonomic_ranks()::Vector{String}
     copy(PBDB_RANK_HIERARCHY)
 end
 
@@ -262,7 +262,7 @@ end
 # ---------------------------------------------------------------------------
 
 """
-    ls_registered_taxa(taxon_name=nothing) -> Vector{String}
+    registered_taxa(taxon_name=nothing) -> Vector{String}
 
 Return accepted taxon names from the Scratch-cached PBDB taxa list snapshot
 that match the given filter.
@@ -276,7 +276,7 @@ that match the given filter.
     (union semantics).
 
 Only accepted (non-synonym) names are included, consistent with
-[`ls_child_taxa`](@ref) and [`ls_parent_taxa`](@ref).
+[`child_taxa`](@ref) and [`parent_taxa`](@ref).
 
 ## Returns
 
@@ -288,24 +288,24 @@ A sorted `Vector{String}`.  Returns an empty vector when no names match.
 using PaleobiologyDB, PaleobiologyDB.Taxonomy
 
 # All accepted names (tens of thousands of entries)
-all_taxa = ls_registered_taxa()
+all_taxa = registered_taxa()
 
 # Names containing "Canis" (case-sensitive)
-ls_registered_taxa(r"Canis")
+registered_taxa(r"Canis")
 # → ["Canis", "Canis aureus", "Canis lupus", …]
 
 # Case-insensitive search
-ls_registered_taxa(r"canid"i)
+registered_taxa(r"canid"i)
 
 # Union of two patterns
-ls_registered_taxa([r"^Canis\b", r"^Vulpes\b"])
+registered_taxa([r"^Canis\b", r"^Vulpes\b"])
 # → ["Canis", "Canis aureus", …, "Vulpes", "Vulpes vulpes", …]
 ```
 
-See also [`ls_taxonomic_ranks`](@ref), [`ls_child_taxa`](@ref),
-[`ls_parent_taxa`](@ref), [`istaxon`](@ref).
+See also [`taxonomic_ranks`](@ref), [`child_taxa`](@ref),
+[`parent_taxa`](@ref), [`istaxon`](@ref).
 """
-function ls_registered_taxa(
+function registered_taxa(
     taxon_name::Union{Nothing, Regex, AbstractVector{<:Regex}} = nothing,
 )::Vector{String}
     _ensure_hierarchy_index()
@@ -502,8 +502,8 @@ df2 = augment_taxonomy(df)
 df2[taxon_occursin("Canidae", df2; autoaugment=false), :]
 ```
 
-See also [`augment_taxonomy`](@ref), [`ls_child_taxa`](@ref),
-[`ls_parent_taxa`](@ref), [`ls_registered_taxa`](@ref).
+See also [`augment_taxonomy`](@ref), [`child_taxa`](@ref),
+[`parent_taxa`](@ref), [`registered_taxa`](@ref).
 """
 function taxon_occursin(
     name::Regex,
@@ -643,8 +643,8 @@ using Chain
 end
 ```
 
-See also [`augment_taxonomy`](@ref), [`ls_child_taxa`](@ref),
-[`ls_parent_taxa`](@ref), [`ls_registered_taxa`](@ref).
+See also [`augment_taxonomy`](@ref), [`child_taxa`](@ref),
+[`parent_taxa`](@ref), [`registered_taxa`](@ref).
 """
 function taxon_occursin(name::Regex)
     ByRow(v -> !ismissing(v) && !isempty(string(v)) && occursin(name, string(v)))
@@ -762,7 +762,7 @@ subset(df, :taxonomy_clades => contains_taxon([r"^Canis\\b", r"^Vulpes\\b"]; com
 \`\`\`
 
 See also [`taxon_occursin`](@ref), [`augment_taxonomy`](@ref),
-[`ls_child_taxa`](@ref), [`ls_parent_taxa`](@ref), [`ls_registered_taxa`](@ref).
+[`child_taxa`](@ref), [`parent_taxa`](@ref), [`registered_taxa`](@ref).
 """
 
 # 2-arg forms (delegate to taxon_occursin with arguments swapped)

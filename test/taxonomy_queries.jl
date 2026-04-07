@@ -1,7 +1,7 @@
 # test/taxonomy_queries.jl
 # Tests for PaleobiologyDB.Taxonomy taxonomy tree-query functions:
-#   ls_taxonomic_ranks, ls_registered_taxa,
-#   ls_child_taxa, ls_parent_taxa,
+#   taxonomic_ranks, registered_taxa,
+#   child_taxa, parent_taxa,
 #   taxon_occursin (2-arg and 1-arg ByRow forms)
 #
 # Offline tests inject a small mock hierarchy directly into the module-level
@@ -26,10 +26,10 @@ using Test
 using DataFrames
 using PaleobiologyDB
 
-const _ls_ranks    = PaleobiologyDB.Taxonomy.ls_taxonomic_ranks
-const _ls_regtaxa  = PaleobiologyDB.Taxonomy.ls_registered_taxa
-const _ls_children = PaleobiologyDB.Taxonomy.ls_child_taxa
-const _ls_parents  = PaleobiologyDB.Taxonomy.ls_parent_taxa
+const _ls_ranks    = PaleobiologyDB.Taxonomy.taxonomic_ranks
+const _ls_regtaxa  = PaleobiologyDB.Taxonomy.registered_taxa
+const _ls_children = PaleobiologyDB.Taxonomy.child_taxa
+const _ls_parents  = PaleobiologyDB.Taxonomy.parent_taxa
 const _taxon_in    = PaleobiologyDB.Taxonomy.taxon_occursin
 const _PBDB_RANKS  = PaleobiologyDB.Taxonomy.PBDB_RANK_HIERARCHY
 
@@ -90,10 +90,10 @@ function _clear_mock_hierarchy!()
 end
 
 # ---------------------------------------------------------------------------
-# ls_taxonomic_ranks — no network needed
+# taxonomic_ranks — no network needed
 # ---------------------------------------------------------------------------
 
-@testset "ls_taxonomic_ranks" begin
+@testset "taxonomic_ranks" begin
     ranks = _ls_ranks()
     @test ranks isa Vector{String}
     @test length(ranks) == 19
@@ -106,10 +106,10 @@ end
 end
 
 # ---------------------------------------------------------------------------
-# ls_registered_taxa — offline (mock name index)
+# registered_taxa — offline (mock name index)
 # ---------------------------------------------------------------------------
 
-@testset "ls_registered_taxa — offline mock" begin
+@testset "registered_taxa — offline mock" begin
     _inject_mock_hierarchy!()
 
     @testset "nothing → all accepted names sorted" begin
@@ -334,10 +334,10 @@ end
 end
 
 # ---------------------------------------------------------------------------
-# ls_child_taxa — offline (mock hierarchy)
+# child_taxa — offline (mock hierarchy)
 # ---------------------------------------------------------------------------
 
-@testset "ls_child_taxa — offline mock" begin
+@testset "child_taxa — offline mock" begin
     _inject_mock_hierarchy!()
 
     # Direct children at the requested rank
@@ -411,10 +411,10 @@ end
 end
 
 # ---------------------------------------------------------------------------
-# ls_parent_taxa — offline (mock hierarchy)
+# parent_taxa — offline (mock hierarchy)
 # ---------------------------------------------------------------------------
 
-@testset "ls_parent_taxa — offline mock" begin
+@testset "parent_taxa — offline mock" begin
     _inject_mock_hierarchy!()
 
     @testset "all ancestors — species" begin
@@ -469,7 +469,7 @@ end
 # Live tests — require ENV["PBDB_LIVE"]="1"  (LIVE constant from runtests.jl)
 # ---------------------------------------------------------------------------
 
-@testset "ls_registered_taxa — live snapshot" begin
+@testset "registered_taxa — live snapshot" begin
     if !LIVE
         @info "Live taxonomy-query tests skipped. Set ENV[\"PBDB_LIVE\"]=\"1\" to enable."
         return
@@ -491,7 +491,7 @@ end
     @test "Vulpes" in multi
 end
 
-@testset "ls_child_taxa — live snapshot" begin
+@testset "child_taxa — live snapshot" begin
     if !LIVE
         return
     end
@@ -509,7 +509,7 @@ end
     @test _ls_children("INVALID_TAXON_NAME_XYZ", "genus") == String[]
 end
 
-@testset "ls_parent_taxa — live snapshot" begin
+@testset "parent_taxa — live snapshot" begin
     if !LIVE
         return
     end
