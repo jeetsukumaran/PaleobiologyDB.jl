@@ -137,48 +137,48 @@ on first use (no extra download required).
 using PaleobiologyDB.Taxonomy
 
 # Valid rank names
-ls_taxonomic_ranks()
+taxonomic_ranks()
 # → ["subspecies", "species", "genus", …, "kingdom"]
 
 # All accepted taxon names (tens of thousands)
-ls_registered_taxa()
+registered_taxa()
 
 # Names matching a pattern
-ls_registered_taxa(r"^Canis\b")
+registered_taxa(r"^Canis\b")
 # → ["Canis", "Canis aureus", "Canis lupus", …]
 
 # Union of patterns
-ls_registered_taxa([r"^Canis\b", r"^Vulpes\b"])
+registered_taxa([r"^Canis\b", r"^Vulpes\b"])
 
 # All families within Carnivora
-ls_child_taxa("Carnivora", "family")
+child_taxa("Carnivora", "family")
 # → ["Ailuridae", "Amphicyonidae", "Canidae", "Felidae", …]
 
 # All genera within Canidae
-ls_child_taxa("Canidae", "genus")
+child_taxa("Canidae", "genus")
 # → ["Borophagus", "Canis", "Lycaon", "Urocyon", "Vulpes", …]
 
 # All species within a genus
-ls_child_taxa("Canis", "species")
+child_taxa("Canis", "species")
 # → ["Canis aureus", "Canis lupus", "Canis mesomelas", …]
 
 # Every descendant at any rank (no filter)
-ls_child_taxa("Canidae")
+child_taxa("Canidae")
 
 # Full ancestor chain of a species, child → root
-ls_parent_taxa("Canis lupus")
+parent_taxa("Canis lupus")
 # → ["Canis", "Canidae", "Carnivora", "Mammalia", …, "Animalia"]
 
 # Only the family
-ls_parent_taxa("Canis lupus", "family")
+parent_taxa("Canis lupus", "family")
 # → ["Canidae"]
 ```
 
 ```@docs
-PaleobiologyDB.Taxonomy.ls_taxonomic_ranks
-PaleobiologyDB.Taxonomy.ls_registered_taxa
-PaleobiologyDB.Taxonomy.ls_child_taxa
-PaleobiologyDB.Taxonomy.ls_parent_taxa
+PaleobiologyDB.Taxonomy.taxonomic_ranks
+PaleobiologyDB.Taxonomy.registered_taxa
+PaleobiologyDB.Taxonomy.child_taxa
+PaleobiologyDB.Taxonomy.parent_taxa
 ```
 
 ## Taxon occurrence search: taxon_occursin

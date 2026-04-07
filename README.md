@@ -68,16 +68,16 @@ df2.taxonomy_clades[1]
 # ── Taxonomy queries ───────────────────────────────────────────────────────
 
 # Valid rank names
-ls_taxonomic_ranks()
+taxonomic_ranks()
 # → ["subspecies", "species", "genus", …, "kingdom"]
 
 # Search accepted PBDB taxon names
-ls_registered_taxa(r"^Canis\b")            # → ["Canis", "Canis aureus", "Canis lupus", …]
-ls_registered_taxa([r"^Canis\b", r"^Vulpes\b"])  # union of patterns
+registered_taxa(r"^Canis\b")            # → ["Canis", "Canis aureus", "Canis lupus", …]
+registered_taxa([r"^Canis\b", r"^Vulpes\b"])  # union of patterns
 
 # Navigate the hierarchy
-ls_child_taxa("Carnivora", "family")       # → ["Ailuridae", "Canidae", "Felidae", …]
-ls_parent_taxa("Canis lupus", "family")    # → ["Canidae"]
+child_taxa("Carnivora", "family")       # → ["Ailuridae", "Canidae", "Felidae", …]
+parent_taxa("Canis lupus", "family")    # → ["Canidae"]
 
 # ── Row filtering ──────────────────────────────────────────────────────────
 
