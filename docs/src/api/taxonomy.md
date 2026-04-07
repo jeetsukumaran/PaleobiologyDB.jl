@@ -315,6 +315,282 @@ patterns, keywords, and use cases. The choice is purely stylistic:
 
 Use whichever feels more natural for your workflow. Both are equally idiomatic and supported.
 
+## PhyloPic silhouette images
+
+`acquire_phylopic` and `augment_phylopic` resolve PBDB taxon names to
+[PhyloPic](https://www.phylopic.org/) silhouette image metadata using the
+PhyloPic `/resolve/paleobiodb.org/txn` API endpoint.
+
+### How it works
+
+For each taxon name the following steps are performed automatically:
+
+1. **PBDB lookup** — `pbdb_taxon(name = X)` retrieves the taxon's numeric ID (`orig_no`).
+2. **Lineage** — `pbdb_taxa(id = "txn:N", rel = "all_parents")` fetches the full ancestor chain.
+3. **PhyloPic resolve** — the lineage IDs are sent to
+   `https://api.phylopic.org/resolve/paleobiodb.org/txn`, which returns the UUID of the
+   closest-matching node in PhyloPic's taxonomy.
+4. **Image metadata** — the node's primary image is fetched with all file links, licence, and attribution.
+
+The current PhyloPic build number is cached in memory for one hour to avoid unnecessary round-trips.
+
+When processing a DataFrame, each *unique* taxon name triggers exactly one set of API calls;
+duplicate names reuse the cached result.  If a taxon cannot be found in PBDB or PhyloPic, all
+fields for that row are `missing` — no error is raised.
+
+### Output fields
+
+Both functions produce the following fields.  The `fieldname_prefix` argument (default
+`"phylopic_"`) is prepended to every base name:
+
+| Base name       | Column (default prefix) | Content                                   |
+|-----------------|-------------------------|-------------------------------------------|
+| `pbdb_taxon_id` | `phylopic_pbdb_taxon_id`| PBDB `orig_no` of the query taxon         |
+| `pbdb_lineage`  | `phylopic_pbdb_lineage` | Comma-separated lineage `orig_no` values  |
+| `node_uuid`     | `phylopic_node_uuid`    | Matched PhyloPic node UUID                |
+| `matched_name`  | `phylopic_matched_name` | Name of the matched PhyloPic node         |
+| `uuid`          | `phylopic_uuid`         | Image UUID                                |
+| `thumbnail`     | `phylopic_thumbnail`    | URL to the largest thumbnail PNG          |
+| `vector`        | `phylopic_vector`       | URL to the vector SVG                     |
+| `raster`        | `phylopic_raster`       | URL to the largest raster PNG             |
+| `source_file`   | `phylopic_source_file`  | URL to the original uploaded file         |
+| `og_image`      | `phylopic_og_image`     | URL to the OG social-media preview image  |
+| `license`       | `phylopic_license`      | Licence identifier (e.g. `"CC BY 4.0"`)  |
+| `license_url`   | `phylopic_license_url`  | Full licence URL                          |
+| `contributor`   | `phylopic_contributor`  | Contributor resource href                 |
+| `attribution`   | `phylopic_attribution`  | Attribution text                          |
+
+### acquire_phylopic — single taxon
+
+```julia
+using PaleobiologyDB, PaleobiologyDB.Taxonomy
+
+# Default prefix → :phylopic_uuid, :phylopic_thumbnail, etc.
+rec = acquire_phylopic("Tyrannosaurus")
+rec.phylopic_thumbnail    # → "https://images.phylopic.org/…/thumbnail/…"
+rec.phylopic_vector       # → SVG URL
+rec.phylopic_license      # → "CC BY 4.0"
+rec.phylopic_attribution  # → "Matt Martyniuk"
+rec.phylopic_pbdb_taxon_id  # → 56230 (orig_no)
+
+# Taxon not found in PBDB or PhyloPic → all fields missing
+rec_missing = acquire_phylopic("UNKNOWN_TAXON_XYZ")
+ismissing(rec_missing.phylopic_uuid)  # → true
+```
+
+### acquire_phylopic — DataFrame (phylopic columns only)
+
+```julia
+using PaleobiologyDB, PaleobiologyDB.Taxonomy, DataFrames
+
+df   = pbdb_occurrences(base_name = "Ceratopsia", interval = "Cretaceous", show = "full")
+
+# Returns a new DataFrame with ONLY the 14 phylopic columns (nrow(df) rows)
+pics = acquire_phylopic(df)
+pics.phylopic_thumbnail   # vector of URL strings / missings
+
+# Custom taxon column (default is :accepted_name)
+pics_genus = acquire_phylopic(df, :genus)
+```
+
+The returned DataFrame contains only the PhyloPic columns.  Combine it with the
+original using `hcat` or use [`augment_phylopic`](@ref) for the one-call convenience:
+
+```julia
+enriched = hcat(df, pics)
+```
+
+### augment_phylopic — enriched DataFrame
+
+```julia
+# Returns a copy of df with all original columns plus the 14 phylopic columns
+enriched = augment_phylopic(df)
+
+ncol(enriched) == ncol(df) + 14  # true
+hasproperty(enriched, :accepted_name)   # original columns preserved
+hasproperty(enriched, :phylopic_uuid)   # phylopic columns added
+```
+
+### Multi-level enrichment with custom prefixes
+
+Because the `fieldname_prefix` argument completely controls the output column names,
+you can acquire images at multiple taxonomic levels simultaneously without column-name
+conflicts:
+
+```julia
+using PaleobiologyDB, PaleobiologyDB.Taxonomy, DataFrames
+
+df = pbdb_occurrences(base_name = "Dinosauria", interval = "Cretaceous",
+                      show = "full", limit = 100)
+
+# Silhouettes matched at genus level
+genus_pics = acquire_phylopic(df, :genus, "genus_phylopic_")
+# → columns :genus_phylopic_uuid, :genus_phylopic_thumbnail, …
+
+# Silhouettes matched at species level
+sp_pics = acquire_phylopic(df, :accepted_name, "sp_phylopic_")
+# → columns :sp_phylopic_uuid, :sp_phylopic_thumbnail, …
+
+# Combine everything
+full = hcat(df, genus_pics, sp_pics)
+
+# Compare: genus-level match vs. species-level match
+full[!, [:accepted_name, :genus_phylopic_matched_name, :sp_phylopic_matched_name]]
+```
+
+This is especially useful when the species-level image is absent (returns `missing`)
+but a genus- or family-level silhouette is available.
+
+### Downloading and saving images
+
+The functions return URLs as plain strings.  `Downloads` (a Julia standard
+library, no installation required) is all you need to save files to disk:
+
+```julia
+using Downloads
+using PaleobiologyDB, PaleobiologyDB.Taxonomy
+
+rec = acquire_phylopic("Tyrannosaurus")
+
+# Save to disk — no extra dependencies needed
+Downloads.download(rec.phylopic_raster,    "tyrannosaurus.png")   # raster PNG
+Downloads.download(rec.phylopic_vector,    "tyrannosaurus.svg")   # vector SVG
+Downloads.download(rec.phylopic_thumbnail, "tyrannosaurus_thumb.png")
+```
+
+To load an image as a Julia matrix (for Makie, Pluto, Jupyter, etc.) you need
+a separate image-loading package that is **not** a dependency of
+PaleobiologyDB.jl.  Install one in your own environment first:
+
+```
+pkg> add FileIO PNGFiles     # or: add FileIO ImageMagick
+```
+
+then:
+
+```julia
+using FileIO, Downloads
+img = load(Downloads.download(rec.phylopic_thumbnail))
+# img is a Matrix{RGB{N0f8}} or similar — pass directly to Makie image!()
+```
+
+### Enhancing Makie plots with PhyloPic silhouettes
+
+PhyloPic thumbnails can be overlaid on Makie figures using `image!`.
+The examples below require GLMakie (or CairoMakie) and an image-loading
+package — neither is a dependency of PaleobiologyDB.jl, so install them first:
+
+```
+pkg> add GLMakie FileIO PNGFiles
+```
+
+The example below draws a stratigraphic range chart for a handful of Cretaceous
+taxa and annotates each range bar with the taxon's silhouette.
+
+```julia
+using GLMakie, FileIO, Downloads
+using PaleobiologyDB, PaleobiologyDB.Taxonomy
+
+# ── Data ──────────────────────────────────────────────────────────────────
+
+taxa       = ["Tyrannosaurus", "Triceratops", "Ankylosaurus",
+              "Pachycephalosaurus", "Edmontosaurus"]
+first_app  = [68.0, 68.0, 70.0, 74.0, 76.0]   # first appearance (Ma)
+last_app   = [66.0, 66.0, 66.0, 66.0, 66.0]   # last appearance (Ma)
+
+# ── PhyloPic images ───────────────────────────────────────────────────────
+
+pics = [acquire_phylopic(t) for t in taxa]
+
+# ── Plot ──────────────────────────────────────────────────────────────────
+
+fig = Figure(size = (800, 420))
+ax  = Axis(fig[1, 1],
+    xlabel          = "Age (Ma)",
+    title           = "Latest Cretaceous taxa — stratigraphic ranges",
+    yreversed       = false,
+    xreversed       = true,          # geological convention: older on the right
+    yticks          = (1:length(taxa), taxa),
+    yticklabelsize  = 13,
+)
+
+img_half_height = 0.38   # vertical half-size of the image overlay
+
+for (i, (fa, la, rec)) in enumerate(zip(first_app, last_app, pics))
+    # Range bar
+    lines!(ax, [fa, la], [i, i]; linewidth = 6, color = :gray30)
+
+    # Overlay the thumbnail at the older end of the range
+    if !ismissing(rec.phylopic_thumbnail)
+        img = load(Downloads.download(rec.phylopic_thumbnail))
+        w   = size(img, 2) / size(img, 1)   # aspect ratio
+        dx  = img_half_height * w
+        image!(ax,
+            [fa - dx, fa + dx],               # x extent (Ma)
+            [i - img_half_height, i + img_half_height],  # y extent
+            rotr90(img);                       # Makie expects column-major
+            interpolate = true,
+        )
+    end
+end
+
+xlims!(ax, 78, 64)
+display(fig)
+save("cretaceous_ranges.png", fig)
+```
+
+For a diversity bar chart, pass the full occurrence DataFrame through
+`augment_phylopic` and load one thumbnail per bar (same package requirements:
+`pkg> add GLMakie FileIO PNGFiles`):
+
+```julia
+using GLMakie, FileIO, Downloads, DataFrames
+using PaleobiologyDB, PaleobiologyDB.Taxonomy
+
+df = pbdb_occurrences(base_name = "Ceratopsia", interval = "Cretaceous",
+                      show = "full", limit = 500)
+df2 = augment_taxonomy(df)
+
+# Occurrence counts per genus
+counts = sort(
+    combine(groupby(dropmissing(df2, :taxonomy_genus), :taxonomy_genus),
+            nrow => :n),
+    :n; rev = true
+)
+top = first(counts, 6)
+
+# PhyloPic images for the top genera
+pics = acquire_phylopic(
+    DataFrame(g = top.taxonomy_genus), :g, "phylopic_"
+)
+
+fig = Figure(size = (700, 500))
+ax  = Axis(fig[1, 1],
+    xticks         = (1:nrow(top), top.taxonomy_genus),
+    xticklabelrotation = π / 4,
+    ylabel         = "Occurrence count",
+    title          = "Most common Cretaceous ceratopsian genera",
+)
+
+for (i, (n, thumb)) in enumerate(zip(top.n, pics.phylopic_thumbnail))
+    barplot!(ax, [i], [n]; color = (:steelblue, 0.7))
+    if !ismissing(thumb)
+        img = load(Downloads.download(thumb))
+        w   = size(img, 2) / size(img, 1)
+        h   = n * 0.25                        # image height = 25 % of bar
+        image!(ax, [i - w * h / 2, i + w * h / 2], [n * 0.02, n * 0.02 + h],
+               rotr90(img); interpolate = true)
+    end
+end
+
+display(fig)
+```
+
+```@docs
+PaleobiologyDB.Taxonomy.acquire_phylopic
+PaleobiologyDB.Taxonomy.augment_phylopic
+```
+
 ## Local data store management
 
 The `Store` submodule manages the Scratch-backed local snapshots used by the

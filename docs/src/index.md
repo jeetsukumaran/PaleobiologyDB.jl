@@ -111,6 +111,8 @@ PaleobiologyDB
 | Specimens | `pbdb_specimen`, `pbdb_specimens`, `pbdb_ref_specimens`, `pbdb_measurements` |
 | Opinions | `pbdb_opinion`, `pbdb_opinions` |
 | Counts | `pbdb_count` |
+| Taxonomy (submodule) | `drop_unqualified_taxa`, `drop_unresolved_taxa`, `drop_unrecognized_taxa`, `augment_taxonomy`, `child_taxa`, `parent_taxa`, `registered_taxa`, `taxon_occursin`, `contains_taxon` |
+| PhyloPic (submodule) | `acquire_phylopic`, `augment_phylopic` |
 
 All wrappers delegate to `pbdb_query(endpoint; kwargs...)`.
 

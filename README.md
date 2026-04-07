@@ -106,6 +106,65 @@ subset(df2, :taxonomy_clades   => taxon_occursin([r"Canidae", r"lupus"]))  # AND
 subset(df2, :taxonomy_genus    => taxon_occursin(["Canis", "Vulpes"]; combine=any))  # OR
 ```
 
+### PhyloPic silhouette images
+
+The `acquire_phylopic` and `augment_phylopic` functions map PBDB taxon names to
+[PhyloPic](https://www.phylopic.org/) silhouette images via the PhyloPic
+`/resolve/paleobiodb.org/txn` API endpoint.
+
+```julia
+using PaleobiologyDB, PaleobiologyDB.Taxonomy
+
+# ── Single taxon ───────────────────────────────────────────────────────────
+
+rec = acquire_phylopic("Tyrannosaurus")
+rec.phylopic_thumbnail   # → "https://images.phylopic.org/images/.../thumbnail/…"
+rec.phylopic_vector      # → SVG URL
+rec.phylopic_license     # → "CC BY 4.0"
+rec.phylopic_attribution # → "Matt Martyniuk"
+
+# ── DataFrame: phylopic columns only (same row count) ─────────────────────
+
+df   = pbdb_occurrences(base_name = "Ceratopsia", interval = "Cretaceous", show = "full")
+pics = acquire_phylopic(df)                # 14 phylopic columns, nrow(df) rows
+pics.phylopic_thumbnail                    # vector of URLs / missings
+
+# ── Convenience: original df + phylopic columns ───────────────────────────
+
+enriched = augment_phylopic(df)            # all original columns + 14 phylopic columns
+
+# ── Multi-level enrichment with custom prefixes ────────────────────────────
+
+# Different images at genus vs. species level
+genus_pics = acquire_phylopic(df, :genus,         "genus_phylopic_")
+sp_pics    = acquire_phylopic(df, :accepted_name, "sp_phylopic_")
+full       = hcat(df, genus_pics, sp_pics)
+full.genus_phylopic_thumbnail
+full.sp_phylopic_thumbnail
+```
+
+Each unique taxon name triggers one set of API calls; repeated names reuse the
+cached result.  Unresolvable names return `missing` in every field rather than
+raising an error.
+
+```julia
+# ── Downloading images to disk (only needs Downloads, a stdlib) ───────────
+
+using Downloads
+
+rec = acquire_phylopic("Tyrannosaurus")
+Downloads.download(rec.phylopic_raster,    "tyrannosaurus.png")
+Downloads.download(rec.phylopic_vector,    "tyrannosaurus.svg")
+Downloads.download(rec.phylopic_thumbnail, "tyrannosaurus_thumb.png")
+
+# To load an image as a Julia matrix for Makie / Pluto / Jupyter, use a
+# separate image-loading package (not a PaleobiologyDB.jl dependency):
+#   pkg> add FileIO PNGFiles    (or ImageMagick, Images, etc.)
+# then:
+#   using FileIO
+#   img = load(Downloads.download(rec.phylopic_thumbnail))
+```
+
 ## Key features
 
 - **DataFrame results** — all queries return a `DataFrame` for immediate use with the Julia data ecosystem.
@@ -115,6 +174,8 @@ subset(df2, :taxonomy_genus    => taxon_occursin(["Canis", "Vulpes"]; combine=an
 - **Rich field names and extra blocks** — `vocab = "pbdb"` (default) for full column names, `vocab = "com"` for compact codes; `show = ["coords", "classext", "stratext"]` for additional data blocks.
 
 - **Count without downloading** — `pbdb_count(:occurrences; base_name = "Canidae")` returns the record count without fetching data.
+
+- **PhyloPic silhouette images** — `acquire_phylopic` and `augment_phylopic` resolve PBDB taxon names to [PhyloPic](https://www.phylopic.org/) silhouette image URLs, licences, and attribution metadata.  The `fieldname_prefix` argument supports multi-level enrichment (genus-level images alongside species-level images) in a single DataFrame.
 
 - **Built-in API help** — `pbdb_parameters("occurrences")` lists all selection, geographic, temporal, taxonomic, and output parameters directly in the REPL. See the [Interactive Help docs](https://jeetsukumaran.github.io/PaleobiologyDB.jl/dev/api/apihelp/).
 
@@ -129,6 +190,8 @@ subset(df2, :taxonomy_genus    => taxon_occursin(["Canis", "Vulpes"]; combine=an
 * Specimens: `pbdb_specimen`, `pbdb_specimens`, `pbdb_ref_specimens`, `pbdb_measurements`
 * Opinions: `pbdb_opinion`, `pbdb_opinions`
 * Counts: `pbdb_count`
+* Taxonomy (submodule): `drop_unqualified_taxa`, `drop_unresolved_taxa`, `drop_unrecognized_taxa`, `augment_taxonomy`, `child_taxa`, `parent_taxa`, `registered_taxa`, `taxon_occursin`, `contains_taxon`
+* PhyloPic (submodule): `acquire_phylopic`, `augment_phylopic`
 
 ## Documentation
 

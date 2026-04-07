@@ -9,6 +9,6 @@ include("_scratchstore.jl")
 include("_taxonomy.jl")
 
 export taxon_occursin, contains_taxon,
-    pbdb_phylopic, pbdb_augment_phylopic
+    acquire_phylopic, augment_phylopic
 
 end

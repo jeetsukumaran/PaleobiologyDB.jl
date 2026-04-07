@@ -1,7 +1,7 @@
 # test/taxonomy_phylopic.jl
 # Tests for PaleobiologyDB.Taxonomy PhyloPic integration:
-#   pbdb_phylopic (string and DataFrame variants)
-#   pbdb_augment_phylopic
+#   acquire_phylopic (string and DataFrame variants)
+#   augment_phylopic
 #
 # Offline tests bypass network by injecting the build number Ref directly,
 # so _ensure_phylopic_build() is never triggered.
@@ -12,8 +12,8 @@ using Test
 using DataFrames
 using PaleobiologyDB
 
-const _phylopic_pbdb_phylopic        = PaleobiologyDB.Taxonomy.pbdb_phylopic
-const _phylopic_augment              = PaleobiologyDB.Taxonomy.pbdb_augment_phylopic
+const _phylopic_acquire        = PaleobiologyDB.Taxonomy.acquire_phylopic
+const _phylopic_augment              = PaleobiologyDB.Taxonomy.augment_phylopic
 const _PHYLOPIC_BASE_COLUMNS         = PaleobiologyDB.Taxonomy._PHYLOPIC_BASE_COLUMNS
 const _phylopic_null_record_fn       = PaleobiologyDB.Taxonomy._phylopic_null_record
 const _apply_prefix_fn               = PaleobiologyDB.Taxonomy._apply_fieldname_prefix
@@ -73,7 +73,7 @@ const _PHYLOPIC_BUILD_REF            = PaleobiologyDB.Taxonomy._PHYLOPIC_BUILD
 
     @testset "DataFrame variant — missing taxon_field throws ArgumentError" begin
         df = DataFrame(wrong_col = ["Canis lupus"])
-        @test_throws ArgumentError _phylopic_pbdb_phylopic(df, :accepted_name)
+        @test_throws ArgumentError _phylopic_acquire(df, :accepted_name)
     end
 
     @testset "DataFrame variant — missing/empty taxon values → missing rows" begin
@@ -85,7 +85,7 @@ const _PHYLOPIC_BUILD_REF            = PaleobiologyDB.Taxonomy._PHYLOPIC_BUILD
         df = DataFrame(
             taxon = Union{String, Missing}[missing, "", "   "],
         )
-        pics = _phylopic_pbdb_phylopic(df, :taxon)
+        pics = _phylopic_acquire(df, :taxon)
 
         @test pics isa DataFrame
         @test nrow(pics) == 3
@@ -102,13 +102,13 @@ const _PHYLOPIC_BUILD_REF            = PaleobiologyDB.Taxonomy._PHYLOPIC_BUILD
         _PHYLOPIC_BUILD_REF[] = 999_999
 
         df   = DataFrame(taxon = Union{String, Missing}[missing])
-        pics = _phylopic_pbdb_phylopic(df, :taxon)
+        pics = _phylopic_acquire(df, :taxon)
         @test ncol(pics) == length(_PHYLOPIC_BASE_COLUMNS)
 
         _PHYLOPIC_BUILD_REF[] = nothing
     end
 
-    @testset "pbdb_augment_phylopic — column count" begin
+    @testset "augment_phylopic — column count" begin
         _PHYLOPIC_BUILD_REF[] = 999_999
 
         df       = DataFrame(id = [1, 2], taxon = Union{String, Missing}[missing, missing])
@@ -120,7 +120,7 @@ const _PHYLOPIC_BUILD_REF            = PaleobiologyDB.Taxonomy._PHYLOPIC_BUILD
         _PHYLOPIC_BUILD_REF[] = nothing
     end
 
-    @testset "pbdb_augment_phylopic — custom prefix" begin
+    @testset "augment_phylopic — custom prefix" begin
         _PHYLOPIC_BUILD_REF[] = 999_999
 
         df       = DataFrame(t = Union{String, Missing}[missing])
@@ -144,7 +144,7 @@ end
     end
 
     @testset "String variant — Tyrannosaurus (default prefix)" begin
-        rec = _phylopic_pbdb_phylopic("Tyrannosaurus")
+        rec = _phylopic_acquire("Tyrannosaurus")
         @test rec isa NamedTuple
         @test hasproperty(rec, :phylopic_uuid)
         @test !ismissing(rec.phylopic_uuid)
@@ -157,7 +157,7 @@ end
     end
 
     @testset "String variant — custom prefix" begin
-        rec = _phylopic_pbdb_phylopic("Triceratops", "dino_")
+        rec = _phylopic_acquire("Triceratops", "dino_")
         @test hasproperty(rec, :dino_uuid)
         @test hasproperty(rec, :dino_thumbnail)
         @test !hasproperty(rec, :phylopic_uuid)
@@ -165,7 +165,7 @@ end
     end
 
     @testset "String variant — unknown taxon → all missing" begin
-        rec = _phylopic_pbdb_phylopic("ZZZNOMATCH_FAKE_TAXON_XYZ_999")
+        rec = _phylopic_acquire("ZZZNOMATCH_FAKE_TAXON_XYZ_999")
         @test rec isa NamedTuple
         for col in _PHYLOPIC_BASE_COLUMNS
             dest = Symbol("phylopic_" * string(col))
@@ -177,7 +177,7 @@ end
         df = DataFrame(
             accepted_name = ["Tyrannosaurus", "Triceratops", "ZZZNOMATCH_XYZ_999"],
         )
-        pics = _phylopic_pbdb_phylopic(df)
+        pics = _phylopic_acquire(df)
 
         @test pics isa DataFrame
         @test nrow(pics) == 3
@@ -192,7 +192,7 @@ end
             accepted_name = ["Tyrannosaurus", "Triceratops",
                              "Tyrannosaurus", "Triceratops"],
         )
-        pics = _phylopic_pbdb_phylopic(df)
+        pics = _phylopic_acquire(df)
 
         @test nrow(pics) == 4
         # Rows with the same taxon name must have identical values
@@ -202,20 +202,20 @@ end
 
     @testset "DataFrame variant — custom taxon_field" begin
         df   = DataFrame(name_col = ["Canis"])
-        pics = _phylopic_pbdb_phylopic(df, :name_col)
+        pics = _phylopic_acquire(df, :name_col)
         @test hasproperty(pics, :phylopic_uuid)
         @test !ismissing(pics.phylopic_uuid[1])
     end
 
     @testset "DataFrame variant — custom fieldname_prefix" begin
         df   = DataFrame(accepted_name = ["Canis"])
-        pics = _phylopic_pbdb_phylopic(df, :accepted_name, "my_")
+        pics = _phylopic_acquire(df, :accepted_name, "my_")
         @test  hasproperty(pics, :my_uuid)
         @test !hasproperty(pics, :phylopic_uuid)
         @test !ismissing(pics.my_uuid[1])
     end
 
-    @testset "pbdb_augment_phylopic — all original cols preserved" begin
+    @testset "augment_phylopic — all original cols preserved" begin
         df       = DataFrame(id = [1], accepted_name = ["Canis"])
         enriched = _phylopic_augment(df)
 
@@ -229,8 +229,8 @@ end
 
     @testset "multi-level enrichment pattern" begin
         df      = DataFrame(genus = ["Tyrannosaurus"], accepted_name = ["Tyrannosaurus rex"])
-        g_pics  = _phylopic_pbdb_phylopic(df, :genus,         "genus_phylopic_")
-        sp_pics = _phylopic_pbdb_phylopic(df, :accepted_name, "sp_phylopic_")
+        g_pics  = _phylopic_acquire(df, :genus,         "genus_phylopic_")
+        sp_pics = _phylopic_acquire(df, :accepted_name, "sp_phylopic_")
         full    = hcat(df, g_pics, sp_pics)
 
         @test hasproperty(full, :genus_phylopic_uuid)

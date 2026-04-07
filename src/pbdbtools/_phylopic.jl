@@ -11,16 +11,16 @@
 #   4. PhyloPic /nodes/<uuid>?embed_primaryImage  → image metadata
 #
 # Public API:
-#   pbdb_phylopic(taxon_name, fieldname_prefix)       → NamedTuple
-#   pbdb_phylopic(df, taxon_field, fieldname_prefix)  → DataFrame (phylopic cols only)
-#   pbdb_augment_phylopic(df, taxon_field, prefix)    → DataFrame (original + phylopic cols)
+#   acquire_phylopic(taxon_name, fieldname_prefix)       → NamedTuple
+#   acquire_phylopic(df, taxon_field, fieldname_prefix)  → DataFrame (phylopic cols only)
+#   augment_phylopic(df, taxon_field, prefix)    → DataFrame (original + phylopic cols)
 #
 # Column names are formed by prepending `fieldname_prefix` to each base name.
 # Default prefix is "phylopic_", giving columns like :phylopic_uuid, :phylopic_thumbnail.
 # Use a custom prefix to associate images at different taxonomic levels:
 #
-#   genus_pics = pbdb_phylopic(df, :genus,         "genus_phylopic_")
-#   sp_pics    = pbdb_phylopic(df, :accepted_name, "sp_phylopic_")
+#   genus_pics = acquire_phylopic(df, :genus,         "genus_phylopic_")
+#   sp_pics    = acquire_phylopic(df, :accepted_name, "sp_phylopic_")
 #   enriched   = hcat(df, genus_pics, sp_pics)
 # ---------------------------------------------------------------------------
 
@@ -36,7 +36,7 @@ const PHYLOPIC_BASE_URL = "https://api.phylopic.org"
 """
 Base column keys for PhyloPic results (without any prefix).
 
-The `fieldname_prefix` argument to `pbdb_phylopic` is prepended to each of these
+The `fieldname_prefix` argument to `acquire_phylopic` is prepended to each of these
 symbols to form the actual column names. With the default prefix `"phylopic_"`,
 the columns become `:phylopic_pbdb_taxon_id`, `:phylopic_uuid`, etc.
 """
@@ -160,11 +160,18 @@ function _phylopic_resolve_node(build::Int, lineage_nos::Vector{Int})::Union{Str
     try
         resp = _phylopic_get(url)
         obj  = JSON3.read(resp.body)
-        # Extract UUID from the node link href (last path segment)
-        hasproperty(obj, :_links)       || return nothing
-        hasproperty(obj._links, :node)  || return nothing
-        href = string(obj._links.node.href)
-        return last(split(href, '/'))
+        # HTTP.jl follows the 308 redirect to the node endpoint.
+        # The redirected response has a top-level :uuid field.
+        hasproperty(obj, :uuid) && return string(obj.uuid)
+        # If the redirect was not followed, the 308 body is
+        # {"href": "/nodes/<uuid>?build=...", "title": "..."}.
+        # Extract the UUID from the path component of the href.
+        if hasproperty(obj, :href)
+            path = first(split(string(obj.href), '?'))
+            uuid = last(split(path, '/'))
+            isempty(uuid) || return uuid
+        end
+        return nothing
     catch err
         err isa HTTP.Exceptions.StatusError && err.status == 404 && return nothing
         return nothing
@@ -277,7 +284,7 @@ function _phylopic_extract_record(
         end
 
         try
-            lu = string(img.license)
+            lu = string(img._links.license.href)
             license_url = lu
             license     = _cc_license_label(lu)
         catch; end
@@ -344,7 +351,7 @@ function _phylopic_lookup_taxon(taxon_name::AbstractString; build::Int)::NamedTu
         return _phylopic_extract_record(node_obj, orig_no, lineage_str)
 
     catch err
-        @warn "pbdb_phylopic: unexpected error looking up \"$taxon_name\"" exception = err
+        @warn "acquire_phylopic: unexpected error looking up \"$taxon_name\"" exception = err
         return _phylopic_null_record()
     end
 end
@@ -364,7 +371,7 @@ end
 # ---------------------------------------------------------------------------
 
 """
-    pbdb_phylopic(taxon_name, fieldname_prefix = "phylopic_"; kwargs...) -> NamedTuple
+    acquire_phylopic(taxon_name, fieldname_prefix = "phylopic_"; kwargs...) -> NamedTuple
 
 Look up PhyloPic silhouette image metadata for a single PBDB taxon name.
 
@@ -411,18 +418,18 @@ If the taxon cannot be found in PBDB or PhyloPic, all fields are `missing`.
 using PaleobiologyDB, PaleobiologyDB.Taxonomy
 
 # Default prefix: :phylopic_uuid, :phylopic_thumbnail, ...
-rec = pbdb_phylopic("Tyrannosaurus")
+rec = acquire_phylopic("Tyrannosaurus")
 rec.phylopic_thumbnail   # URL string
 
 # Custom prefix for multi-level use
-genus_rec = pbdb_phylopic("Tyrannosaurus", "genus_phylopic_")
+genus_rec = acquire_phylopic("Tyrannosaurus", "genus_phylopic_")
 genus_rec.genus_phylopic_uuid
 ```
 
-See also [`pbdb_phylopic(df, ...)`](@ref) for the DataFrame variant and
-[`pbdb_augment_phylopic`](@ref) to enrich a DataFrame in one call.
+See also [`acquire_phylopic(df, ...)`](@ref) for the DataFrame variant and
+[`augment_phylopic`](@ref) to enrich a DataFrame in one call.
 """
-function pbdb_phylopic(
+function acquire_phylopic(
     taxon_name::AbstractString,
     fieldname_prefix::AbstractString = "phylopic_";
     kwargs...,
@@ -432,7 +439,7 @@ function pbdb_phylopic(
 end
 
 """
-    pbdb_phylopic(df, taxon_field = :accepted_name, fieldname_prefix = "phylopic_"; kwargs...) -> DataFrame
+    acquire_phylopic(df, taxon_field = :accepted_name, fieldname_prefix = "phylopic_"; kwargs...) -> DataFrame
 
 Return a DataFrame of PhyloPic columns for every row in `df`, aligned by row.
 
@@ -450,15 +457,15 @@ produce rows of `missing` values.
 
 A `DataFrame` with `nrow(df)` rows and one column per PhyloPic field (14 columns total).
 The returned DataFrame contains **only** the PhyloPic columns — the original columns
-of `df` are not included. Use [`pbdb_augment_phylopic`](@ref) or `hcat` to combine:
+of `df` are not included. Use [`augment_phylopic`](@ref) or `hcat` to combine:
 
 ```julia
-pics     = pbdb_phylopic(df)          # 14 phylopic cols
+pics     = acquire_phylopic(df)          # 14 phylopic cols
 enriched = hcat(df, pics)             # original + phylopic
 
 # Or multi-level:
-g_pics = pbdb_phylopic(df, :genus,         "genus_phylopic_")
-s_pics = pbdb_phylopic(df, :accepted_name, "sp_phylopic_")
+g_pics = acquire_phylopic(df, :genus,         "genus_phylopic_")
+s_pics = acquire_phylopic(df, :accepted_name, "sp_phylopic_")
 hcat(df, g_pics, s_pics)
 ```
 
@@ -468,13 +475,13 @@ hcat(df, g_pics, s_pics)
 using PaleobiologyDB, PaleobiologyDB.Taxonomy, DataFrames
 
 df   = pbdb_occurrences(base_name = "Tyrannosaurus", limit = 10)
-pics = pbdb_phylopic(df)
+pics = acquire_phylopic(df)
 pics.phylopic_thumbnail   # vector of URL strings / missings
 ```
 
-See also [`pbdb_augment_phylopic`](@ref) for the one-call enrichment convenience function.
+See also [`augment_phylopic`](@ref) for the one-call enrichment convenience function.
 """
-function pbdb_phylopic(
+function acquire_phylopic(
     df::AbstractDataFrame,
     taxon_field::Symbol = :accepted_name,
     fieldname_prefix::AbstractString = "phylopic_";
@@ -482,7 +489,7 @@ function pbdb_phylopic(
 )::DataFrame
     hasproperty(df, taxon_field) ||
         throw(ArgumentError(
-            "pbdb_phylopic: column `$taxon_field` not found in DataFrame. " *
+            "acquire_phylopic: column `$taxon_field` not found in DataFrame. " *
             "Available columns: $(join(propertynames(df), ", "))"
         ))
 
@@ -519,16 +526,16 @@ function pbdb_phylopic(
 end
 
 """
-    pbdb_augment_phylopic(df, taxon_field = :accepted_name, fieldname_prefix = "phylopic_"; kwargs...) -> DataFrame
+    augment_phylopic(df, taxon_field = :accepted_name, fieldname_prefix = "phylopic_"; kwargs...) -> DataFrame
 
 Enrich `df` with PhyloPic image columns and return the combined result.
 
-This is a convenience wrapper: it calls [`pbdb_phylopic(df, ...)`](@ref) and concatenates
+This is a convenience wrapper: it calls [`acquire_phylopic(df, ...)`](@ref) and concatenates
 the result with a copy of `df` using `hcat`.
 
 ## Arguments
 
-Same as [`pbdb_phylopic(df, ...)`](@ref).
+Same as [`acquire_phylopic(df, ...)`](@ref).
 
 ## Returns
 
@@ -540,19 +547,19 @@ A `DataFrame` containing all original columns of `df` followed by the 14 PhyloPi
 using PaleobiologyDB, PaleobiologyDB.Taxonomy, DataFrames
 
 df       = pbdb_occurrences(base_name = "Ceratopsia", limit = 20)
-enriched = pbdb_augment_phylopic(df)   # all original cols + :phylopic_uuid etc.
+enriched = augment_phylopic(df)   # all original cols + :phylopic_uuid etc.
 
 # Custom taxon field and prefix
-enriched_genus = pbdb_augment_phylopic(df, :genus, "genus_phylopic_")
+enriched_genus = augment_phylopic(df, :genus, "genus_phylopic_")
 ```
 
-See also [`pbdb_phylopic`](@ref).
+See also [`acquire_phylopic`](@ref).
 """
-function pbdb_augment_phylopic(
+function augment_phylopic(
     df::AbstractDataFrame,
     taxon_field::Symbol = :accepted_name,
     fieldname_prefix::AbstractString = "phylopic_";
     kwargs...,
 )::DataFrame
-    hcat(copy(df), pbdb_phylopic(df, taxon_field, fieldname_prefix; kwargs...))
+    hcat(copy(df), acquire_phylopic(df, taxon_field, fieldname_prefix; kwargs...))
 end
