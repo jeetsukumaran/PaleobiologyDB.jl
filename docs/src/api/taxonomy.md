@@ -458,37 +458,21 @@ Downloads.download(rec.phylopic_vector,    "tyrannosaurus.svg")   # vector SVG
 Downloads.download(rec.phylopic_thumbnail, "tyrannosaurus_thumb.png")
 ```
 
-To load an image as a Julia matrix (for Makie, Pluto, Jupyter, etc.) you need
-a separate image-loading package that is **not** a dependency of
-PaleobiologyDB.jl.  Install one in your own environment first:
-
-```
-pkg> add FileIO PNGFiles     # or: add FileIO ImageMagick
-```
-
-then:
-
-```julia
-using FileIO, Downloads
-img = load(Downloads.download(rec.phylopic_thumbnail))
-# img is a Matrix{RGB{N0f8}} or similar — pass directly to Makie image!()
-```
-
 ### Enhancing Makie plots with PhyloPic silhouettes
 
 PhyloPic thumbnails can be overlaid on Makie figures using `image!`.
-The examples below require GLMakie (or CairoMakie) and an image-loading
-package — neither is a dependency of PaleobiologyDB.jl, so install them first:
+
+The examples below require the following additional packages: 
 
 ```
-pkg> add GLMakie FileIO PNGFiles
+pkg> add CairoMakie FileIO PNGFiles
 ```
 
 The example below draws a stratigraphic range chart for a handful of Cretaceous
 taxa and annotates each range bar with the taxon's silhouette.
 
 ```julia
-using GLMakie, FileIO, Downloads
+using CairoMakie, FileIO, Downloads
 using PaleobiologyDB, PaleobiologyDB.Taxonomy
 
 # ── Data ──────────────────────────────────────────────────────────────────
@@ -541,10 +525,10 @@ save("cretaceous_ranges.png", fig)
 
 For a diversity bar chart, pass the full occurrence DataFrame through
 `augment_phylopic` and load one thumbnail per bar (same package requirements:
-`pkg> add GLMakie FileIO PNGFiles`):
+`pkg> add CairoMakie FileIO PNGFiles`):
 
 ```julia
-using GLMakie, FileIO, Downloads, DataFrames
+using CairoMakie, FileIO, Downloads, DataFrames
 using PaleobiologyDB, PaleobiologyDB.Taxonomy
 
 df = pbdb_occurrences(base_name = "Ceratopsia", interval = "Cretaceous",
