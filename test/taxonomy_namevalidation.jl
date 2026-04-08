@@ -151,7 +151,7 @@ end
 end
 
 # ---------------------------------------------------------------------------
-# Taxonomy.Store metadata — always available (no network)
+# Depot metadata — always available (no network)
 # ---------------------------------------------------------------------------
 
 @testset "Depot metadata" begin
