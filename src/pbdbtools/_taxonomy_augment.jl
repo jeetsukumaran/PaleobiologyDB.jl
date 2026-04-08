@@ -21,6 +21,8 @@
 using DataFrames, CSV
 using .Store
 
+export augment_taxonomy
+
 # ---------------------------------------------------------------------------
 # Lazy in-memory hierarchy indices
 # ---------------------------------------------------------------------------

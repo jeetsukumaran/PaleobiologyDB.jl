@@ -1,6 +1,8 @@
 
 using DataFrames
 
+export drop_unresolved_taxa, drop_unresolved_taxa!
+
 # ---------------------------------------------------------------------------
 # Taxonomic rank hierarchy
 # ---------------------------------------------------------------------------

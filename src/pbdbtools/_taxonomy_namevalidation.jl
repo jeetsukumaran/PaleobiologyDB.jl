@@ -24,6 +24,8 @@
 using DataFrames, CSV
 using .Store
 
+export istaxon, audit_taxonomy, drop_unrecognized_taxa, drop_unrecognized_taxa!
+
 # ---------------------------------------------------------------------------
 # Taxa-list store registration
 # ---------------------------------------------------------------------------

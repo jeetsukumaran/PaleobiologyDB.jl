@@ -19,6 +19,9 @@
 #   parent_taxa — names of ancestors at a given rank (or all ancestors)
 # ---------------------------------------------------------------------------
 
+export child_taxa, parent_taxa, taxonomic_ranks, registered_taxa,
+    taxon_occursin, contains_taxon
+
 # ---------------------------------------------------------------------------
 # Lazy children index (reverse of parent_no)
 # ---------------------------------------------------------------------------

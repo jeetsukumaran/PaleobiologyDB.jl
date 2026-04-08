@@ -57,6 +57,8 @@ const _PHYLOPIC_BASE_COLUMNS = [
     :attribution,
 ]
 
+export acquire_phylopic, augment_phylopic
+
 # Current PhyloPic build number, cached in memory with a TTL.
 # Re-fetched if missing or older than _PHYLOPIC_BUILD_TTL seconds.
 const _PHYLOPIC_BUILD      = Ref{Union{Nothing, Int}}(nothing)
