@@ -59,6 +59,8 @@ const _PHYLOPIC_BASE_COLUMNS = [
 
 export acquire_phylopic, augment_phylopic
 
+import DataCaches: autocache
+
 # Current PhyloPic build number, cached in memory with a TTL.
 # Re-fetched if missing or older than _PHYLOPIC_BUILD_TTL seconds.
 const _PHYLOPIC_BUILD      = Ref{Union{Nothing, Int}}(nothing)
@@ -319,43 +321,51 @@ end
 # ---------------------------------------------------------------------------
 
 function _phylopic_lookup_taxon(taxon_name::AbstractString; build::Int)::NamedTuple
-    try
-        # Step 1: PBDB taxon ID
-        orig_no = _pbdb_taxon_orig_no(taxon_name)
-        if isnothing(orig_no)
+    _do_fetch = () -> begin
+        try
+            # Step 1: PBDB taxon ID
+            orig_no = _pbdb_taxon_orig_no(taxon_name)
+            if isnothing(orig_no)
+                return _phylopic_null_record()
+            end
+
+            # Step 2: Lineage IDs
+            lineage_nos  = _pbdb_lineage_nos(orig_no)
+            lineage_str  = join(string.(lineage_nos), ",")
+
+            # Step 3: Resolve PhyloPic node
+            node_uuid = _phylopic_resolve_node(build, lineage_nos)
+            if isnothing(node_uuid)
+                return merge(
+                    _phylopic_null_record(),
+                    (pbdb_taxon_id = orig_no, pbdb_lineage = lineage_str),
+                )
+            end
+
+            # Step 4: Fetch node with primary image embedded
+            node_obj = _phylopic_fetch_node_with_image(node_uuid, build)
+            if isnothing(node_obj)
+                return merge(
+                    _phylopic_null_record(),
+                    (pbdb_taxon_id = orig_no, pbdb_lineage = lineage_str,
+                     node_uuid = node_uuid),
+                )
+            end
+
+            # Step 5: Extract all metadata fields
+            return _phylopic_extract_record(node_obj, orig_no, lineage_str)
+
+        catch err
+            @warn "acquire_phylopic: unexpected error looking up \"$taxon_name\"" exception = err
             return _phylopic_null_record()
         end
-
-        # Step 2: Lineage IDs
-        lineage_nos  = _pbdb_lineage_nos(orig_no)
-        lineage_str  = join(string.(lineage_nos), ",")
-
-        # Step 3: Resolve PhyloPic node
-        node_uuid = _phylopic_resolve_node(build, lineage_nos)
-        if isnothing(node_uuid)
-            return merge(
-                _phylopic_null_record(),
-                (pbdb_taxon_id = orig_no, pbdb_lineage = lineage_str),
-            )
-        end
-
-        # Step 4: Fetch node with primary image embedded
-        node_obj = _phylopic_fetch_node_with_image(node_uuid, build)
-        if isnothing(node_obj)
-            return merge(
-                _phylopic_null_record(),
-                (pbdb_taxon_id = orig_no, pbdb_lineage = lineage_str,
-                 node_uuid = node_uuid),
-            )
-        end
-
-        # Step 5: Extract all metadata fields
-        return _phylopic_extract_record(node_obj, orig_no, lineage_str)
-
-    catch err
-        @warn "acquire_phylopic: unexpected error looking up \"$taxon_name\"" exception = err
-        return _phylopic_null_record()
     end
+    return autocache(
+        _do_fetch,
+        acquire_phylopic,
+        "phylopic/taxon",
+        (; taxon_name = taxon_name, build = build),
+    )
 end
 
 # ---------------------------------------------------------------------------
