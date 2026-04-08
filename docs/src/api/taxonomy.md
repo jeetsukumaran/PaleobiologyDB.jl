@@ -510,8 +510,8 @@ for (i, (fa, la, rec)) in enumerate(zip(first_app, last_app, pics))
         w   = size(img, 2) / size(img, 1)   # aspect ratio
         dx  = img_half_height * w
         image!(ax,
-            [fa - dx, fa + dx],               # x extent (Ma)
-            [i - img_half_height, i + img_half_height],  # y extent
+            (fa - dx, fa + dx),# x extent (Ma)
+            (i - img_half_height, i + img_half_height)# y extent,
             rotr90(img);                       # Makie expects column-major
             interpolate = true,
         )
