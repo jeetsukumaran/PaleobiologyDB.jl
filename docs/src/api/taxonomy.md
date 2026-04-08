@@ -562,8 +562,12 @@ for (i, (n, thumb)) in enumerate(zip(top.n, pics.phylopic_thumbnail))
         img = load(Downloads.download(thumb))
         w   = size(img, 2) / size(img, 1)
         h   = n * 0.25                        # image height = 25 % of bar
-        image!(ax, [i - w * h / 2, i + w * h / 2], [n * 0.02, n * 0.02 + h],
-               rotr90(img); interpolate = true)
+        image!(
+            ax,
+            (i - w * h / 2, i + w * h / 2),
+            (n * 0.02, n * 0.02 + h),
+            rotr90(img); interpolate = true
+        )
     end
 end
 
