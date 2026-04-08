@@ -581,25 +581,25 @@ PaleobiologyDB.Taxonomy.augment_phylopic
 
 ## Local data store management
 
-The `Store` submodule manages the Scratch-backed local snapshots used by the
+The `Depot` module manages the Scratch-backed local snapshots used by the
 taxonomy validation functions. Access via the full namespace:
 
 ```julia
-using PaleobiologyDB.Taxonomy
+using PaleobiologyDB.Depot
 
 # List all registered stores and their status
-PaleobiologyDB.Taxonomy.Store.list()
+PaleobiologyDB.Depot.list()
 
 # Metadata for a specific store
-PaleobiologyDB.Taxonomy.Store.info(:pbdb_taxa)
+PaleobiologyDB.Depot.info(:pbdb_taxa)
 
 # Force re-download of a snapshot
-PaleobiologyDB.Taxonomy.Store.refresh!(:pbdb_taxa)
+PaleobiologyDB.Depot.refresh!(:pbdb_taxa)
 
 # Delete the local snapshot (will be re-downloaded on next use)
-PaleobiologyDB.Taxonomy.Store.delete!(:pbdb_taxa)
+PaleobiologyDB.Depot.delete!(:pbdb_taxa)
 ```
 
 ```@docs
-PaleobiologyDB.Taxonomy.Store
+PaleobiologyDB.Depot
 ```

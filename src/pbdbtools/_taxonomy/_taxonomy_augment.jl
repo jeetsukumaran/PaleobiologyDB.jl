@@ -19,7 +19,7 @@
 # ---------------------------------------------------------------------------
 
 using DataFrames, CSV
-using .Store
+using ..Depot
 
 export augment_taxonomy
 
@@ -36,8 +36,8 @@ const _PBDB_RANK_SET = Set{String}(PBDB_RANK_HIERARCHY)
 
 function _ensure_hierarchy_index(; force::Bool = false)
     if isnothing(_TAXA_HIERARCHY_NAME_INDEX[]) || force
-        Store._ensure_populated!(_TAXA_LIST_STORE; force = force)
-        path = Store._store_path(_TAXA_LIST_STORE)
+        Depot._ensure_populated!(_TAXA_LIST_STORE; force = force)
+        path = Depot._store_path(_TAXA_LIST_STORE)
         @debug "PBDB hierarchy index: loading snapshot …" path = path
 
         df = CSV.read(

@@ -1,11 +1,4 @@
 
-include("_taxonomy_resolution.jl")
-include("_taxonomy_namevalidation.jl")
-include("_taxonomy_augment.jl")
-include("_taxonomy_queries.jl")
-include("_phylopic.jl")
-
-
 # Applies both `drop_unresolved_taxa` and `drop_unrecognized_taxa` to `df`, after first mapping taxonomic_resolution to the correct String value and PBDB database field value ("genus" => ("genus", :genus), but "species" => ("species", :accepted_name)
 function _resolve_taxonomic_resolution(taxonomic_resolution::AbstractString)
     if taxonomic_resolution == "species"
@@ -63,10 +56,6 @@ The one exception is `"species"`, where the PBDB stores the full binomial in the
 ## Examples
 
 ```julia
-
-
-```julia
-```julia
 using PaleobiologyDB, PaleobiologyDB.Taxonomy
 
 df = pbdb_occurrences(base_name = "Canidae", interval = "Miocene", show = "full")
@@ -80,7 +69,6 @@ df_species = drop_unqualified_taxa(df, "species")
 
 # Keep only rows resolved to family level, using live API validation
 df_family = drop_unqualified_taxa(df, "family"; validation_authority = :query)
-```
 ```
 
 See also [`drop_unqualified_taxa!`](@ref) for the in-place variant,
@@ -128,10 +116,6 @@ column of the same name (e.g. `"genus"` → `:genus`).
 ## Examples
 
 ```julia
-
-
-```julia
-```julia
 using PaleobiologyDB, PaleobiologyDB.Taxonomy
 
 df = pbdb_occurrences(base_name = "Felidae", interval = "Pleistocene", show = "full")
@@ -141,7 +125,6 @@ drop_unqualified_taxa!(df, "genus")
 
 # Filter in-place to species-level (uses accepted_name column for name check)
 drop_unqualified_taxa!(df, "species")
-```
 ```
 
 See also [`drop_unqualified_taxa`](@ref) for the non-mutating variant.

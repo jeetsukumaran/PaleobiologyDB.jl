@@ -22,7 +22,7 @@
 # ---------------------------------------------------------------------------
 
 using DataFrames, CSV
-using .Store
+using ..Depot
 
 export istaxon, audit_taxonomy, drop_unrecognized_taxa, drop_unrecognized_taxa!
 
@@ -30,14 +30,14 @@ export istaxon, audit_taxonomy, drop_unrecognized_taxa, drop_unrecognized_taxa!
 # Taxa-list store registration
 # ---------------------------------------------------------------------------
 
-const _TAXA_LIST_STORE = Store.LocalStore(
+const _TAXA_LIST_STORE = Depot.LocalStore(
     :pbdb_taxa,
     "https://paleobiodb.org/data1.2/taxa/list.csv?all_records&vocab=pbdb",
     "pbdb_taxa.csv",
     30,
     "PBDB taxa list",
 )
-Store._register_store!(_TAXA_LIST_STORE)
+Depot._register_store!(_TAXA_LIST_STORE)
 
 # ---------------------------------------------------------------------------
 # Lazy in-memory indices (built from the snapshot on first use)
@@ -48,8 +48,8 @@ const _TAXA_NAME_SET = Ref{Union{Nothing, Set{String}}}(nothing)
 
 function _ensure_taxa_index(; force::Bool = false)
     if isnothing(_TAXA_NAME_SET[]) || force
-        Store._ensure_populated!(_TAXA_LIST_STORE; force = force)
-        path = Store._store_path(_TAXA_LIST_STORE)
+        Depot._ensure_populated!(_TAXA_LIST_STORE; force = force)
+        path = Depot._store_path(_TAXA_LIST_STORE)
         @debug "PBDB taxonomic authority: loading snapshot into memory …" path=path
         df = CSV.read(
             path, DataFrame;

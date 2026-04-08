@@ -1,28 +1,27 @@
 """
-    PaleobiologyDB.Taxonomy.Store
+    PaleobiologyDB.Depot
 
-Management interface for Taxonomy's Scratch-backed local data stores (snapshots).
+Management interface for Scratch-backed local data stores (snapshots).
 
-These functions are intentionally **not exported** from `Taxonomy`; access them via
-the full namespace `PaleobiologyDB.Taxonomy.Store.*`.
+Access via the full namespace `PaleobiologyDB.Depot.*`.
 
 ## Functions
 
-- `Store.list()`            — list metadata for all registered stores
-- `Store.info(:pbdb_taxa)`  — metadata for a specific store
-- `Store.refresh!(:pbdb_taxa)` — force re-download
-- `Store.delete!(:pbdb_taxa)` — remove the local snapshot
+- `Depot.list()`            — list metadata for all registered stores
+- `Depot.info(:pbdb_taxa)`  — metadata for a specific store
+- `Depot.refresh!(:pbdb_taxa)` — force re-download
+- `Depot.delete!(:pbdb_taxa)` — remove the local snapshot
 
 ## Example
 
 ```julia
-PaleobiologyDB.Taxonomy.Store.list()
-PaleobiologyDB.Taxonomy.Store.info(:pbdb_taxa)
-PaleobiologyDB.Taxonomy.Store.refresh!(:pbdb_taxa)
-PaleobiologyDB.Taxonomy.Store.delete!(:pbdb_taxa)
+PaleobiologyDB.Depot.list()
+PaleobiologyDB.Depot.info(:pbdb_taxa)
+PaleobiologyDB.Depot.refresh!(:pbdb_taxa)
+PaleobiologyDB.Depot.delete!(:pbdb_taxa)
 ```
 """
-module Store
+module Depot
 
 # ---------------------------------------------------------------------------
 # LocalStore: general scratch-backed local data store infrastructure
@@ -35,7 +34,7 @@ module Store
 # time via `_register_store!` and populated lazily on first access.
 #
 # Management functions (_refresh_store!, _delete_store!, _store_info,
-# _list_stores) are exposed to users through the Taxonomy.Store submodule.
+# _list_stores) are exposed to users through the Depot module.
 # ---------------------------------------------------------------------------
 
 using Scratch, Downloads
@@ -158,7 +157,7 @@ function _ensure_populated!(store::LocalStore; force::Bool = false)
 end
 
 # ---------------------------------------------------------------------------
-# Management functions (surfaced via Taxonomy.Store submodule)
+# Management functions (surfaced via Depot module)
 # ---------------------------------------------------------------------------
 
 function _refresh_store!(name::Symbol; force::Bool = true)
@@ -206,40 +205,21 @@ function _list_stores()
     [_store_info(k) for k in sort!(collect(keys(_REGISTERED_STORES)))]
 end
 
+"""Force re-download of the named store (e.g. `:pbdb_taxa`)."""
+refresh!(name::Symbol; force::Bool = true) = _refresh_store!(name; force = force)
 
+"""Delete the local snapshot for the named store."""
+delete!(name::Symbol) = _delete_store!(name)
 
+"""
+Return a NamedTuple of metadata for the named store.
 
+Fields: `name`, `description`, `path`, `exists`, `size_mb`, `age_days`,
+`max_age_days`, `is_fresh`.
+"""
+info(name::Symbol) = _store_info(name)
 
+"""Return a vector of info NamedTuples for all registered stores."""
+list() = _list_stores()
 
-
-
-
-
-
-
-
-
-
-
-    # parentmodule(@__MODULE__) resolves to Taxonomy at call time, avoiding the
-    # need for an explicit import from the enclosing module.
-    # _curator() = parentmodule(@__MODULE__)
-
-    """Force re-download of the named store (e.g. `:pbdb_taxa`)."""
-    # refresh!(name::Symbol; force::Bool = true) = _curator()._refresh_store!(name; force = force)
-    refresh!(name::Symbol; force::Bool = true) = _refresh_store!(name; force = force)
-
-    """Delete the local snapshot for the named store."""
-    delete!(name::Symbol) = _delete_store!(name)
-
-    """
-    Return a NamedTuple of metadata for the named store.
-
-    Fields: `name`, `description`, `path`, `exists`, `size_mb`, `age_days`,
-    `max_age_days`, `is_fresh`.
-    """
-    info(name::Symbol) = _store_info(name)
-
-    """Return a vector of info NamedTuples for all registered stores."""
-    list() = _list_stores()
 end

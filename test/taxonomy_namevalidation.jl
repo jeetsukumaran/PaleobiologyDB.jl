@@ -154,8 +154,8 @@ end
 # Taxonomy.Store metadata — always available (no network)
 # ---------------------------------------------------------------------------
 
-@testset "Taxonomy.Store metadata" begin
-    info = PaleobiologyDB.Taxonomy.Store.info(:pbdb_taxa)
+@testset "Depot metadata" begin
+    info = PaleobiologyDB.Depot.info(:pbdb_taxa)
 
     @test info isa NamedTuple
     @test info.name         == :pbdb_taxa
@@ -167,7 +167,7 @@ end
     @test haskey(info, :is_fresh)
     @test haskey(info, :description)
 
-    stores = PaleobiologyDB.Taxonomy.Store.list()
+    stores = PaleobiologyDB.Depot.list()
     @test stores isa Vector
     @test any(s.name == :pbdb_taxa for s in stores)
 end

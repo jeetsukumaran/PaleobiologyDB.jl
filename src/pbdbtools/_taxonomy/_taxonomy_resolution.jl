@@ -101,7 +101,7 @@ Convenience form that accepts a DataFrame column name instead of a rank string.
 The taxonomic rank is technically a data value (`:accepted_rank == "genus"`),
 while `taxon_field` is the column that carries the identification result for
 that rank (`:genus == "Tyrannosaurus"`). Passing `:genus` here is therefore a
-shortcut for `drop_unresolved_taxa(df, "genus")`: keep rows resolved to the same 
+shortcut for `drop_unresolved_taxa(df, "genus")`: keep rows resolved to the same
 taxonomic level as the data in the given `taxon_field`
 
 The one special case is `:accepted_name`, which holds the full species binomial
@@ -158,4 +158,3 @@ function drop_unresolved_taxa!(df::AbstractDataFrame, taxonomic_rank::AbstractSt
 
     df
 end
-
