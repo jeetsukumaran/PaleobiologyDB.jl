@@ -144,8 +144,22 @@ full.sp_phylopic_thumbnail
 ```
 
 Each unique taxon name triggers one set of API calls; repeated names reuse the
-cached result.  Unresolvable names return `missing` in every field rather than
-raising an error.
+in-call result.  Unresolvable names return `missing` in every field rather than
+raising an error.  Enable `set_autocaching!` to persist results to disk across
+sessions — the cache is keyed per taxon name, so two DataFrames sharing the same
+taxa produce zero redundant network requests:
+
+```julia
+PaleobiologyDB.set_autocaching!(true, acquire_phylopic)
+
+pics1 = acquire_phylopic(df1)   # fetches Tyrannosaurus, Triceratops → cached
+pics2 = acquire_phylopic(df2)   # same taxa → instant cache hits, no new requests
+
+PaleobiologyDB.set_autocaching!(false, acquire_phylopic)
+```
+
+`augment_phylopic` also benefits automatically since it calls `acquire_phylopic`
+internally.
 
 ```julia
 # ── Downloading images to disk (only needs Downloads, a stdlib) ───────────
@@ -169,7 +183,7 @@ Downloads.download(rec.phylopic_thumbnail, "tyrannosaurus_thumb.png")
 
 - **DataFrame results** — all queries return a `DataFrame` for immediate use with the Julia data ecosystem.
 
-- **Caching** — persistent file cache (`@filecache`), in-memory session cache (`@memcache`), and global autocaching (`set_autocaching!`) keep repeated or expensive queries off the network. See the [Caching guide](https://jeetsukumaran.github.io/PaleobiologyDB.jl/dev/guide/caching/).
+- **Caching** — persistent file cache (`@filecache`), in-memory session cache (`@memcache`), and transparent autocaching (`set_autocaching!`) keep repeated or expensive queries off the network.  All 29 PBDB API functions and the PhyloPic enrichment functions (`acquire_phylopic`, `augment_phylopic`) are autocache-enabled.  See the [Caching guide](https://jeetsukumaran.github.io/PaleobiologyDB.jl/dev/guide/caching/).
 
 - **Rich field names and extra blocks** — `vocab = "pbdb"` (default) for full column names, `vocab = "com"` for compact codes; `show = ["coords", "classext", "stratext"]` for additional data blocks.
 

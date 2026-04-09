@@ -10,6 +10,7 @@
 
 using Test
 using DataFrames
+using DataCaches
 using PaleobiologyDB
 
 const _phylopic_acquire        = PaleobiologyDB.Taxonomy.acquire_phylopic
@@ -131,6 +132,14 @@ const _PHYLOPIC_BUILD_REF            = PaleobiologyDB.Taxonomy._PHYLOPIC_BUILD
 
         _PHYLOPIC_BUILD_REF[] = nothing
     end
+
+    @testset "autocaching — acquire_phylopic is a valid func reference for set_autocaching!" begin
+        # Structural test: the caching machinery is wired to acquire_phylopic
+        # (the user-visible function reference used inside _phylopic_lookup_taxon).
+        # Both acquire_phylopic and augment_phylopic are controlled via this reference.
+        @test_nowarn PaleobiologyDB.set_autocaching!(true,  _phylopic_acquire)
+        @test_nowarn PaleobiologyDB.set_autocaching!(false, _phylopic_acquire)
+    end
 end
 
 # ---------------------------------------------------------------------------
@@ -237,5 +246,67 @@ end
         @test hasproperty(full, :sp_phylopic_uuid)
         @test hasproperty(full, :genus)
         @test hasproperty(full, :accepted_name)
+    end
+
+    @testset "autocaching — string variant writes and hits cache" begin
+        test_cache = DataCache(mktempdir())
+        try
+            PaleobiologyDB.set_autocaching!(true, _phylopic_acquire; cache = test_cache)
+
+            rec1 = _phylopic_acquire("Tyrannosaurus")
+            @test length(test_cache) == 1       # one taxon entry stored
+
+            rec2 = _phylopic_acquire("Tyrannosaurus")
+            @test rec1 == rec2                  # identical result from cache
+            @test length(test_cache) == 1       # no new entry written
+        finally
+            PaleobiologyDB.set_autocaching!(false, _phylopic_acquire)
+        end
+    end
+
+    @testset "autocaching — DataFrame variant shares per-taxon cache across calls" begin
+        # Key property: caching is keyed per (taxon_name, build), not per DataFrame.
+        # Two DataFrames with different rows but the same unique taxa should produce
+        # no additional cache entries on the second call.
+        test_cache = DataCache(mktempdir())
+        try
+            PaleobiologyDB.set_autocaching!(true, _phylopic_acquire; cache = test_cache)
+
+            df1 = DataFrame(accepted_name = ["Tyrannosaurus", "Triceratops"])
+            df2 = DataFrame(accepted_name = ["Triceratops", "Tyrannosaurus", "Tyrannosaurus"])
+
+            pics1 = _phylopic_acquire(df1)
+            @test length(test_cache) == 2       # 2 unique taxa cached
+
+            pics2 = _phylopic_acquire(df2)
+            @test length(test_cache) == 2       # 0 new entries (all cache hits)
+
+            # Tyrannosaurus UUID must be consistent across both DataFrames
+            @test pics1.phylopic_uuid[1] == pics2.phylopic_uuid[2]  # T-rex row in df2
+            @test pics1.phylopic_uuid[1] == pics2.phylopic_uuid[3]  # duplicate T-rex
+        finally
+            PaleobiologyDB.set_autocaching!(false, _phylopic_acquire)
+        end
+    end
+
+    @testset "autocaching — augment_phylopic benefits via acquire_phylopic cache" begin
+        # augment_phylopic internally calls acquire_phylopic(df), which calls
+        # _phylopic_lookup_taxon, which is instrumented with acquire_phylopic as the
+        # func reference.  Enabling autocaching for acquire_phylopic therefore caches
+        # all taxon lookups made through augment_phylopic as well.
+        test_cache = DataCache(mktempdir())
+        try
+            PaleobiologyDB.set_autocaching!(true, _phylopic_acquire; cache = test_cache)
+
+            df       = DataFrame(accepted_name = ["Canis"])
+            enriched = _phylopic_augment(df)
+            @test length(test_cache) == 1       # taxon entry stored via acquire_phylopic
+
+            enriched2 = _phylopic_augment(df)
+            @test length(test_cache) == 1       # no new entries
+            @test all(enriched.phylopic_uuid .=== enriched2.phylopic_uuid)
+        finally
+            PaleobiologyDB.set_autocaching!(false, _phylopic_acquire)
+        end
     end
 end
