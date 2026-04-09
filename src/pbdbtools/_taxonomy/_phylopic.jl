@@ -369,16 +369,12 @@ function _phylopic_lookup_taxon(taxon_name::AbstractString; build::Int)::NamedTu
             return _phylopic_null_record()
         end
     end
-    # Wrap the NamedTuple in a single-row DataFrame so autocache stores it as
-    # CSV rather than a binary .jls file, then unwrap back to NamedTuple.
-    _do_fetch_df = () -> DataFrame([col => [v] for (col, v) in pairs(_do_fetch())])
-    df = autocache(
-        _do_fetch_df,
+    return autocache(
+        _do_fetch,
         acquire_phylopic,
         "phylopic/taxon",
         (; taxon_name = taxon_name, build = build),
     )
-    return NamedTuple(df[1, :])
 end
 
 # ---------------------------------------------------------------------------
