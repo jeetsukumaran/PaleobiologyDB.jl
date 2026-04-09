@@ -323,34 +323,43 @@ end
 function _phylopic_lookup_taxon(taxon_name::AbstractString; build::Int)::NamedTuple
     _do_fetch = () -> begin
         try
+            @debug "PhyloPic: resolving taxon" taxon_name build
+
             # Step 1: PBDB taxon ID
             orig_no = _pbdb_taxon_orig_no(taxon_name)
             if isnothing(orig_no)
+                @debug "PhyloPic: taxon not found in PBDB" taxon_name
                 return _phylopic_null_record()
             end
+            @debug "PhyloPic: PBDB taxon resolved" taxon_name orig_no
 
             # Step 2: Lineage IDs
             lineage_nos  = _pbdb_lineage_nos(orig_no)
             lineage_str  = join(string.(lineage_nos), ",")
+            @debug "PhyloPic: lineage fetched" taxon_name n_ids=length(lineage_nos)
 
             # Step 3: Resolve PhyloPic node
             node_uuid = _phylopic_resolve_node(build, lineage_nos)
             if isnothing(node_uuid)
+                @debug "PhyloPic: no PhyloPic node found" taxon_name
                 return merge(
                     _phylopic_null_record(),
                     (pbdb_taxon_id = orig_no, pbdb_lineage = lineage_str),
                 )
             end
+            @debug "PhyloPic: node resolved" taxon_name node_uuid
 
             # Step 4: Fetch node with primary image embedded
             node_obj = _phylopic_fetch_node_with_image(node_uuid, build)
             if isnothing(node_obj)
+                @debug "PhyloPic: node fetch failed" taxon_name node_uuid
                 return merge(
                     _phylopic_null_record(),
                     (pbdb_taxon_id = orig_no, pbdb_lineage = lineage_str,
                      node_uuid = node_uuid),
                 )
             end
+            @debug "PhyloPic: image fetched" taxon_name node_uuid
 
             # Step 5: Extract all metadata fields
             return _phylopic_extract_record(node_obj, orig_no, lineage_str)
