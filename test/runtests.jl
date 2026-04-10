@@ -16,6 +16,7 @@ include("taxonomy_resolution.jl")
 include("taxonomy_namevalidation.jl")
 include("taxonomy_queries.jl")
 include("taxonomy_phylopic.jl")
+include("phylopic_makie.jl")
 
 if isnothing(Base.find_package("Aqua")) 
     println("Aqua package not available in this environment: skipping Aqua tests")

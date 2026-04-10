@@ -460,119 +460,49 @@ Downloads.download(rec.phylopic_thumbnail, "tyrannosaurus_thumb.png")
 
 ### Enhancing Makie plots with PhyloPic silhouettes
 
-PhyloPic thumbnails can be overlaid on Makie figures using `image!`.
-
-The examples below require the following additional packages: 
+The `PaleobiologyDB.PhyloPicMakie` extension provides a high-level API for
+overlaying PhyloPic silhouettes on existing Makie axes.  It activates
+automatically when a Makie backend (e.g. `CairoMakie`) and `FileIO` are
+loaded.
 
 ```
 pkg> add CairoMakie FileIO PNGFiles
 ```
 
-The example below draws a stratigraphic range chart for a handful of Cretaceous
-taxa and annotates each range bar with the taxon's silhouette.
-
 ```julia
-using CairoMakie, FileIO, Downloads
-using PaleobiologyDB, PaleobiologyDB.Taxonomy
+using PaleobiologyDB, PaleobiologyDB.PhyloPicMakie
+using CairoMakie, FileIO
 
-# ── Data ──────────────────────────────────────────────────────────────────
-
-taxa       = ["Tyrannosaurus", "Triceratops", "Ankylosaurus",
-              "Pachycephalosaurus", "Edmontosaurus"]
-first_app  = [68.0, 68.0, 70.0, 74.0, 76.0]   # first appearance (Ma)
-last_app   = [66.0, 66.0, 66.0, 66.0, 66.0]   # last appearance (Ma)
-
-# ── PhyloPic images ───────────────────────────────────────────────────────
-
-pics = [acquire_phylopic(t) for t in taxa]
-
-# ── Plot ──────────────────────────────────────────────────────────────────
+taxa      = ["Tyrannosaurus", "Triceratops", "Ankylosaurus",
+             "Pachycephalosaurus", "Edmontosaurus"]
+first_app = [68.0, 68.0, 70.0, 74.0, 76.0]
+last_app  = [66.0, 66.0, 66.0, 66.0, 66.0]
 
 fig = Figure(size = (800, 420))
-ax  = Axis(fig[1, 1],
-    xlabel          = "Age (Ma)",
-    title           = "Latest Cretaceous taxa — stratigraphic ranges",
-    yreversed       = false,
-    xreversed       = true,          # geological convention: older on the right
-    yticks          = (1:length(taxa), taxa),
-    yticklabelsize  = 13,
+ax  = Axis(fig[1, 1];
+    xlabel = "Age (Ma)", xreversed = true,
+    yticks = (1:length(taxa), taxa), yticklabelsize = 13,
 )
 
-img_half_height = 0.38   # vertical half-size of the image overlay
-
-for (i, (fa, la, rec)) in enumerate(zip(first_app, last_app, pics))
-    # Range bar
+for (i, (fa, la)) in enumerate(zip(first_app, last_app))
     lines!(ax, [fa, la], [i, i]; linewidth = 6, color = :gray30)
-
-    # Overlay the thumbnail at the older end of the range
-    if !ismissing(rec.phylopic_thumbnail)
-        img = load(Downloads.download(rec.phylopic_thumbnail))
-        w   = size(img, 2) / size(img, 1)   # aspect ratio
-        dx  = img_half_height * w
-        image!(ax,
-            (fa - dx, fa + dx),# x extent (Ma)
-            (i - img_half_height, i + img_half_height)# y extent,
-            rotr90(img);                       # Makie expects column-major
-            interpolate = true,
-        )
-    end
 end
+
+augment_phylopic_ranges!(
+    ax, first_app, last_app, collect(1.0:length(taxa));
+    taxon      = taxa,
+    at         = :start,
+    glyph_size = 0.38,
+    placement  = :center,
+)
 
 xlims!(ax, 78, 64)
 display(fig)
-save("cretaceous_ranges.png", fig)
 ```
 
-For a diversity bar chart, pass the full occurrence DataFrame through
-`augment_phylopic` and load one thumbnail per bar (same package requirements:
-`pkg> add CairoMakie FileIO PNGFiles`):
-
-```julia
-using CairoMakie, FileIO, Downloads, DataFrames
-using PaleobiologyDB, PaleobiologyDB.Taxonomy
-
-df = pbdb_occurrences(base_name = "Ceratopsia", interval = "Cretaceous",
-                      show = "full", limit = 500)
-df2 = augment_taxonomy(df)
-
-# Occurrence counts per genus
-counts = sort(
-    combine(groupby(dropmissing(df2, :taxonomy_genus), :taxonomy_genus),
-            nrow => :n),
-    :n; rev = true
-)
-top = first(counts, 6)
-
-# PhyloPic images for the top genera
-pics = acquire_phylopic(
-    DataFrame(g = top.taxonomy_genus), :g, "phylopic_"
-)
-
-fig = Figure(size = (700, 500))
-ax  = Axis(fig[1, 1],
-    xticks         = (1:nrow(top), top.taxonomy_genus),
-    xticklabelrotation = π / 4,
-    ylabel         = "Occurrence count",
-    title          = "Most common Cretaceous ceratopsian genera",
-)
-
-for (i, (n, thumb)) in enumerate(zip(top.n, pics.phylopic_thumbnail))
-    barplot!(ax, [i], [n]; color = (:steelblue, 0.7))
-    if !ismissing(thumb)
-        img = load(Downloads.download(thumb))
-        w   = size(img, 2) / size(img, 1)
-        h   = n * 0.25                        # image height = 25 % of bar
-        image!(
-            ax,
-            (i - w * h / 2, i + w * h / 2),
-            (n * 0.02, n * 0.02 + h),
-            rotr90(img); interpolate = true
-        )
-    end
-end
-
-display(fig)
-```
+See the [PhyloPicMakie guide](../guide/phylopic_makie.md) and
+[PhyloPicMakie API reference](phylopic_makie.md) for the full API, table-
+oriented variants, and keyword-argument reference.
 
 ```@docs
 PaleobiologyDB.Taxonomy.acquire_phylopic

@@ -179,6 +179,55 @@ Downloads.download(rec.phylopic_thumbnail, "tyrannosaurus_thumb.png")
 #   img = load(Downloads.download(rec.phylopic_thumbnail))
 ```
 
+## PhyloPicMakie — Makie plot integration
+
+`PaleobiologyDB.PhyloPicMakie` is an optional extension that adds PhyloPic
+silhouette overlays to existing Makie axes.  It activates automatically when a
+Makie backend (e.g. `CairoMakie`) and `FileIO` are loaded.
+
+```
+pkg> add CairoMakie FileIO PNGFiles
+```
+
+```julia
+using PaleobiologyDB
+using CairoMakie, FileIO
+using PaleobiologyDB.PhyloPicMakie
+
+taxa      = ["Tyrannosaurus", "Triceratops", "Ankylosaurus",
+             "Pachycephalosaurus", "Edmontosaurus"]
+first_app = [68.0, 68.0, 70.0, 74.0, 76.0]
+last_app  = [66.0, 66.0, 66.0, 66.0, 66.0]
+
+fig = Figure(size = (800, 420))
+ax  = Axis(
+    fig[1, 1];
+    xlabel = "Age (Ma)", xreversed = true,
+    yticks = (1:length(taxa), taxa), yticklabelsize = 13,
+)
+
+for (i, (fa, la)) in enumerate(zip(first_app, last_app))
+    lines!(ax, [fa, la], [i, i]; linewidth = 6, color = :gray30)
+end
+
+# Anchor PhyloPic glyphs at each taxon's first appearance
+augment_phylopic_ranges!(
+    ax, first_app, last_app, collect(1.0:length(taxa));
+    taxon      = taxa,
+    at         = :start,
+    glyph_size = 0.38,
+    placement  = :center,
+)
+
+xlims!(ax, 78, 64)
+display(fig)
+```
+
+A table-oriented variant accepts a `DataFrame` and column-selector keywords
+(`xstart`, `xstop`, `y`, `taxon`) — see the
+[PhyloPicMakie guide](https://jeetsukumaran.github.io/PaleobiologyDB.jl/dev/guide/phylopic_makie/)
+for full documentation.
+
 ## Key features
 
 - **DataFrame results** — all queries return a `DataFrame` for immediate use with the Julia data ecosystem.
@@ -206,6 +255,7 @@ Downloads.download(rec.phylopic_thumbnail, "tyrannosaurus_thumb.png")
 * Counts: `pbdb_count`
 * Taxonomy (submodule): `drop_unqualified_taxa`, `drop_unresolved_taxa`, `drop_unrecognized_taxa`, `augment_taxonomy`, `child_taxa`, `parent_taxa`, `registered_taxa`, `taxon_occursin`, `contains_taxon`
 * PhyloPic (submodule): `acquire_phylopic`, `augment_phylopic`
+* PhyloPicMakie (extension): `augment_phylopic!`, `augment_phylopic`, `augment_phylopic_ranges!`, `augment_phylopic_ranges`
 
 ## Documentation
 
@@ -213,6 +263,7 @@ Full documentation: <https://jeetsukumaran.github.io/PaleobiologyDB.jl/>
 
 - [Quick Start](https://jeetsukumaran.github.io/PaleobiologyDB.jl/dev/guide/quickstart/) — examples for all endpoint types, advanced query options
 - [Caching](https://jeetsukumaran.github.io/PaleobiologyDB.jl/dev/guide/caching/) — file, memory, and auto-caching
+- [PhyloPicMakie](https://jeetsukumaran.github.io/PaleobiologyDB.jl/dev/guide/phylopic_makie/) — PhyloPic silhouette overlays on Makie plots
 - [API Reference](https://jeetsukumaran.github.io/PaleobiologyDB.jl/dev/api/occurrences/) — per-function docstrings
 - [Interactive Help](https://jeetsukumaran.github.io/PaleobiologyDB.jl/dev/api/apihelp/) — REPL-based parameter and field discovery
 - [Contributing](https://jeetsukumaran.github.io/PaleobiologyDB.jl/dev/guide/contributing/) — testing, development, and external resources
