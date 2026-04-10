@@ -146,6 +146,18 @@ if _EXT_AVAILABLE
         @test_throws ArgumentError _ra_fn(10.0, 20.0, :unknown)
     end
 
+    @testset "PhyloPicMakie — _infer_thumbnail_grid_shape" begin
+        infer_shape = PaleobiologyDB.PhyloPicMakie._infer_thumbnail_grid_shape
+        @test infer_shape(0) == (1, 1)
+        @test infer_shape(1) == (1, 1)
+        @test infer_shape(6) == (3, 2)
+        @test infer_shape(17) == (4, 5)
+        @test infer_shape(6; ncols = 2) == (2, 3)
+        @test infer_shape(6; nrows = 2) == (3, 2)
+        @test_throws ArgumentError infer_shape(6; ncols = 0)
+        @test_throws ArgumentError infer_shape(6; ncols = 2, nrows = 2)
+    end
+
 else
     @testset "PhyloPicMakie — offline / coordinates (skipped)" begin
         @info "PhyloPicMakie coordinate tests skipped: extension not available." cairo=_CAIRO_AVAILABLE fileio=_FILEIO_AVAILABLE
@@ -173,6 +185,8 @@ using Makie: RGBA, N0f8, Image
     @test :augment_phylopic         ∈ names(PaleobiologyDB.PhyloPicMakie)
     @test :augment_phylopic_ranges! ∈ names(PaleobiologyDB.PhyloPicMakie)
     @test :augment_phylopic_ranges  ∈ names(PaleobiologyDB.PhyloPicMakie)
+    @test :phylopic_thumbnail_grid! ∈ names(PaleobiologyDB.PhyloPicMakie)
+    @test :phylopic_thumbnail_grid  ∈ names(PaleobiologyDB.PhyloPicMakie)
 end
 
 # Synthetic 4-row × 8-column opaque grey RGBA image for offline render tests.
@@ -326,6 +340,41 @@ end  # table API
     end
 
 end  # range table API
+
+
+@testset "PhyloPicMakie — thumbnail grid" begin
+    @testset "bang variant adds one image per taxon and labels" begin
+        taxa = ["Tyrannosaurus", "Triceratops", "Ankylosaurus", "Edmontosaurus"]
+        fig = Figure(); ax = Axis(fig[1, 1])
+        n0 = length(ax.scene.plots)
+        phylopic_thumbnail_grid!(ax, taxa; glyph_fraction = 0.5, ncols = 2, on_missing = :placeholder)
+        @test _count_images(ax) == 4
+        @test length(ax.scene.plots) ≥ n0 + 8
+    end
+
+    @testset "placeholder mode draws plot objects for missing thumbnails" begin
+        fig = Figure(); ax = Axis(fig[1, 1])
+        n0 = length(ax.scene.plots)
+        phylopic_thumbnail_grid!(ax, ["", " "]; on_missing = :placeholder, ncols = 1)
+        @test _count_images(ax) == 0
+        @test length(ax.scene.plots) ≥ n0 + 4
+    end
+
+    @testset "error mode throws for unresolved thumbnails" begin
+        fig = Figure(); ax = Axis(fig[1, 1])
+        @test_throws ErrorException phylopic_thumbnail_grid!(ax, [""]; on_missing = :error)
+    end
+
+    @testset "non-bang constructor returns a figure" begin
+        fig = phylopic_thumbnail_grid(["Tyrannosaurus", "Triceratops", "Ankylosaurus"]; ncols = 2)
+        @test fig isa Figure
+    end
+
+    @testset "invalid glyph fraction throws" begin
+        fig = Figure(); ax = Axis(fig[1, 1])
+        @test_throws ArgumentError phylopic_thumbnail_grid!(ax, ["Tyrannosaurus"]; glyph_fraction = 1.0)
+    end
+end
 
 end  # if _EXT_AVAILABLE
 

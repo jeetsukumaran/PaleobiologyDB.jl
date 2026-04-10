@@ -49,6 +49,8 @@ augment_phylopic_ranges!(
 | [`augment_phylopic`](@ref) | Non-bang alias for `augment_phylopic!` |
 | [`augment_phylopic_ranges!`](@ref) | Add glyphs anchored to range data |
 | [`augment_phylopic_ranges`](@ref) | Non-bang alias for `augment_phylopic_ranges!` |
+| [`phylopic_thumbnail_grid!`](@ref) | Draw a thumbnail gallery into an existing axis |
+| [`phylopic_thumbnail_grid`](@ref) | Create a new figure containing a thumbnail gallery |
 
 Both functions have vector-based and table-based signatures.
 
@@ -73,10 +75,13 @@ export augment_phylopic!
 export augment_phylopic
 export augment_phylopic_ranges!
 export augment_phylopic_ranges
+export phylopic_thumbnail_grid!
+export phylopic_thumbnail_grid
 
 include("_image_cache.jl")
 include("_coordinates.jl")
 include("_render.jl")
+include("_phylopic_thumbnail_grid.jl")
 
 function __init__()
     # Bind this extension module to PaleobiologyDB.PhyloPicMakie so that

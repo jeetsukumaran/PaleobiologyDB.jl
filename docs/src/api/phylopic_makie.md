@@ -21,3 +21,10 @@ PaleobiologyDB.PhyloPicMakie.augment_phylopic
 PaleobiologyDB.PhyloPicMakie.augment_phylopic_ranges!
 PaleobiologyDB.PhyloPicMakie.augment_phylopic_ranges
 ```
+
+## Thumbnail grids
+
+```@docs
+PaleobiologyDB.PhyloPicMakie.phylopic_thumbnail_grid!
+PaleobiologyDB.PhyloPicMakie.phylopic_thumbnail_grid
+```

@@ -228,6 +228,20 @@ A table-oriented variant accepts a `DataFrame` and column-selector keywords
 [PhyloPicMakie guide](https://jeetsukumaran.github.io/PaleobiologyDB.jl/dev/guide/phylopic_makie/)
 for full documentation.
 
+
+### PhyloPic thumbnail gallery
+
+```julia
+# Thumbnail gallery with bounded-width automatic layout
+fig = phylopic_thumbnail_grid(
+    ["Tyrannosaurus", "Triceratops", "Ankylosaurus",
+     "Pachycephalosaurus", "Edmontosaurus", "Maiasaura"];
+    ncols = 3,
+    label_fontsize = 18,
+    title = "Latest Cretaceous thumbnail gallery",
+)
+```
+
 ## Key features
 
 - **DataFrame results** — all queries return a `DataFrame` for immediate use with the Julia data ecosystem.
@@ -255,7 +269,7 @@ for full documentation.
 * Counts: `pbdb_count`
 * Taxonomy (submodule): `drop_unqualified_taxa`, `drop_unresolved_taxa`, `drop_unrecognized_taxa`, `augment_taxonomy`, `child_taxa`, `parent_taxa`, `registered_taxa`, `taxon_occursin`, `contains_taxon`
 * PhyloPic (submodule): `acquire_phylopic`, `augment_phylopic`
-* PhyloPicMakie (extension): `augment_phylopic!`, `augment_phylopic`, `augment_phylopic_ranges!`, `augment_phylopic_ranges`
+* PhyloPicMakie (extension): `augment_phylopic!`, `augment_phylopic`, `augment_phylopic_ranges!`, `augment_phylopic_ranges`, `phylopic_thumbnail_grid!`, `phylopic_thumbnail_grid`
 
 ## Documentation
 

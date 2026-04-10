@@ -186,3 +186,31 @@ range the glyph is anchored:
 | `:start` (default) | `xstart` |
 | `:stop` | `xstop` |
 | `:midpoint` | `(xstart + xstop) / 2` |
+
+
+## Thumbnail gallery
+
+Use `phylopic_thumbnail_grid` to build a gallery of silhouettes paired with taxon
+names. The default layout keeps the number of columns bounded, so larger
+collections grow downward rather than becoming excessively wide.
+
+```julia
+using PaleobiologyDB
+using CairoMakie, FileIO
+using PaleobiologyDB.PhyloPicMakie
+
+fig = phylopic_thumbnail_grid(
+    [
+        "Tyrannosaurus",
+        "Triceratops",
+        "Ankylosaurus",
+        "Pachycephalosaurus",
+        "Edmontosaurus",
+        "Maiasaura",
+    ];
+    ncols = 3,
+    label_fontsize = 18,
+    title = "Latest Cretaceous thumbnail gallery",
+)
+display(fig)
+```
