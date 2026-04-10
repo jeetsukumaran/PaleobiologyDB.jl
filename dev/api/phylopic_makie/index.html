@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>PhyloPicMakie · PaleobiologyDB.jl</title><meta name="title" content="PhyloPicMakie · PaleobiologyDB.jl"/><meta property="og:title" content="PhyloPicMakie · PaleobiologyDB.jl"/><meta property="twitter:title" content="PhyloPicMakie · PaleobiologyDB.jl"/><meta name="description" content="Documentation for PaleobiologyDB.jl."/><meta property="og:description" content="Documentation for PaleobiologyDB.jl."/><meta property="twitter:description" content="Documentation for PaleobiologyDB.jl."/><meta property="og:url" content="https://jeetsukumaran.github.io/PaleobiologyDB.jl/api/phylopic_makie/"/><meta property="twitter:url" content="https://jeetsukumaran.github.io/PaleobiologyDB.jl/api/phylopic_makie/"/><link rel="canonical" href="https://jeetsukumaran.github.io/PaleobiologyDB.jl/api/phylopic_makie/"/><script data-outdated-warner src="../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../search_index.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../">PaleobiologyDB.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../">Home</a></li><li><span class="tocitem">Guide</span><ul><li><a class="tocitem" href="../../guide/quickstart/">Quick Start</a></li><li><a class="tocitem" href="../../guide/caching/">Caching</a></li><li><a class="tocitem" href="../../guide/phylopic_makie/">PhyloPicMakie</a></li><li><a class="tocitem" href="../../guide/contributing/">Contributing</a></li></ul></li><li><span class="tocitem">API Reference</span><ul><li><a class="tocitem" href="../occurrences/">Occurrences</a></li><li><a class="tocitem" href="../collections/">Collections</a></li><li><a class="tocitem" href="../taxa/">Taxa</a></li><li><a class="tocitem" href="../specimens/">Specimens</a></li><li><a class="tocitem" href="../other/">Other</a></li><li><a class="tocitem" href="../apihelp/">Interactive Help</a></li><li><a class="tocitem" href="../taxonomy/">Taxonomy</a></li><li class="is-active"><a class="tocitem" href>PhyloPicMakie</a><ul class="internal"><li><a class="tocitem" href="#Point-placement"><span>Point placement</span></a></li><li><a class="tocitem" href="#Range-placement"><span>Range placement</span></a></li></ul></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">API Reference</a></li><li class="is-active"><a href>PhyloPicMakie</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>PhyloPicMakie</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/jeetsukumaran/PaleobiologyDB.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/jeetsukumaran/PaleobiologyDB.jl/blob/main/docs/src/api/phylopic_makie.md" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="PhyloPicMakie-—-API-Reference"><a class="docs-heading-anchor" href="#PhyloPicMakie-—-API-Reference">PhyloPicMakie — API Reference</a><a id="PhyloPicMakie-—-API-Reference-1"></a><a class="docs-heading-anchor-permalink" href="#PhyloPicMakie-—-API-Reference" title="Permalink"></a></h1><p><code>PaleobiologyDB.PhyloPicMakie</code> is an optional package extension that overlays <a href="https://www.phylopic.org/">PhyloPic</a> silhouette images on existing Makie axes. It activates automatically when both a Makie backend (e.g. <code>CairoMakie</code>) and <code>FileIO</code> are loaded.</p><p>See the <a href="../../guide/phylopic_makie/">PhyloPicMakie guide</a> for installation instructions, worked examples, and a keyword-argument reference.</p><h2 id="Point-placement"><a class="docs-heading-anchor" href="#Point-placement">Point placement</a><a id="Point-placement-1"></a><a class="docs-heading-anchor-permalink" href="#Point-placement" title="Permalink"></a></h2><article><details class="docstring" open="true"><summary id="PhyloPicMakie.augment_phylopic!"><a class="docstring-binding" href="#PhyloPicMakie.augment_phylopic!"><code>PhyloPicMakie.augment_phylopic!</code></a> — <span class="docstring-category">Function</span></summary><section><div><pre><code class="language-julia hljs">augment_phylopic!(
+    ax::Makie.Axis,
+    x::AbstractVector{&lt;:Real},
+    y::AbstractVector{&lt;:Real};
+    taxon::Union{AbstractVector, Nothing} = nothing,
+    glyph::Union{AbstractMatrix{&lt;:Colorant}, Nothing} = nothing,
+    placement::Symbol = :center,
+    xoffset::Real = 0.0,
+    yoffset::Real = 0.0,
+    glyph_size::Real = 0.4,
+    aspect::Symbol = :preserve,
+    rotation::Real = 0.0,
+    mirror::Bool = false,
+    clip::Bool = true,
+    on_missing::Symbol = :skip,
+) -&gt; Nothing</code></pre><p>Add one PhyloPic silhouette glyph per datum to an existing Makie axis <code>ax</code>, anchored at positions <code>(x[i], y[i])</code> in axis data coordinates.</p><p>This is the primitive operation.  All other <code>augment_phylopic</code> variants reduce to this.</p><p><strong>Arguments</strong></p><ul><li><code>x</code>, <code>y</code>: anchor coordinates in axis data space.  Must have equal length.</li></ul><p><strong>Image source (exactly one required)</strong></p><ul><li><code>taxon</code>: per-datum taxon names (used for glyph lookup via <a href="../taxonomy/#PaleobiologyDB.Taxonomy.acquire_phylopic"><code>PaleobiologyDB.Taxonomy.acquire_phylopic</code></a>).  Missing or empty strings are handled according to <code>on_missing</code>.</li><li><code>glyph</code>: a single pre-loaded image matrix (e.g. from <code>FileIO.load</code>), broadcast to every data point.  When provided, <code>taxon</code> is ignored.</li></ul><p><strong>Placement</strong></p><ul><li><code>placement</code>: anchor position on the glyph relative to the data coordinate. One of <code>:center</code> (default), <code>:left</code>, <code>:right</code>, <code>:top</code>, <code>:bottom</code>, <code>:topleft</code>, <code>:topright</code>, <code>:bottomleft</code>, <code>:bottomright</code>.</li><li><code>xoffset</code>, <code>yoffset</code>: additional offset in data units applied after anchoring.</li></ul><p><strong>Sizing</strong></p><ul><li><code>glyph_size</code>: half-height of the rendered glyph in data units (total height = <code>2 * glyph_size</code>).  Default <code>0.4</code>.</li><li><code>aspect</code>: <code>:preserve</code> (default) maintains the original image aspect ratio; <code>:stretch</code> renders as a square.</li></ul><p><strong>Rendering</strong></p><ul><li><code>rotation</code>: clockwise rotation in degrees.  Supported values: <code>0</code>, <code>90</code>, <code>180</code>, <code>270</code> (and their negatives / modulo equivalents).  Default <code>0.0</code>.</li><li><code>mirror</code>: if <code>true</code>, flip the glyph horizontally before rendering.</li><li><code>clip</code>: if <code>true</code> (default), let Makie clip images to the axis bounds automatically (current behaviour — explicit bounding-box intersection is not yet implemented).</li></ul><p><strong>Missing-value policy</strong></p><ul><li><code>on_missing</code>: how to handle data points for which no image is available. <code>:skip</code> (default) silently omits the glyph; <code>:error</code> throws; <code>:placeholder</code> draws a small grey rectangle at the glyph position.</li></ul><p><strong>Returns</strong></p><p><code>Nothing</code>.  The glyphs are added as side-effects to <code>ax</code>.</p><p><strong>Examples</strong></p><pre><code class="language-julia hljs">using PaleobiologyDB, PaleobiologyDB.PhyloPicMakie
+using CairoMakie, FileIO
+
+fig = Figure()
+ax  = Axis(fig[1, 1])
+lines!(ax, [68.0, 66.0], [1, 1])
+
+augment_phylopic!(
+    ax,
+    [68.0],
+    [1.0];
+    taxon     = [&quot;Tyrannosaurus&quot;],
+    glyph_size = 0.4,
+    placement = :left,
+)</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/jeetsukumaran/PaleobiologyDB.jl/blob/2fa77048aea34bae77e65d96d2513a68033d5827/ext/PhyloPicMakie/_render.jl#L208-L297">source</a></section><section><div><pre><code class="language-julia hljs">augment_phylopic!(
+    ax::Makie.Axis,
+    table;
+    x,
+    y,
+    taxon = nothing,
+    glyph = nothing,
+    kwargs...,
+) -&gt; Nothing</code></pre><p>Table-oriented variant of <a href="#PhyloPicMakie.augment_phylopic!"><code>augment_phylopic!</code></a>.</p><p>Extracts coordinate and taxon columns from any Tables.jl-compatible source (e.g. a <code>DataFrame</code>) and forwards to the vector API.</p><p><strong>Arguments</strong></p><ul><li><code>table</code>: any Tables.jl-compatible object.</li><li><code>x</code>: column selector for x coordinates (Symbol, String, or Integer).</li><li><code>y</code>: column selector for y coordinates.</li><li><code>taxon</code>: column selector for taxon names, or <code>nothing</code> if <code>glyph</code> is used.</li><li><code>glyph</code>: a single pre-loaded image matrix broadcast to all rows (alternative to <code>taxon</code>).</li><li>All remaining keyword arguments are forwarded to the vector <a href="#PhyloPicMakie.augment_phylopic!"><code>augment_phylopic!</code></a>.</li></ul><p><strong>Returns</strong></p><p><code>Nothing</code>.</p><p><strong>Examples</strong></p><pre><code class="language-julia hljs">using PaleobiologyDB, PaleobiologyDB.PhyloPicMakie
+using CairoMakie, FileIO, DataFrames
+
+df = DataFrame(
+    x     = [68.0, 68.0],
+    y     = [1.0, 2.0],
+    taxon = [&quot;Tyrannosaurus&quot;, &quot;Triceratops&quot;],
+)
+
+fig = Figure()
+ax  = Axis(fig[1, 1])
+augment_phylopic!(ax, df; x = :x, y = :y, taxon = :taxon, glyph_size = 0.4)</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/jeetsukumaran/PaleobiologyDB.jl/blob/2fa77048aea34bae77e65d96d2513a68033d5827/ext/PhyloPicMakie/_render.jl#L522-L568">source</a></section></details></article><article><details class="docstring" open="true"><summary id="PhyloPicMakie.augment_phylopic"><a class="docstring-binding" href="#PhyloPicMakie.augment_phylopic"><code>PhyloPicMakie.augment_phylopic</code></a> — <span class="docstring-category">Function</span></summary><section><div><pre><code class="language-julia hljs">augment_phylopic(
+    ax::Makie.Axis,
+    x::AbstractVector{&lt;:Real},
+    y::AbstractVector{&lt;:Real};
+    kwargs...,
+) -&gt; Nothing</code></pre><p>Non-mutating alias for <a href="#PhyloPicMakie.augment_phylopic!"><code>augment_phylopic!</code></a>.</p><p>Semantically identical: adds a glyph layer to an existing axis.  The <code>!</code> convention is preserved in <a href="#PhyloPicMakie.augment_phylopic!"><code>augment_phylopic!</code></a>; this alias is provided for naming symmetry only.</p><p>See <a href="#PhyloPicMakie.augment_phylopic!"><code>augment_phylopic!</code></a> for the full keyword-argument documentation.</p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/jeetsukumaran/PaleobiologyDB.jl/blob/2fa77048aea34bae77e65d96d2513a68033d5827/ext/PhyloPicMakie/_render.jl#L332-L347">source</a></section><section><div><pre><code class="language-julia hljs">augment_phylopic(
+    ax::Makie.Axis,
+    table;
+    kwargs...,
+) -&gt; Nothing</code></pre><p>Non-mutating alias for the table-based <a href="#PhyloPicMakie.augment_phylopic!"><code>augment_phylopic!</code></a>.</p><p>See <a href="#PhyloPicMakie.augment_phylopic!"><code>augment_phylopic!</code></a> for full documentation.</p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/jeetsukumaran/PaleobiologyDB.jl/blob/2fa77048aea34bae77e65d96d2513a68033d5827/ext/PhyloPicMakie/_render.jl#L584-L594">source</a></section></details></article><h2 id="Range-placement"><a class="docs-heading-anchor" href="#Range-placement">Range placement</a><a id="Range-placement-1"></a><a class="docs-heading-anchor-permalink" href="#Range-placement" title="Permalink"></a></h2><article><details class="docstring" open="true"><summary id="PhyloPicMakie.augment_phylopic_ranges!"><a class="docstring-binding" href="#PhyloPicMakie.augment_phylopic_ranges!"><code>PhyloPicMakie.augment_phylopic_ranges!</code></a> — <span class="docstring-category">Function</span></summary><section><div><pre><code class="language-julia hljs">augment_phylopic_ranges!(
+    ax::Makie.Axis,
+    xstart::AbstractVector{&lt;:Real},
+    xstop::AbstractVector{&lt;:Real},
+    y::AbstractVector{&lt;:Real};
+    taxon::Union{AbstractVector, Nothing} = nothing,
+    glyph::Union{AbstractMatrix{&lt;:Colorant}, Nothing} = nothing,
+    at::Symbol = :start,
+    placement::Symbol = :center,
+    xoffset::Real = 0.0,
+    yoffset::Real = 0.0,
+    glyph_size::Real = 0.4,
+    aspect::Symbol = :preserve,
+    rotation::Real = 0.0,
+    mirror::Bool = false,
+    clip::Bool = true,
+    on_missing::Symbol = :skip,
+) -&gt; Nothing</code></pre><p>Add one PhyloPic silhouette per datum to <code>ax</code>, where each glyph is anchored relative to a range <code>(xstart[i], xstop[i])</code> at vertical position <code>y[i]</code>.</p><p>This is a convenience wrapper for range-based data (e.g. stratigraphic intervals).  It computes anchor x coordinates from the range endpoints and then calls <a href="#PhyloPicMakie.augment_phylopic!"><code>augment_phylopic!</code></a>.</p><p><strong>Arguments</strong></p><ul><li><code>xstart</code>, <code>xstop</code>: range endpoints in axis data units.</li><li><code>y</code>: vertical coordinate for each datum.</li><li><code>at</code>: where along the range to anchor the glyph.  One of:<ul><li><code>:start</code> (default) — anchor at <code>xstart[i]</code>.</li><li><code>:stop</code> — anchor at <code>xstop[i]</code>.</li><li><code>:midpoint</code> — anchor at the midpoint <code>(xstart[i] + xstop[i]) / 2</code>.</li></ul></li><li>All remaining keyword arguments are forwarded unchanged to <a href="#PhyloPicMakie.augment_phylopic!"><code>augment_phylopic!</code></a>.</li></ul><p><strong>Returns</strong></p><p><code>Nothing</code>.</p><p><strong>Examples</strong></p><pre><code class="language-julia hljs">using PaleobiologyDB, PaleobiologyDB.PhyloPicMakie
+using CairoMakie, FileIO
+
+taxa      = [&quot;Tyrannosaurus&quot;, &quot;Triceratops&quot;]
+first_app = [68.0, 68.0]
+last_app  = [66.0, 66.0]
+
+fig = Figure()
+ax  = Axis(fig[1, 1]; xreversed = true,
+           yticks = (1:length(taxa), taxa))
+
+for (i, (fa, la)) in enumerate(zip(first_app, last_app))
+    lines!(ax, [fa, la], [i, i]; linewidth = 4, color = :gray30)
+end
+
+augment_phylopic_ranges!(
+    ax,
+    first_app,
+    last_app,
+    collect(1:length(taxa));
+    taxon     = taxa,
+    at        = :start,
+    glyph_size = 0.4,
+    placement = :center,
+)</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/jeetsukumaran/PaleobiologyDB.jl/blob/2fa77048aea34bae77e65d96d2513a68033d5827/ext/PhyloPicMakie/_render.jl#L361-L432">source</a></section><section><div><pre><code class="language-julia hljs">augment_phylopic_ranges!(
+    ax::Makie.Axis,
+    table;
+    xstart,
+    xstop,
+    y,
+    taxon = nothing,
+    glyph = nothing,
+    at::Symbol = :start,
+    kwargs...,
+) -&gt; Nothing</code></pre><p>Table-oriented variant of <a href="#PhyloPicMakie.augment_phylopic_ranges!"><code>augment_phylopic_ranges!</code></a>.</p><p>Extracts range and taxon columns from a Tables.jl-compatible source and forwards to the vector range API.</p><p><strong>Arguments</strong></p><ul><li><code>table</code>: any Tables.jl-compatible object.</li><li><code>xstart</code>, <code>xstop</code>: column selectors for the range endpoints.</li><li><code>y</code>: column selector for the vertical coordinate.</li><li><code>taxon</code>: column selector for taxon names, or <code>nothing</code> if <code>glyph</code> is used.</li><li><code>glyph</code>: a single pre-loaded image matrix broadcast to all rows.</li><li><code>at</code>: <code>:start</code> (default), <code>:stop</code>, or <code>:midpoint</code> — which end of the range to anchor the glyph.</li><li>All remaining keyword arguments are forwarded to the vector <a href="#PhyloPicMakie.augment_phylopic_ranges!"><code>augment_phylopic_ranges!</code></a>.</li></ul><p><strong>Returns</strong></p><p><code>Nothing</code>.</p><p><strong>Examples</strong></p><pre><code class="language-julia hljs">using PaleobiologyDB, PaleobiologyDB.PhyloPicMakie
+using CairoMakie, FileIO, DataFrames
+
+df = DataFrame(
+    taxon      = [&quot;Tyrannosaurus&quot;, &quot;Triceratops&quot;],
+    first_app  = [68.0, 68.0],
+    last_app   = [66.0, 66.0],
+    row        = [1.0, 2.0],
+)
+
+fig = Figure()
+ax  = Axis(fig[1, 1]; xreversed = true,
+           yticks = (1:nrow(df), df.taxon))
+for i in 1:nrow(df)
+    lines!(ax, [df.first_app[i], df.last_app[i]], [i, i])
+end
+
+augment_phylopic_ranges!(
+    ax, df;
+    xstart = :first_app,
+    xstop  = :last_app,
+    y      = :row,
+    taxon  = :taxon,
+    at     = :start,
+    glyph_size = 0.4,
+)</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/jeetsukumaran/PaleobiologyDB.jl/blob/2fa77048aea34bae77e65d96d2513a68033d5827/ext/PhyloPicMakie/_render.jl#L603-L667">source</a></section></details></article><article><details class="docstring" open="true"><summary id="PhyloPicMakie.augment_phylopic_ranges"><a class="docstring-binding" href="#PhyloPicMakie.augment_phylopic_ranges"><code>PhyloPicMakie.augment_phylopic_ranges</code></a> — <span class="docstring-category">Function</span></summary><section><div><pre><code class="language-julia hljs">augment_phylopic_ranges(
+    ax::Makie.Axis,
+    xstart::AbstractVector{&lt;:Real},
+    xstop::AbstractVector{&lt;:Real},
+    y::AbstractVector{&lt;:Real};
+    kwargs...,
+) -&gt; Nothing</code></pre><p>Non-mutating alias for <a href="#PhyloPicMakie.augment_phylopic_ranges!"><code>augment_phylopic_ranges!</code></a>.</p><p>See <a href="#PhyloPicMakie.augment_phylopic_ranges!"><code>augment_phylopic_ranges!</code></a> for full documentation.</p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/jeetsukumaran/PaleobiologyDB.jl/blob/2fa77048aea34bae77e65d96d2513a68033d5827/ext/PhyloPicMakie/_render.jl#L452-L464">source</a></section><section><div><pre><code class="language-julia hljs">augment_phylopic_ranges(
+    ax::Makie.Axis,
+    table;
+    kwargs...,
+) -&gt; Nothing</code></pre><p>Non-mutating alias for the table-based <a href="#PhyloPicMakie.augment_phylopic_ranges!"><code>augment_phylopic_ranges!</code></a>.</p><p>See <a href="#PhyloPicMakie.augment_phylopic_ranges!"><code>augment_phylopic_ranges!</code></a> for full documentation.</p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/jeetsukumaran/PaleobiologyDB.jl/blob/2fa77048aea34bae77e65d96d2513a68033d5827/ext/PhyloPicMakie/_render.jl#L686-L696">source</a></section></details></article></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../taxonomy/">« Taxonomy</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.17.0 on <span class="colophon-date" title="Friday 10 April 2026 07:13">Friday 10 April 2026</span>. Using Julia version 1.12.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
