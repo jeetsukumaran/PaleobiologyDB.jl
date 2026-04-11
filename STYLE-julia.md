@@ -459,7 +459,104 @@ habitat(::TerrestrialOccurrence)::Symbol = :terrestrial
 
 ---
 
-### 1.12.1 Return type annotations (mandatory)
+### 1.13 Annotations
+
+#### 1.13.1 Argument type annotations (mandatory except when harmful to design)
+
+> Function arguments must be annotated at the correct level of abstraction to
+> express the interface contract. Overly concrete annotations are correctness
+> bugs at the design level.
+
+Argument type annotations serve a different purpose than return types. They do
+not constrain what a function *produces* — they define what a function is
+*willing to accept*. This is an interface boundary and must be treated as such.
+
+This project mandates argument annotation to:
+
+* **Document intent**: the expected shape and semantics of inputs are visible
+  at the point of definition.
+* **Enable dispatch**: method specialization depends on argument types.
+* **Improve tooling**: static analysis, documentation generators, and code
+  navigation rely on explicit types.
+* **Catch errors early**: invalid inputs fail at the method boundary, not deep
+  in execution.
+
+However, annotation must not come at the cost of generality. The goal is not to
+specify the most specific type, but the **most appropriate abstraction**.
+
+**Examples:**
+
+```julia
+# Correct: expresses required interface, not implementation
+function tokenize(names::AbstractVector{<:AbstractString})::Vector{Vector{SubString{String}}}
+    # ...
+end
+```
+
+```julia
+# Incorrect: over-constrained — excludes valid inputs (e.g. SubArray, GPU arrays)
+function tokenize(names::Vector{String})::Vector{Vector{SubString{String}}}
+```
+
+```julia
+# Incorrect: still too narrow — disallows other string types
+function tokenize(names::AbstractVector{String})::Vector{Vector{SubString{String}}}
+```
+
+**Rules:**
+
+* Annotate all public and non-trivial function arguments unless doing so would
+  reduce correctness, composability, or generality.
+* Prefer **abstract types** (`AbstractVector`, `AbstractMatrix`,
+  `AbstractString`, custom abstract types) over concrete types.
+* Use **parametric constraints** to express relationships:
+
+  ```julia
+  function f(x::AbstractVector{T}) where {T<:Real}
+  ```
+* Use **custom abstract types** to encode domain interfaces:
+
+  ```julia
+  f(x::AbstractOccurrenceRecord)
+  ```
+* Avoid **over-constraining**:
+
+  * Do not require `Vector{Float64}` when `AbstractVector{<:Real}` suffices.
+  * Do not require `Matrix` when `AbstractMatrix` suffices.
+* Avoid **under-constraining**:
+
+  * Do not use `Any` unless the function truly accepts all values.
+  * Do not omit annotation when the expected structure is non-trivial.
+* Argument annotations must reflect **semantic requirements**, not incidental
+  implementation details.
+* Higher-order arguments (functions) should generally remain unannotated unless
+  a specific callable signature is required.
+* When annotation harms composability or introduces artificial coupling, it is
+  permitted to omit or relax it — this is the only exception to the rule.
+
+**Anti-pattern:**
+
+```julia
+# Overly concrete — locks implementation prematurely
+function compute_mean(x::Vector{Float64})::Float64
+```
+
+**Correct form:**
+
+```julia
+function compute_mean(x::AbstractVector{<:Real})::Float64
+```
+
+**Relationship to multiple dispatch:**
+
+Argument annotations define method selection. Overly specific types reduce the
+applicability of methods and fragment the API. Overly general types collapse
+dispatch distinctions and defer errors. The correct annotation is the one that
+captures the **minimal valid interface** for the computation.
+
+---
+
+#### 1.13.2 Return type annotations (mandatory)
 
 > All public and non-trivial functions must include explicit return type
 > annotations. The return type is part of the function's contract and belongs
@@ -834,23 +931,25 @@ end
 These are explicitly prohibited. If you find yourself writing any of these,
 stop and redesign.
 
-| Anti-pattern | Problem | Preferred alternative |
-|---|---|---|
-| Global mutable `Dict` or `Ref` | Destroys statelessness and reentrancy | Pass cache/config as argument |
-| `!`-function without `!` in name | Violates the side-effect contract | Add `!` suffix |
-| Non-`!` function that mutates argument | Violates caller's immutability expectation | Return a copy |
-| Closure capturing mutable variable | Hard to reason about; Julia compiler issues | Pass state as argument |
-| Repeated literal constant | Violates DRY; one change → many bugs | Named `const` |
-| `f(x) = global_var + x` | Hidden dependency, not testable | Pass the value as argument |
-| `try; catch; end` swallowing errors | Violates "fail loudly" | Re-raise or handle specifically |
-| `for` loop building array via `push!` | Imperative; slower; harder to read | Comprehension or `map` |
-| `Array{Float64}(undef, n)` for generic output | Breaks GPU/StaticArray support | `similar(input)` |
-| `1:length(v)` for indexing | Breaks non-1-based arrays | `eachindex(v)` |
-| Hardcoded `Vector` in a generic signature | Breaks composition with other array types | `AbstractVector` |
-| Type-unstable function | Prevents compiler optimization | Ensure return type depends only on input types |
-| Missing return type annotation | Contract invisible at definition; refactoring errors are silent | Add `::ReturnType` to all public and non-trivial functions (§1.12.1) |
-| `Any` as return type | Defeats type stability and compiler optimization | Redesign to return a specific type |
-| Macro that generates opaque code | Violates readability | Prefer named functions |
+| Anti-pattern                                  | Problem                                                                     | Preferred alternative                                                     |
+| --------------------------------------------- | --------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| Global mutable `Dict` or `Ref`                | Destroys statelessness and reentrancy                                       | Pass cache/config as argument                                             |
+| `!`-function without `!` in name              | Violates the side-effect contract                                           | Add `!` suffix                                                            |
+| Non-`!` function that mutates argument        | Violates caller's immutability expectation                                  | Return a copy                                                             |
+| Closure capturing mutable variable            | Hard to reason about; Julia compiler issues                                 | Pass state as argument                                                    |
+| Repeated literal constant                     | Violates DRY; one change → many bugs                                        | Named `const`                                                             |
+| `f(x) = global_var + x`                       | Hidden dependency, not testable                                             | Pass the value as argument                                                |
+| `try; catch; end` swallowing errors           | Violates "fail loudly"                                                      | Re-raise or handle specifically                                           |
+| `for` loop building array via `push!`         | Imperative; slower; harder to read                                          | Comprehension or `map`                                                    |
+| `Array{Float64}(undef, n)` for generic output | Breaks GPU/StaticArray support                                              | `similar(input)`                                                          |
+| `1:length(v)` for indexing                    | Breaks non-1-based arrays                                                   | `eachindex(v)`                                                            |
+| Hardcoded `Vector` in a generic signature     | Breaks composition with other array types                                   | `AbstractVector`                                                          |
+| Type-unstable function                        | Prevents compiler optimization                                              | Ensure return type depends only on input types                            |
+| Missing return type annotation                | Contract invisible at definition; refactoring errors are silent             | Add `::ReturnType` to all public and non-trivial functions (§1.13)      |
+| `Any` as return type                          | Defeats type stability and compiler optimization                            | Redesign to return a specific type                                        |
+| Macro that generates opaque code              | Violates readability                                                        | Prefer named functions                                                    |
+| `using Package` in library/module code        | Imports all exported names; obscures dependencies; increases collision risk | `using Package: foo, bar` or `import Package: foo` when extending methods |
+
 
 ---
 
@@ -879,8 +978,14 @@ Does it repeat logic from another function?
 ├── Yes → Extract a named function; apply DRY (§1.16)
 └── No  → Continue.
 
-Does it have an explicit return type annotation?
-├── No  → Add ::ReturnType before the function body (§1.12.1)
-│         Ensure the type is concrete or constrained — not Any
+Does it have expliit argument annotations that are at the correct level of abstraction?
+├── No  → Add ::TypeAnnotation before the function body (§1.13)
+│         Ensure the type is at the correct level of abstraction; if not possible or advisable, discuss
+└── Yes → You're done. Write the docstring.
+
+Does it have an explicit return type annotations?
+├── No  → Add ::TypeAnnotation before the function body (§1.13)
+│         Ensure the type is concrete or constrained — not Any; if not possible or advisable, discusss
 └── Yes → You're done. Write the docstring.
 ```
+
