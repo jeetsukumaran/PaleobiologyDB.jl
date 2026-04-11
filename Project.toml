@@ -23,6 +23,7 @@ DataCaches = {url = "https://github.com/JuliaData/DataCaches.jl.git"}
 
 [extensions]
 PhyloPicMakie = ["Makie", "FileIO"]
+TaxonTreeMakie = ["Makie"]
 
 [compat]
 Aqua = "0.8"

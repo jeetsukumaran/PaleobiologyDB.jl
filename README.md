@@ -201,6 +201,57 @@ Downloads.download(rec.phylopic_thumbnail, "tyrannosaurus_thumb.png")
 #   img = load(Downloads.download(rec.phylopic_thumbnail))
 ```
 
+## TaxonTreeMakie — Makie tree visualization
+
+`PaleobiologyDB.TaxonTreeMakie` is an optional extension that renders
+[`TaxonTree`](@ref) objects as interactive dendrograms in Makie figures.
+It activates automatically when any Makie backend is loaded — no extra
+packages beyond a backend are required.
+
+```
+pkg> add CairoMakie
+```
+
+```julia
+using PaleobiologyDB, PaleobiologyDB.Taxonomy
+using CairoMakie
+using PaleobiologyDB.TaxonTreeMakie
+
+# Build a taxonomic subtree (Carnivora down to family level)
+tree = taxon_subtree("Carnivora"; leaf_rank = "family")
+
+# Standalone figure — returns (Figure, Axis, TaxonTreePlot)
+fig, ax, p = taxontreeplot(tree; showtips = true)
+save("carnivora_families.png", fig)
+
+# Color branches and nodes by taxonomic rank
+fig2, ax2, p2 = taxontreeplot(tree; color_by_rank = true, showtips = true)
+
+# Ladderized layout (denser subtrees at bottom)
+fig3, ax3, p3 = taxontreeplot(tree; ladderize = true, showtips = true)
+
+# Add to an existing Makie axis (compose with other plots)
+fig4 = Figure(size = (1000, 700))
+ax4  = Axis(fig4[1, 1]; title = "Canidae genera")
+tree4 = taxon_subtree("Canidae"; leaf_rank = "genus")
+taxontreeplot!(ax4, tree4; showtips = true, ladderize = true)
+set_rank_axis_ticks!(ax4, tree4)
+display(fig4)
+```
+
+Key attributes for `taxontreeplot` / `taxontreeplot!`:
+
+| Attribute | Default | Description |
+|---|---|---|
+| `showtips` | `true` | Show leaf taxon-name labels |
+| `color_by_rank` | `false` | Color branches and nodes by rank |
+| `ladderize` | `false` | Sort children by subtree size |
+| `showinternal` | `false` | Show internal node labels |
+| `branch_color` | `:black` | Branch line color |
+| `node_size` | `5` | Node marker size (pts) |
+
+See the [TaxonTreeMakie guide](https://jeetsukumaran.github.io/PaleobiologyDB.jl/dev/guide/taxontree_makie/) for the full attribute reference and worked examples.
+
 ## PhyloPicMakie — Makie plot integration
 
 `PaleobiologyDB.PhyloPicMakie` is an optional extension that adds PhyloPic
@@ -292,6 +343,7 @@ fig = phylopic_thumbnail_grid(
 * Taxonomy (submodule): `drop_unqualified_taxa`, `drop_unresolved_taxa`, `drop_unrecognized_taxa`, `augment_taxonomy`, `child_taxa`, `parent_taxa`, `registered_taxa`, `taxon_occursin`, `contains_taxon`, `taxon_subtree`, `root_taxon`, `leaf_taxa`, `taxa_at_rank`
 * PhyloPic (submodule): `acquire_phylopic`, `augment_phylopic`
 * PhyloPicMakie (extension): `augment_phylopic!`, `augment_phylopic`, `augment_phylopic_ranges!`, `augment_phylopic_ranges`, `phylopic_thumbnail_grid!`, `phylopic_thumbnail_grid`
+* TaxonTreeMakie (extension): `taxontreeplot`, `taxontreeplot!`, `TaxonTreePlot`, `set_rank_axis_ticks!`
 
 ## Documentation
 
@@ -299,6 +351,7 @@ Full documentation: <https://jeetsukumaran.github.io/PaleobiologyDB.jl/>
 
 - [Quick Start](https://jeetsukumaran.github.io/PaleobiologyDB.jl/dev/guide/quickstart/) — examples for all endpoint types, advanced query options
 - [Caching](https://jeetsukumaran.github.io/PaleobiologyDB.jl/dev/guide/caching/) — file, memory, and auto-caching
+- [TaxonTreeMakie](https://jeetsukumaran.github.io/PaleobiologyDB.jl/dev/guide/taxontree_makie/) — dendrogram visualization of taxonomic trees
 - [PhyloPicMakie](https://jeetsukumaran.github.io/PaleobiologyDB.jl/dev/guide/phylopic_makie/) — PhyloPic silhouette overlays on Makie plots
 - [API Reference](https://jeetsukumaran.github.io/PaleobiologyDB.jl/dev/api/occurrences/) — per-function docstrings
 - [Interactive Help](https://jeetsukumaran.github.io/PaleobiologyDB.jl/dev/api/apihelp/) — REPL-based parameter and field discovery
