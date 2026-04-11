@@ -12,7 +12,7 @@
 #
 # Two lazy in-memory indices are built on first use:
 #   _TAXA_HIERARCHY_NAME_INDEX  taxon_name → orig_no  (accepted entries only)
-#   _TAXA_HIERARCHY_NO_INDEX    orig_no    → (name, rank, parent_no)
+#   _TAXA_HIERARCHY_NO_INDEX    orig_no    → (name, rank, accepted_no, parent_no)
 #
 # Public API:
 #   augment_taxonomy   — non-mutating; returns an enriched copy of df
@@ -27,7 +27,7 @@ export augment_taxonomy
 # Lazy in-memory hierarchy indices
 # ---------------------------------------------------------------------------
 
-const _TaxonInfo = @NamedTuple{name::String, rank::String, parent_no::Union{Int,Missing}}
+const _TaxonInfo = @NamedTuple{name::String, rank::String, accepted_no::Union{Int,Missing}, parent_no::Union{Int,Missing}}
 
 const _TAXA_HIERARCHY_NAME_INDEX = Ref{Union{Nothing, Dict{String, Int}}}(nothing)
 const _TAXA_HIERARCHY_NO_INDEX   = Ref{Union{Nothing, Dict{Int, _TaxonInfo}}}(nothing)
@@ -67,7 +67,7 @@ function _ensure_hierarchy_index(; force::Bool = false)
             par  = row.parent_no         # may be missing
 
             # Full traversal index — every row
-            no_to_info[no] = (name = name, rank = rank, parent_no = par)
+            no_to_info[no] = (name = name, rank = rank, accepted_no = acc, parent_no = par)
 
             # Name-lookup index — accepted (non-synonym) rows only
             if !ismissing(acc) && acc == no

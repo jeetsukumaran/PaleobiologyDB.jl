@@ -57,16 +57,16 @@ function _inject_mock_hierarchy!()
     )
 
     no_to_info = Dict{Int, _TaxonInfo}(
-        1  => (name = "Carnivora",    rank = "order",   parent_no = missing),
-        2  => (name = "Canidae",      rank = "family",  parent_no = 1),
-        3  => (name = "Felidae",      rank = "family",  parent_no = 1),
-        4  => (name = "Canis",        rank = "genus",   parent_no = 2),
-        5  => (name = "Vulpes",       rank = "genus",   parent_no = 2),
-        6  => (name = "Felis",        rank = "genus",   parent_no = 3),
-        7  => (name = "Canis lupus",  rank = "species", parent_no = 4),
-        8  => (name = "Canis aureus", rank = "species", parent_no = 4),
-        9  => (name = "Vulpes vulpes",rank = "species", parent_no = 5),
-        10 => (name = "Felis catus",  rank = "species", parent_no = 6),
+        1  => (name = "Carnivora",     rank = "order",   accepted_no = 1,  parent_no = missing),
+        2  => (name = "Canidae",       rank = "family",  accepted_no = 2,  parent_no = 1),
+        3  => (name = "Felidae",       rank = "family",  accepted_no = 3,  parent_no = 1),
+        4  => (name = "Canis",         rank = "genus",   accepted_no = 4,  parent_no = 2),
+        5  => (name = "Vulpes",        rank = "genus",   accepted_no = 5,  parent_no = 2),
+        6  => (name = "Felis",         rank = "genus",   accepted_no = 6,  parent_no = 3),
+        7  => (name = "Canis lupus",   rank = "species", accepted_no = 7,  parent_no = 4),
+        8  => (name = "Canis aureus",  rank = "species", accepted_no = 8,  parent_no = 4),
+        9  => (name = "Vulpes vulpes", rank = "species", accepted_no = 9,  parent_no = 5),
+        10 => (name = "Felis catus",   rank = "species", accepted_no = 10, parent_no = 6),
     )
 
     children = Dict{Int, Vector{Int}}(
