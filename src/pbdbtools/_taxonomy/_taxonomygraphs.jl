@@ -28,59 +28,45 @@ export TaxonNode, TaxonTree, taxon_subtree, root_taxon, leaf_taxa, taxa_at_rank
 # ---------------------------------------------------------------------------
 
 """
-    TaxonNode{M}
+    TaxonNode
 
-A single node in a taxonomic tree, carrying the essential identity fields
-plus an optional metadata slot of type `M`.
+A single node in a taxonomic tree, carrying the full set of identity fields
+from the PBDB taxa list snapshot.
 
 ## Fields
 
-- `name::String`                  — accepted taxon name (as in PBDB)
-- `rank::String`                  — taxonomic rank (e.g. `"genus"`, `"family"`)
-- `pbdb_id::Int`                  — PBDB `orig_no` integer identifier
-- `parent_id::Union{Int,Missing}` — `orig_no` of the parent node, or
+- `name::String`                        — accepted taxon name (as in PBDB)
+- `rank::String`                        — taxonomic rank (e.g. `"genus"`, `"family"`)
+- `pbdb_id::Int`                        — PBDB `orig_no` integer identifier
+- `accepted_id::Union{Int,Missing}`     — PBDB `accepted_no`; equals `pbdb_id`
+  for accepted (non-synonym) taxa, points to the valid name for synonyms,
+  `missing` when not recorded in the snapshot
+- `parent_id::Union{Int,Missing}`       — `orig_no` of the parent node, or
   `missing` when this node is the root of the subtree
-- `metadata::M`                   — caller-supplied metadata; `Nothing` by
-  default (zero overhead)
 
 ## Construction
 
 ```julia
-# No metadata (default; M = Nothing)
-TaxonNode("Canis", "genus", 41045, 2)
-
-# With metadata
-TaxonNode("Canis", "genus", 41045, 2, (author = "Linnaeus", year = 1758))
+TaxonNode("Canis", "genus", 41045, 41045, 2)
+#          name     rank     pbdb_id accepted_id parent_id
 ```
 
 See also [`TaxonTree`](@ref), [`taxon_subtree`](@ref).
 """
-struct TaxonNode{M}
+struct TaxonNode
     name::String
     rank::String
     pbdb_id::Int
+    accepted_id::Union{Int, Missing}
     parent_id::Union{Int, Missing}
-    metadata::M
 end
-
-"""
-    TaxonNode(name, rank, pbdb_id, parent_id) -> TaxonNode{Nothing}
-
-Convenience constructor with no metadata (`M = Nothing`).
-"""
-TaxonNode(
-    name::String,
-    rank::String,
-    pbdb_id::Int,
-    parent_id::Union{Int, Missing},
-) = TaxonNode(name, rank, pbdb_id, parent_id, nothing)
 
 # ---------------------------------------------------------------------------
 # TaxonTree
 # ---------------------------------------------------------------------------
 
 """
-    TaxonTree{M}
+    TaxonTree
 
 A rooted, directed tree representing a taxonomic subtree extracted from
 the PBDB taxa list snapshot.
@@ -89,11 +75,11 @@ the PBDB taxa list snapshot.
 
 - `graph::Graphs.SimpleDiGraph{Int}` — directed graph; edges run
   parent → child.  Vertices are integers in `1 .. Graphs.nv(graph)`.
-- `taxa::Vector{TaxonNode{M}}`        — `taxa[v]` is the [`TaxonNode`](@ref)
+- `taxa::Vector{TaxonNode}`          — `taxa[v]` is the [`TaxonNode`](@ref)
   for vertex `v`.
-- `vertex_of::Dict{Int,Int}`          — maps PBDB `orig_no` → vertex index,
+- `vertex_of::Dict{Int,Int}`         — maps PBDB `orig_no` → vertex index,
   allowing O(1) lookup by numeric PBDB identifier.
-- `root::Int`                         — vertex index of the root node
+- `root::Int`                        — vertex index of the root node
   (always `1`).
 
 ## Working with Graphs.jl
@@ -115,9 +101,9 @@ Graphs.is_tree(t.graph)                    # always true for a valid subtree
 
 See also [`taxon_subtree`](@ref), [`TaxonNode`](@ref).
 """
-struct TaxonTree{M}
+struct TaxonTree
     graph::Graphs.SimpleDiGraph{Int}
-    taxa::Vector{TaxonNode{M}}
+    taxa::Vector{TaxonNode}
     vertex_of::Dict{Int, Int}
     root::Int
 end
@@ -129,24 +115,24 @@ end
 # Each triple is (orig_no::Int, parent_orig_no::Union{Int,Missing}, info::_TaxonInfo)
 function _build_taxon_tree(
     collected::Vector{Tuple{Int, Union{Int, Missing}, Any}},
-)::TaxonTree{Nothing}
+)::TaxonTree
     n = length(collected)
 
     # Vertex 1 = root (first element); rest follow BFS order
     vertex_of = Dict{Int, Int}(orig_no => v for (v, (orig_no, _, _)) in enumerate(collected))
 
     g = Graphs.SimpleDiGraph{Int}(n)
-    taxa = Vector{TaxonNode{Nothing}}(undef, n)
+    taxa = Vector{TaxonNode}(undef, n)
 
     for (v, (orig_no, parent_no, info)) in enumerate(collected)
-        taxa[v] = TaxonNode(info.name, info.rank, orig_no, parent_no)
+        taxa[v] = TaxonNode(info.name, info.rank, orig_no, info.accepted_no, parent_no)
         if !ismissing(parent_no)
             parent_v = vertex_of[parent_no]
             Graphs.add_edge!(g, parent_v, v)
         end
     end
 
-    TaxonTree{Nothing}(g, taxa, vertex_of, 1)
+    TaxonTree(g, taxa, vertex_of, 1)
 end
 
 # ---------------------------------------------------------------------------
@@ -182,7 +168,7 @@ refreshed automatically when older than 30 days.
 
 ## Returns
 
-A `TaxonTree{Nothing}` rooted at the named taxon.  Returns a single-node
+A [`TaxonTree`](@ref) rooted at the named taxon.  Returns a single-node
 tree (root only, no edges) when `taxon_name` is not found in the snapshot.
 
 Throws `ArgumentError` if `leaf_rank` is not a valid PBDB rank string.
@@ -216,7 +202,7 @@ See also [`root_taxon`](@ref), [`leaf_taxa`](@ref), [`taxa_at_rank`](@ref),
 function taxon_subtree(
     taxon_name::AbstractString;
     leaf_rank::Union{AbstractString, Nothing} = nothing,
-)::TaxonTree{Nothing}
+)::TaxonTree
     _ensure_children_index()
 
     name_to_no   = _TAXA_HIERARCHY_NAME_INDEX[]
@@ -227,9 +213,9 @@ function taxon_subtree(
 
     if isnothing(start_no)
         # Unknown taxon — return a single-node placeholder tree
-        placeholder = TaxonNode(string(taxon_name), "", 0, missing)
+        placeholder = TaxonNode(string(taxon_name), "", 0, missing, missing)
         g = Graphs.SimpleDiGraph{Int}(1)
-        return TaxonTree{Nothing}(g, [placeholder], Dict{Int, Int}(0 => 1), 1)
+        return TaxonTree(g, [placeholder], Dict{Int, Int}(0 => 1), 1)
     end
 
     start_info = no_to_info[start_no]
@@ -309,7 +295,7 @@ root_taxon(t).rank    # "order"
 
 See also [`leaf_taxa`](@ref), [`taxa_at_rank`](@ref).
 """
-function root_taxon(tree::TaxonTree{M})::TaxonNode{M} where {M}
+function root_taxon(tree::TaxonTree)::TaxonNode
     tree.taxa[tree.root]
 end
 
@@ -332,7 +318,7 @@ leaf_taxa(t) .|> (n -> n.name)   # ["Ailuridae", "Canidae", …]
 
 See also [`root_taxon`](@ref), [`taxa_at_rank`](@ref).
 """
-function leaf_taxa(tree::TaxonTree{M})::Vector{TaxonNode{M}} where {M}
+function leaf_taxa(tree::TaxonTree)::Vector{TaxonNode}
     g = tree.graph
     nodes = [tree.taxa[v] for v in Graphs.vertices(g) if isempty(Graphs.outneighbors(g, v))]
     sort!(nodes; by = n -> n.name)
@@ -358,9 +344,9 @@ taxa_at_rank(t, "genus")  |> length          # number of genera in Carnivora
 See also [`root_taxon`](@ref), [`leaf_taxa`](@ref).
 """
 function taxa_at_rank(
-    tree::TaxonTree{M},
+    tree::TaxonTree,
     rank::AbstractString,
-)::Vector{TaxonNode{M}} where {M}
+)::Vector{TaxonNode}
     _pbdb_rank_index(rank)   # throws ArgumentError for unknown ranks
     nodes = [n for n in tree.taxa if n.rank == rank]
     sort!(nodes; by = n -> n.name)

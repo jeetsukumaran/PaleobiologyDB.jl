@@ -263,22 +263,21 @@ taxa_at_rank(full_tree, "species")  |> length   # number of species
 
 ### TaxonNode fields
 
-Every node in the tree is a `TaxonNode{M}`:
+Every node in the tree is a `TaxonNode` carrying the full set of fields
+from the PBDB taxa list snapshot:
 
 ```julia
 node = root_taxon(tree)
 
-node.name       # accepted taxon name (String)
-node.rank       # rank string (String, e.g. "order")
-node.pbdb_id    # PBDB orig_no (Int)
-node.parent_id  # parent orig_no, or missing for the root (Union{Int, Missing})
-node.metadata   # caller-supplied metadata; nothing by default (type M)
+node.name        # accepted taxon name (String)
+node.rank        # rank string (String, e.g. "order")
+node.pbdb_id     # PBDB orig_no (Int)
+node.accepted_id # PBDB accepted_no (Union{Int,Missing})
+                 #   == pbdb_id  for accepted (non-synonym) taxa
+                 #   != pbdb_id  for synonyms — points to the valid name's orig_no
+                 #   missing     when not recorded in the snapshot
+node.parent_id   # parent orig_no, or missing for the subtree root (Union{Int,Missing})
 ```
-
-The type parameter `M` defaults to `Nothing` (zero overhead).  Pass a
-function as the `metadata` argument to `taxon_subtree` (planned future API)
-to populate it with arbitrary per-node data while keeping the result
-fully type-stable.
 
 ### Using the graph with Graphs.jl
 

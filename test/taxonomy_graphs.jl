@@ -35,26 +35,20 @@ using PaleobiologyDB.Taxonomy: taxon_subtree, root_taxon, leaf_taxa, taxa_at_ran
 # ---------------------------------------------------------------------------
 
 @testset "TaxonNode and TaxonTree structs" begin
-    @testset "TaxonNode default constructor (no metadata)" begin
-        n = TaxonNode("Canis", "genus", 41045, 2)
-        @test n.name      == "Canis"
-        @test n.rank      == "genus"
-        @test n.pbdb_id   == 41045
-        @test n.parent_id == 2
-        @test n.metadata  === nothing
-        @test n isa TaxonNode{Nothing}
-    end
-
-    @testset "TaxonNode with metadata" begin
-        meta = (author = "Linnaeus", year = 1758)
-        n = TaxonNode("Canis", "genus", 41045, 2, meta)
-        @test n.metadata.year == 1758
-        @test n isa TaxonNode{typeof(meta)}
+    @testset "TaxonNode constructor" begin
+        n = TaxonNode("Canis", "genus", 41045, 41045, 2)
+        @test n.name        == "Canis"
+        @test n.rank        == "genus"
+        @test n.pbdb_id     == 41045
+        @test n.accepted_id == 41045
+        @test n.parent_id   == 2
+        @test n isa TaxonNode
     end
 
     @testset "TaxonNode missing parent_id (root)" begin
-        n = TaxonNode("Carnivora", "order", 1, missing)
+        n = TaxonNode("Carnivora", "order", 1, 1, missing)
         @test ismissing(n.parent_id)
+        @test n.accepted_id == 1
     end
 end
 
@@ -68,7 +62,7 @@ end
     @testset "full subtree (no leaf_rank)" begin
         t = taxon_subtree("Carnivora")
 
-        @test t isa TaxonTree{Nothing}
+        @test t isa TaxonTree
         @test Graphs.nv(t.graph) == 10
         @test Graphs.ne(t.graph) == 9
         @test t.root == 1
@@ -155,7 +149,7 @@ end
     @testset "unknown taxon → single-node placeholder tree" begin
         t = taxon_subtree("INVALID_TAXON_XYZ")
 
-        @test t isa TaxonTree{Nothing}
+        @test t isa TaxonTree
         @test Graphs.nv(t.graph) == 1
         @test Graphs.ne(t.graph) == 0
         @test length(t.taxa) == 1
@@ -179,10 +173,11 @@ end
     t = taxon_subtree("Carnivora")
     r = root_taxon(t)
 
-    @test r isa TaxonNode{Nothing}
-    @test r.name == "Carnivora"
-    @test r.rank == "order"
-    @test r.pbdb_id == 1
+    @test r isa TaxonNode
+    @test r.name        == "Carnivora"
+    @test r.rank        == "order"
+    @test r.pbdb_id     == 1
+    @test r.accepted_id == 1   # Carnivora is accepted: accepted_no == orig_no
     @test ismissing(r.parent_id)
 
     _clear_mock_hierarchy!()
@@ -198,7 +193,7 @@ end
     @testset "full subtree leaves are species" begin
         t = taxon_subtree("Carnivora")
         leaves = leaf_taxa(t)
-        @test leaves isa Vector{TaxonNode{Nothing}}
+        @test leaves isa Vector{TaxonNode}
         @test length(leaves) == 4
         @test [n.name for n in leaves] == sort([
             "Canis lupus", "Canis aureus", "Vulpes vulpes", "Felis catus",
@@ -233,7 +228,7 @@ end
 
     @testset "genera in full Carnivora subtree" begin
         genera = taxa_at_rank(t, "genus")
-        @test genera isa Vector{TaxonNode{Nothing}}
+        @test genera isa Vector{TaxonNode}
         @test [n.name for n in genera] == ["Canis", "Felis", "Vulpes"]
         @test all(n.rank == "genus" for n in genera)
     end
@@ -250,7 +245,7 @@ end
     end
 
     @testset "absent rank → empty vector" begin
-        @test taxa_at_rank(t, "phylum") == TaxonNode{Nothing}[]
+        @test taxa_at_rank(t, "phylum") == TaxonNode[]
     end
 
     @testset "bad rank → ArgumentError" begin
