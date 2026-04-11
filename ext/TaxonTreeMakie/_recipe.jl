@@ -1,4 +1,9 @@
 
+# Bring @recipe and Attributes into scope; import Makie alone does not expose
+# macros.  All other Makie symbols are accessed as Makie.xxx via the module-
+# level `import Makie` in TaxonTreeMakie.jl.
+using Makie: @recipe, Attributes
+
 # ---------------------------------------------------------------------------
 # TaxonTreeMakie — @recipe definition, Makie.plot! implementation, and
 # convenience wrappers.
@@ -57,9 +62,11 @@ function _build_rank_color_map(
         by = r -> get(_RANK_DEPTH, r, 99),
     )
     return Dict{String, Makie.RGBAf}(
-        r => Makie.RGBAf(
-            get(rank_palette, r, _RANK_COLORS[mod1(i, length(_RANK_COLORS))])
-        )
+        r => Makie.RGBAf(Makie.to_color(
+            isnothing(rank_palette)
+                ? _RANK_COLORS[mod1(i, length(_RANK_COLORS))]
+                : get(rank_palette, r, _RANK_COLORS[mod1(i, length(_RANK_COLORS))])
+        ))
         for (i, r) in enumerate(ranks)
     )
 end
