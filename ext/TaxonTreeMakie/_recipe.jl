@@ -122,22 +122,25 @@ end
         tree::TaxonTree,
         rank_palette::Union{AbstractDict, Nothing},
         default_color,
+        vertices::AbstractVector{<:Integer} = collect(Graphs.vertices(tree.graph)),
     ) -> Vector{Makie.RGBAf}
 
-Return a colour vector, one entry per vertex of `tree` (in vertex-index order),
+Return a colour vector, one entry per element of `vertices` (in the order given),
 for rank-based node colouring.
+
+When `vertices` is omitted, colours are returned for all vertices of `tree` in
+vertex-index order.  Pass a filtered list to colour only a subset of nodes (e.g.
+when unifurcation nodes are hidden via `show_unifurcation_nodes = false`).
 """
 function _node_colors_vec(
     tree::TaxonTree,
     rank_palette::Union{AbstractDict, Nothing},
     default_color,
+    vertices::AbstractVector{<:Integer} = collect(Graphs.vertices(tree.graph)),
 )::Vector{Makie.RGBAf}
     cmap = _build_rank_color_map(tree, rank_palette)
     fallback = Makie.RGBAf(Makie.to_color(default_color))
-    return [
-        get(cmap, tree.taxa[v].rank, fallback)
-        for v in Graphs.vertices(tree.graph)
-    ]
+    return [get(cmap, tree.taxa[v].rank, fallback) for v in vertices]
 end
 
 # ---------------------------------------------------------------------------
@@ -159,6 +162,7 @@ dendrogram.  Produced by [`taxontreeplot`](@ref) (standalone figure) or
 | `branch_color` | `:black` | Branch line colour (used when `color_by_rank = false`) |
 | `branch_linewidth` | `1.5` | Branch line width in points |
 | `show_nodes` | `true` | Draw a circular marker at every vertex |
+| `show_unifurcation_nodes` | `true` | When `false`, suppress markers at single-child (unifurcation) nodes; branch segments are still drawn |
 | `node_color` | `:black` | Node marker colour (used when `color_by_rank = false`) |
 | `node_size` | `5` | Node marker size in points |
 | `color_by_rank` | `false` | Colour branches and nodes by taxonomic rank |
@@ -166,7 +170,7 @@ dendrogram.  Produced by [`taxontreeplot`](@ref) (standalone figure) or
 | `showtips` | `true` | Show leaf taxon-name labels |
 | `tip_fontsize` | `9` | Leaf label font size in points |
 | `tip_color` | `:black` | Leaf label colour |
-| `tip_xoffset` | `0.5` | Rightward offset for leaf labels in data units |
+| `tip_xoffset` | `0.2` | Rightward offset for leaf labels in data units |
 | `showinternal` | `false` | Show internal node name labels |
 | `internal_fontsize` | `7` | Internal label font size in points |
 | `internal_color` | `:gray40` | Internal label colour |
@@ -194,26 +198,27 @@ See also [`taxontreeplot`](@ref), [`taxontreeplot!`](@ref),
 @recipe(TaxonTreePlot, taxontree) do scene
     Attributes(
         # Layout
-        ladderize         = false,
+        ladderize               = false,
         # Branches
-        branch_color      = :black,
-        branch_linewidth  = 1.5,
+        branch_color            = :black,
+        branch_linewidth        = 1.5,
         # Nodes
-        show_nodes        = true,
-        node_color        = :black,
-        node_size         = 5,
+        show_nodes              = true,
+        show_unifurcation_nodes = true,
+        node_color              = :black,
+        node_size               = 5,
         # Rank-based colouring
-        color_by_rank     = false,
-        rank_palette      = nothing,
+        color_by_rank           = false,
+        rank_palette            = nothing,
         # Leaf labels
-        showtips          = true,
-        tip_fontsize      = 9,
-        tip_color         = :black,
-        tip_xoffset       = 0.5,
+        showtips                = true,
+        tip_fontsize            = 9,
+        tip_color               = :black,
+        tip_xoffset             = 0.2,
         # Internal labels
-        showinternal      = false,
-        internal_fontsize = 7,
-        internal_color    = :gray40,
+        showinternal            = false,
+        internal_fontsize       = 7,
+        internal_color          = :gray40,
     )
 end
 
@@ -261,15 +266,27 @@ function Makie.plot!(p::TaxonTreePlot{<:Tuple{TaxonTree}})
     )
 
     # ── Node markers ──────────────────────────────────────────────────────
-    node_pts_obs = Makie.lift(layout_obs, tree_obs) do (xs, ys), tree
-        [Makie.Point2f(xs[v], ys[v]) for v in Graphs.vertices(tree.graph)]
+    # Compute the set of vertices to render as markers.  When
+    # show_unifurcation_nodes = false, single-child nodes are filtered out so
+    # they appear as transparent pass-throughs rather than extra dots.
+    node_vertices_obs = Makie.lift(tree_obs, p[:show_unifurcation_nodes]) do tree, show_uni
+        g = tree.graph
+        if show_uni
+            collect(Graphs.vertices(g))
+        else
+            [v for v in Graphs.vertices(g) if length(Graphs.outneighbors(g, v)) != 1]
+        end
+    end
+
+    node_pts_obs = Makie.lift(layout_obs, node_vertices_obs) do (xs, ys), verts
+        [Makie.Point2f(xs[v], ys[v]) for v in verts]
     end
 
     node_colors_obs = Makie.lift(
-        tree_obs, p[:color_by_rank], p[:rank_palette], p[:node_color],
-    ) do tree, cbr, palette, nc
-        cbr ? _node_colors_vec(tree, palette, nc) :
-              fill(Makie.RGBAf(Makie.to_color(nc)), Graphs.nv(tree.graph))
+        tree_obs, node_vertices_obs, p[:color_by_rank], p[:rank_palette], p[:node_color],
+    ) do tree, verts, cbr, palette, nc
+        cbr ? _node_colors_vec(tree, palette, nc, verts) :
+              fill(Makie.RGBAf(Makie.to_color(nc)), length(verts))
     end
 
     Makie.scatter!(
@@ -295,11 +312,12 @@ function Makie.plot!(p::TaxonTreePlot{<:Tuple{TaxonTree}})
 
     Makie.text!(
         p, leaf_pts_obs;
-        text    = leaf_names_obs,
-        fontsize = p[:tip_fontsize],
-        color   = p[:tip_color],
-        align   = (:left, :center),
-        visible = p[:showtips],
+        text        = leaf_names_obs,
+        fontsize    = p[:tip_fontsize],
+        color       = p[:tip_color],
+        align       = (:left, :center),
+        visible     = p[:showtips],
+        clip_planes = Makie.Plane3f[],
     )
 
     # ── Internal node labels ──────────────────────────────────────────────
@@ -318,11 +336,12 @@ function Makie.plot!(p::TaxonTreePlot{<:Tuple{TaxonTree}})
 
     Makie.text!(
         p, internal_pts_obs;
-        text     = internal_names_obs,
-        fontsize = p[:internal_fontsize],
-        color    = p[:internal_color],
-        align    = (:center, :bottom),
-        visible  = p[:showinternal],
+        text        = internal_names_obs,
+        fontsize    = p[:internal_fontsize],
+        color       = p[:internal_color],
+        align       = (:center, :bottom),
+        visible     = p[:showinternal],
+        clip_planes = Makie.Plane3f[],
     )
 
     return p
@@ -444,8 +463,20 @@ function taxontreeplot(
     axis_kwargs::NamedTuple = (;),
     kwargs...,
 )::Tuple{Makie.Figure, Makie.Axis, TaxonTreePlot}
-    fig = Makie.Figure(; figure_kwargs...)
-    ax  = Makie.Axis(fig[1, 1]; axis_kwargs...)
+    # Auto-size the figure based on the number of leaves so that dense trees
+    # are not cramped.  User-supplied figure_kwargs / axis_kwargs take
+    # precedence via merge (last-writer wins in NamedTuple merge).
+    g = tree.graph
+    n_leaves = count(v -> isempty(Graphs.outneighbors(g, v)), Graphs.vertices(g))
+    default_height = max(400, n_leaves * 18)
+
+    effective_figure_kwargs = merge((; size = (900, default_height)), figure_kwargs)
+    # 30% right margin leaves room for tip labels; clip_planes = Plane3f[] on the
+    # text! calls ensures glyphs that extend beyond the axis edge are still shown.
+    effective_axis_kwargs = merge((; xautolimitmargin = (0.05f0, 0.30f0)), axis_kwargs)
+
+    fig = Makie.Figure(; effective_figure_kwargs...)
+    ax  = Makie.Axis(fig[1, 1]; effective_axis_kwargs...)
     p   = taxontreeplot!(ax, tree; kwargs...)
     show_rank_ticks && set_rank_axis_ticks!(ax, tree)
     return (fig, ax, p)

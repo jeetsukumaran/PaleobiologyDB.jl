@@ -247,6 +247,16 @@ if _CAIRO_TTM_AVAILABLE
             palette = Dict("order" => :red, "family" => :blue, "genus" => :green)
             @test_nowarn taxontreeplot(tree; color_by_rank = true, rank_palette = palette)
         end
+
+        @testset "show_unifurcation_nodes = false does not error" begin
+            @test_nowarn taxontreeplot(tree; show_unifurcation_nodes = false)
+        end
+
+        @testset "auto-sized figure height respects leaf-count floor" begin
+            # Mock tree has 3 leaves; max(400, 3*18) = 400 → height ≥ 400.
+            fig, _, _ = taxontreeplot(tree)
+            @test fig.scene.viewport[].widths[2] >= 400
+        end
     end
 
     @testset "TaxonTreeMakie — taxontreeplot! into existing axis" begin
