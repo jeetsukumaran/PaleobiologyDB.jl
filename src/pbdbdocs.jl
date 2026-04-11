@@ -52,80 +52,80 @@ using JSON3
 # PBDB API Documentation as JSON strings
 const API_DOCS = Dict{String, String}(
     "occurrences" => """{
-        "endpoint": "/data1.2/occs/list",
-        "title": "List of fossil occurrences",
-        "description": "Returns information about multiple occurrences, selected according to the parameters you provide. You can select occurrences by taxonomy, geography, age, environment, and many other criteria.",
-        "methods": ["GET", "HEAD"],
-        "usage_examples": [
-            "/data1.2/occs/list.txt?base_name=Cetacea&interval=Miocene&show=loc,class",
-            "/data1.2/occs/list.json?base_name=Cetacea&interval=Miocene&show=loc,class"
-        ],
-        "formats": [
-            {"suffix": ".json", "type": "JSON"},
-            {"suffix": ".txt", "type": "Comma-separated text"},
-            {"suffix": ".csv", "type": "Comma-separated text"},
-            {"suffix": ".tsv", "type": "Tab-separated text"}
-        ],
-        "parameters": {
-            "selection": [
-                {"name": "all_records", "description": "Select all occurrences entered in the database"},
-                {"name": "occ_id", "description": "Comma-separated list of occurrence identifiers"},
-                {"name": "coll_id", "description": "Comma-separated list of collection identifiers"},
-                {"name": "base_name", "description": "Taxonomic name(s), including all subtaxa and synonyms"},
-                {"name": "taxon_name", "description": "Taxonomic name(s), including synonyms"},
-                {"name": "taxon_id", "description": "Taxa identifiers, not including subtaxa or synonyms"}
+            "endpoint": "/data1.2/occs/list",
+            "title": "List of fossil occurrences",
+            "description": "Returns information about multiple occurrences, selected according to the parameters you provide. You can select occurrences by taxonomy, geography, age, environment, and many other criteria.",
+            "methods": ["GET", "HEAD"],
+            "usage_examples": [
+                "/data1.2/occs/list.txt?base_name=Cetacea&interval=Miocene&show=loc,class",
+                "/data1.2/occs/list.json?base_name=Cetacea&interval=Miocene&show=loc,class"
             ],
-            "geographic": [
-                {"name": "lngmin", "description": "Minimum longitude bound"},
-                {"name": "lngmax", "description": "Maximum longitude bound"},
-                {"name": "latmin", "description": "Minimum latitude bound"},
-                {"name": "latmax", "description": "Maximum latitude bound"},
-                {"name": "cc", "description": "Country codes (e.g., 'US,CA') or continent codes"},
-                {"name": "country_name", "description": "Full country names, may include wildcards"},
-                {"name": "state", "description": "State or province names"}
+            "formats": [
+                {"suffix": ".json", "type": "JSON"},
+                {"suffix": ".txt", "type": "Comma-separated text"},
+                {"suffix": ".csv", "type": "Comma-separated text"},
+                {"suffix": ".tsv", "type": "Tab-separated text"}
             ],
-            "temporal": [
-                {"name": "interval", "description": "Named geologic time intervals (e.g., 'Miocene')"},
-                {"name": "min_ma", "description": "Minimum age in millions of years"},
-                {"name": "max_ma", "description": "Maximum age in millions of years"},
-                {"name": "timerule", "description": "Temporal locality rule", "values": ["contain", "major", "overlap"]}
-            ],
-            "taxonomic": [
-                {"name": "idreso", "description": "Taxonomic resolution", "values": ["species", "genus", "family"]},
-                {"name": "taxon_status", "description": "Taxonomic status", "values": ["valid", "accepted", "invalid"]},
-                {"name": "extant", "description": "Extant status", "values": ["yes", "no"]}
-            ],
-            "output": [
-                {"name": "show", "description": "Additional info blocks", "values": ["class", "coords", "loc", "time", "strat", "env"]},
-                {"name": "order", "description": "Result ordering", "values": ["id", "max_ma", "identification"]},
-                {"name": "limit", "description": "Maximum number of records to return"}
-            ]
-        },
-        "response_fields": {
-            "basic": [
-                {"pbdb": "occurrence_no", "com": "oid", "description": "Unique occurrence identifier"},
-                {"pbdb": "collection_no", "com": "cid", "description": "Associated collection identifier"},
-                {"pbdb": "identified_name", "com": "idn", "description": "Taxonomic name as identified"},
-                {"pbdb": "accepted_name", "com": "tna", "description": "Accepted taxonomic name"},
-                {"pbdb": "accepted_rank", "com": "rnk", "description": "Taxonomic rank"},
-                {"pbdb": "early_interval", "com": "oei", "description": "Early geologic time interval"},
-                {"pbdb": "late_interval", "com": "oli", "description": "Late geologic time interval"},
-                {"pbdb": "max_ma", "com": "eag", "description": "Early age bound (Ma)"},
-                {"pbdb": "min_ma", "com": "lag", "description": "Late age bound (Ma)"}
-            ],
-            "coords": [
-                {"pbdb": "lng", "com": "lng", "description": "Longitude (degrees)"},
-                {"pbdb": "lat", "com": "lat", "description": "Latitude (degrees)"}
-            ],
-            "class": [
-                {"pbdb": "phylum", "com": "phl", "description": "Phylum name"},
-                {"pbdb": "class", "com": "cll", "description": "Class name"},
-                {"pbdb": "order", "com": "odl", "description": "Order name"},
-                {"pbdb": "family", "com": "fml", "description": "Family name"},
-                {"pbdb": "genus", "com": "gnl", "description": "Genus name"}
-            ]
-        }
-    }"""
+            "parameters": {
+                "selection": [
+                    {"name": "all_records", "description": "Select all occurrences entered in the database"},
+                    {"name": "occ_id", "description": "Comma-separated list of occurrence identifiers"},
+                    {"name": "coll_id", "description": "Comma-separated list of collection identifiers"},
+                    {"name": "base_name", "description": "Taxonomic name(s), including all subtaxa and synonyms"},
+                    {"name": "taxon_name", "description": "Taxonomic name(s), including synonyms"},
+                    {"name": "taxon_id", "description": "Taxa identifiers, not including subtaxa or synonyms"}
+                ],
+                "geographic": [
+                    {"name": "lngmin", "description": "Minimum longitude bound"},
+                    {"name": "lngmax", "description": "Maximum longitude bound"},
+                    {"name": "latmin", "description": "Minimum latitude bound"},
+                    {"name": "latmax", "description": "Maximum latitude bound"},
+                    {"name": "cc", "description": "Country codes (e.g., 'US,CA') or continent codes"},
+                    {"name": "country_name", "description": "Full country names, may include wildcards"},
+                    {"name": "state", "description": "State or province names"}
+                ],
+                "temporal": [
+                    {"name": "interval", "description": "Named geologic time intervals (e.g., 'Miocene')"},
+                    {"name": "min_ma", "description": "Minimum age in millions of years"},
+                    {"name": "max_ma", "description": "Maximum age in millions of years"},
+                    {"name": "timerule", "description": "Temporal locality rule", "values": ["contain", "major", "overlap"]}
+                ],
+                "taxonomic": [
+                    {"name": "idreso", "description": "Taxonomic resolution", "values": ["species", "genus", "family"]},
+                    {"name": "taxon_status", "description": "Taxonomic status", "values": ["valid", "accepted", "invalid"]},
+                    {"name": "extant", "description": "Extant status", "values": ["yes", "no"]}
+                ],
+                "output": [
+                    {"name": "show", "description": "Additional info blocks", "values": ["class", "coords", "loc", "time", "strat", "env"]},
+                    {"name": "order", "description": "Result ordering", "values": ["id", "max_ma", "identification"]},
+                    {"name": "limit", "description": "Maximum number of records to return"}
+                ]
+            },
+            "response_fields": {
+                "basic": [
+                    {"pbdb": "occurrence_no", "com": "oid", "description": "Unique occurrence identifier"},
+                    {"pbdb": "collection_no", "com": "cid", "description": "Associated collection identifier"},
+                    {"pbdb": "identified_name", "com": "idn", "description": "Taxonomic name as identified"},
+                    {"pbdb": "accepted_name", "com": "tna", "description": "Accepted taxonomic name"},
+                    {"pbdb": "accepted_rank", "com": "rnk", "description": "Taxonomic rank"},
+                    {"pbdb": "early_interval", "com": "oei", "description": "Early geologic time interval"},
+                    {"pbdb": "late_interval", "com": "oli", "description": "Late geologic time interval"},
+                    {"pbdb": "max_ma", "com": "eag", "description": "Early age bound (Ma)"},
+                    {"pbdb": "min_ma", "com": "lag", "description": "Late age bound (Ma)"}
+                ],
+                "coords": [
+                    {"pbdb": "lng", "com": "lng", "description": "Longitude (degrees)"},
+                    {"pbdb": "lat", "com": "lat", "description": "Latitude (degrees)"}
+                ],
+                "class": [
+                    {"pbdb": "phylum", "com": "phl", "description": "Phylum name"},
+                    {"pbdb": "class", "com": "cll", "description": "Class name"},
+                    {"pbdb": "order", "com": "odl", "description": "Order name"},
+                    {"pbdb": "family", "com": "fml", "description": "Family name"},
+                    {"pbdb": "genus", "com": "gnl", "description": "Genus name"}
+                ]
+            }
+        }"""
 )
 
 # Main exports
@@ -145,7 +145,7 @@ pbdb_help("occurrences") # Show detailed help for occurrences endpoint
 ```
 """
 function pbdb_help(endpoint = "")
-    if isempty(endpoint)
+    return if isempty(endpoint)
         list_endpoints()
     else
         show_endpoint(endpoint)
@@ -158,7 +158,7 @@ end
 List all available PBDB API endpoints.
 """
 function pbdb_endpoints()
-    list_endpoints()
+    return list_endpoints()
 end
 
 """
@@ -177,7 +177,7 @@ function pbdb_parameters(endpoint; category = "")
     doc_data = get_doc_data(endpoint)
     params = doc_data["parameters"]
 
-    if isempty(category)
+    return if isempty(category)
         for (cat_name, cat_params) in params
             println("$(uppercase(string(cat_name))) PARAMETERS:")
             for param in cat_params
@@ -214,7 +214,7 @@ function pbdb_fields(endpoint; block = "")
     doc_data = get_doc_data(endpoint)
     field_blocks = doc_data["response_fields"]
 
-    if isempty(block)
+    return if isempty(block)
         for (block_name, block_fields) in field_blocks
             println("$(uppercase(string(block_name))) FIELDS:")
             for field in block_fields
@@ -258,18 +258,19 @@ function pbdb_api_search(pattern; scope = "all", endpoint = "occurrences")
     end
 
     println("SEARCH RESULTS for '$pattern':")
-    println("-" ^ 40)
+    println("-"^40)
     for (location, name, description) in results
         println("$location: $name")
         println("  $description")
         println()
     end
+    return
 end
 
 # Internal functions
 function list_endpoints()
     println("PALEOBIOLOGY DATABASE API ENDPOINTS")
-    println("=" ^ 50)
+    println("="^50)
 
     for (key, doc_json) in API_DOCS
         doc_data = JSON3.read(doc_json)
@@ -283,7 +284,7 @@ function list_endpoints()
     println("  pbdb_help(\"endpoint_name\")     - Detailed endpoint help")
     println("  pbdb_parameters(\"endpoint\")    - Show parameters")
     println("  pbdb_fields(\"endpoint\")        - Show response fields")
-    println("  pbdb_api_search(\"pattern\")     - Search documentation")
+    return println("  pbdb_api_search(\"pattern\")     - Search documentation")
 end
 
 function show_endpoint(endpoint)
@@ -311,7 +312,7 @@ function show_endpoint(endpoint)
     println("Next steps:")
     println("  pbdb_parameters(\"$endpoint\")  - View all parameters")
     println("  pbdb_fields(\"$endpoint\")      - View response fields")
-    println("  pbdb_api_search(\"keyword\")    - Search this endpoint")
+    return println("  pbdb_api_search(\"keyword\")    - Search this endpoint")
 end
 
 function get_doc_data(endpoint)
@@ -332,12 +333,12 @@ function show_parameter(param)
         print(" [$(join(param["values"], "|"))]")
     end
     println()
-    println("    $(param["description"])")
+    return println("    $(param["description"])")
 end
 
 function show_field(field)
     println("  $(field["pbdb"]) ($(field["com"]))")
-    println("    $(field["description"])")
+    return println("    $(field["description"])")
 end
 
 function find_matches(doc_data, pattern, scope)

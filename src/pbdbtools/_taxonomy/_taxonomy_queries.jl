@@ -29,7 +29,7 @@ export child_taxa, parent_taxa, taxonomic_ranks, registered_taxa,
 const _TAXA_CHILDREN_INDEX = Ref{Union{Nothing, Dict{Int, Vector{Int}}}}(nothing)
 
 function _ensure_children_index(; force::Bool = false)
-    if isnothing(_TAXA_CHILDREN_INDEX[]) || force
+    return if isnothing(_TAXA_CHILDREN_INDEX[]) || force
         _ensure_hierarchy_index(; force = force)
         no_to_info = _TAXA_HIERARCHY_NO_INDEX[]
         children = Dict{Int, Vector{Int}}()
@@ -85,14 +85,14 @@ child_taxa("INVALID", "genus")      # → String[]
 See also [`parent_taxa`](@ref), [`augment_taxonomy`](@ref).
 """
 function child_taxa(
-    taxon_name::AbstractString,
-    taxonomic_rank::Union{AbstractString, Nothing} = nothing,
-)::Vector{String}
+        taxon_name::AbstractString,
+        taxonomic_rank::Union{AbstractString, Nothing} = nothing,
+    )::Vector{String}
     _ensure_children_index()
 
-    name_to_no    = _TAXA_HIERARCHY_NAME_INDEX[]
-    no_to_info    = _TAXA_HIERARCHY_NO_INDEX[]
-    children_idx  = _TAXA_CHILDREN_INDEX[]
+    name_to_no = _TAXA_HIERARCHY_NAME_INDEX[]
+    no_to_info = _TAXA_HIERARCHY_NO_INDEX[]
+    children_idx = _TAXA_CHILDREN_INDEX[]
 
     start_no = get(name_to_no, taxon_name, nothing)
     isnothing(start_no) && return String[]
@@ -101,7 +101,7 @@ function child_taxa(
 
     results = String[]
     visited = Set{Int}()
-    queue   = [start_no]
+    queue = [start_no]
 
     while !isempty(queue)
         current = popfirst!(queue)
@@ -134,7 +134,7 @@ function child_taxa(
         end
     end
 
-    sort!(unique!(results))
+    return sort!(unique!(results))
 end
 
 """
@@ -177,9 +177,9 @@ parent_taxa("INVALID", "family")      # → String[]
 See also [`child_taxa`](@ref), [`augment_taxonomy`](@ref).
 """
 function parent_taxa(
-    taxon_name::AbstractString,
-    taxonomic_rank::Union{AbstractString, Nothing} = nothing,
-)::Vector{String}
+        taxon_name::AbstractString,
+        taxonomic_rank::Union{AbstractString, Nothing} = nothing,
+    )::Vector{String}
     _ensure_hierarchy_index()
 
     name_to_no = _TAXA_HIERARCHY_NAME_INDEX[]
@@ -195,7 +195,7 @@ function parent_taxa(
 
     results = String[]
     visited = Set{Int}()
-    cur_no  = start_no
+    cur_no = start_no
 
     while true
         cur_no in visited && break
@@ -216,7 +216,7 @@ function parent_taxa(
         cur_no = parent_no
     end
 
-    results
+    return results
 end
 
 # ---------------------------------------------------------------------------
@@ -257,7 +257,7 @@ See also [`PBDB_RANK_HIERARCHY`](@ref), [`registered_taxa`](@ref),
 [`child_taxa`](@ref), [`parent_taxa`](@ref).
 """
 function taxonomic_ranks()::Vector{String}
-    copy(PBDB_RANK_HIERARCHY)
+    return copy(PBDB_RANK_HIERARCHY)
 end
 
 # ---------------------------------------------------------------------------
@@ -309,8 +309,8 @@ See also [`taxonomic_ranks`](@ref), [`child_taxa`](@ref),
 [`parent_taxa`](@ref), [`istaxon`](@ref).
 """
 function registered_taxa(
-    taxon_name::Union{Nothing, Regex, AbstractVector{<:Regex}} = nothing,
-)::Vector{String}
+        taxon_name::Union{Nothing, Regex, AbstractVector{<:Regex}} = nothing,
+    )::Vector{String}
     _ensure_hierarchy_index()
     name_to_no = _TAXA_HIERARCHY_NAME_INDEX[]
 
@@ -509,13 +509,13 @@ See also [`augment_taxonomy`](@ref), [`child_taxa`](@ref),
 [`parent_taxa`](@ref), [`registered_taxa`](@ref).
 """
 function taxon_occursin(
-    name::Regex,
-    df::AbstractDataFrame;
-    autoaugment::Bool = true,
-)::Vector{Bool}
+        name::Regex,
+        df::AbstractDataFrame;
+        autoaugment::Bool = true,
+    )::Vector{Bool}
     df_work, cols = _taxonomy_search_setup(df; autoaugment)
     criterion = (s::String) -> occursin(name, s)
-    [_row_matches_any(row, cols, criterion) for row in eachrow(df_work)]
+    return [_row_matches_any(row, cols, criterion) for row in eachrow(df_work)]
 end
 
 """
@@ -525,13 +525,13 @@ Exact-string variant of [`taxon_occursin`](@ref).  Returns `true` for rows
 where any relevant taxonomic column equals `name` (case-sensitive).
 """
 function taxon_occursin(
-    name::AbstractString,
-    df::AbstractDataFrame;
-    autoaugment::Bool = true,
-)::Vector{Bool}
+        name::AbstractString,
+        df::AbstractDataFrame;
+        autoaugment::Bool = true,
+    )::Vector{Bool}
     df_work, cols = _taxonomy_search_setup(df; autoaugment)
     criterion = (s::String) -> s == name
-    [_row_matches_any(row, cols, criterion) for row in eachrow(df_work)]
+    return [_row_matches_any(row, cols, criterion) for row in eachrow(df_work)]
 end
 
 """
@@ -548,13 +548,13 @@ single-column `subset` context a single value cannot equal two different strings
 `combine=all` is always impractical for `length(names) > 1`; use `combine=any` there.
 """
 function taxon_occursin(
-    names::AbstractVector{<:AbstractString},
-    df::AbstractDataFrame;
-    autoaugment::Bool = true,
-    combine = all,
-)::Vector{Bool}
+        names::AbstractVector{<:AbstractString},
+        df::AbstractDataFrame;
+        autoaugment::Bool = true,
+        combine = all,
+    )::Vector{Bool}
     df_work, cols = _taxonomy_search_setup(df; autoaugment)
-    [combine((n) -> _row_matches_any(row, cols, s -> s == n), names) for row in eachrow(df_work)]
+    return [combine((n) -> _row_matches_any(row, cols, s -> s == n), names) for row in eachrow(df_work)]
 end
 
 """
@@ -569,13 +569,13 @@ Multi-pattern variant of [`taxon_occursin`](@ref).
 - `combine=any` — any pattern matching any column is sufficient (OR semantics).
 """
 function taxon_occursin(
-    names::AbstractVector{<:Regex},
-    df::AbstractDataFrame;
-    autoaugment::Bool = true,
-    combine = all,
-)::Vector{Bool}
+        names::AbstractVector{<:Regex},
+        df::AbstractDataFrame;
+        autoaugment::Bool = true,
+        combine = all,
+    )::Vector{Bool}
     df_work, cols = _taxonomy_search_setup(df; autoaugment)
-    [combine((r) -> _row_matches_any(row, cols, s -> occursin(r, s)), names) for row in eachrow(df_work)]
+    return [combine((r) -> _row_matches_any(row, cols, s -> occursin(r, s)), names) for row in eachrow(df_work)]
 end
 
 # ---------------------------------------------------------------------------
@@ -650,7 +650,7 @@ See also [`augment_taxonomy`](@ref), [`child_taxa`](@ref),
 [`parent_taxa`](@ref), [`registered_taxa`](@ref).
 """
 function taxon_occursin(name::Regex)
-    ByRow(v -> !ismissing(v) && !isempty(string(v)) && occursin(name, string(v)))
+    return ByRow(v -> !ismissing(v) && !isempty(string(v)) && occursin(name, string(v)))
 end
 
 """
@@ -659,7 +659,7 @@ end
 Exact-string 1-arg form of [`taxon_occursin`](@ref).
 """
 function taxon_occursin(name::AbstractString)
-    ByRow(v -> !ismissing(v) && string(v) == name)
+    return ByRow(v -> !ismissing(v) && string(v) == name)
 end
 
 """
@@ -668,7 +668,7 @@ end
 Multi-name 1-arg form of [`taxon_occursin`](@ref).  See that docstring for `combine` semantics.
 """
 function taxon_occursin(names::AbstractVector{<:AbstractString}; combine = all)
-    ByRow(v -> !ismissing(v) && combine(n -> string(v) == n, names))
+    return ByRow(v -> !ismissing(v) && combine(n -> string(v) == n, names))
 end
 
 """
@@ -677,7 +677,7 @@ end
 Multi-pattern 1-arg form of [`taxon_occursin`](@ref).  See that docstring for `combine` semantics.
 """
 function taxon_occursin(names::AbstractVector{<:Regex}; combine = all)
-    ByRow(v -> !ismissing(v) && !isempty(string(v)) && combine(r -> occursin(r, string(v)), names))
+    return ByRow(v -> !ismissing(v) && !isempty(string(v)) && combine(r -> occursin(r, string(v)), names))
 end
 
 # ---------------------------------------------------------------------------
@@ -771,53 +771,53 @@ See also [`taxon_occursin`](@ref), [`augment_taxonomy`](@ref),
 # 2-arg forms (delegate to taxon_occursin with arguments swapped)
 
 function contains_taxon(
-    df::AbstractDataFrame,
-    name::Regex;
-    autoaugment::Bool = true,
-)::Vector{Bool}
-    taxon_occursin(name, df; autoaugment)
+        df::AbstractDataFrame,
+        name::Regex;
+        autoaugment::Bool = true,
+    )::Vector{Bool}
+    return taxon_occursin(name, df; autoaugment)
 end
 
 function contains_taxon(
-    df::AbstractDataFrame,
-    name::AbstractString;
-    autoaugment::Bool = true,
-)::Vector{Bool}
-    taxon_occursin(name, df; autoaugment)
+        df::AbstractDataFrame,
+        name::AbstractString;
+        autoaugment::Bool = true,
+    )::Vector{Bool}
+    return taxon_occursin(name, df; autoaugment)
 end
 
 function contains_taxon(
-    df::AbstractDataFrame,
-    names::AbstractVector{<:AbstractString};
-    autoaugment::Bool = true,
-    combine = all,
-)::Vector{Bool}
-    taxon_occursin(names, df; autoaugment, combine)
+        df::AbstractDataFrame,
+        names::AbstractVector{<:AbstractString};
+        autoaugment::Bool = true,
+        combine = all,
+    )::Vector{Bool}
+    return taxon_occursin(names, df; autoaugment, combine)
 end
 
 function contains_taxon(
-    df::AbstractDataFrame,
-    names::AbstractVector{<:Regex};
-    autoaugment::Bool = true,
-    combine = all,
-)::Vector{Bool}
-    taxon_occursin(names, df; autoaugment, combine)
+        df::AbstractDataFrame,
+        names::AbstractVector{<:Regex};
+        autoaugment::Bool = true,
+        combine = all,
+    )::Vector{Bool}
+    return taxon_occursin(names, df; autoaugment, combine)
 end
 
 # 1-arg forms (identical to taxon_occursin 1-arg)
 
 function contains_taxon(name::Regex)
-    taxon_occursin(name)
+    return taxon_occursin(name)
 end
 
 function contains_taxon(name::AbstractString)
-    taxon_occursin(name)
+    return taxon_occursin(name)
 end
 
 function contains_taxon(names::AbstractVector{<:AbstractString}; combine = all)
-    taxon_occursin(names; combine)
+    return taxon_occursin(names; combine)
 end
 
 function contains_taxon(names::AbstractVector{<:Regex}; combine = all)
-    taxon_occursin(names; combine)
+    return taxon_occursin(names; combine)
 end

@@ -1,4 +1,3 @@
-
 using DataFrames
 
 export drop_unresolved_taxa, drop_unresolved_taxa!
@@ -47,16 +46,18 @@ const PBDB_RANK_HIERARCHY = [
 function _pbdb_rank_index(rank::AbstractString)::Int
     idx = findfirst(==(rank), PBDB_RANK_HIERARCHY)
     if isnothing(idx)
-        throw(ArgumentError(
-            "Unknown taxonomic rank: \"$(rank)\". " *
-            "Must be one of: $(join(PBDB_RANK_HIERARCHY, ", "))"
-        ))
+        throw(
+            ArgumentError(
+                "Unknown taxonomic rank: \"$(rank)\". " *
+                    "Must be one of: $(join(PBDB_RANK_HIERARCHY, ", "))"
+            )
+        )
     end
-    idx
+    return idx
 end
 
 function _pbdb_ranks_at_or_finer_than(rank::AbstractString)::Vector{String}
-    PBDB_RANK_HIERARCHY[1:_pbdb_rank_index(rank)]
+    return PBDB_RANK_HIERARCHY[1:_pbdb_rank_index(rank)]
 end
 
 # ---------------------------------------------------------------------------
@@ -92,7 +93,7 @@ df_clean = drop_unresolved_taxa(df, "order")
 ```
 """
 function drop_unresolved_taxa(df::AbstractDataFrame, taxonomic_rank::AbstractString)::DataFrame
-    drop_unresolved_taxa!(copy(df), taxonomic_rank)
+    return drop_unresolved_taxa!(copy(df), taxonomic_rank)
 end
 
 """
@@ -124,7 +125,7 @@ df_clean = drop_unresolved_taxa(df, :accepted_name)
 ```
 """
 function drop_unresolved_taxa(df::AbstractDataFrame, taxon_field::Symbol)::DataFrame
-    if taxon_field == :accepted_name
+    return if taxon_field == :accepted_name
         drop_unresolved_taxa(df, "species")
     else
         drop_unresolved_taxa(df, String(taxon_field))
@@ -138,7 +139,7 @@ In-place version of [`drop_unresolved_taxa`](@ref).
 Modifies `df` directly and returns it.
 """
 function drop_unresolved_taxa!(df::AbstractDataFrame, taxon_field::Symbol)::DataFrame  # see drop_unresolved_taxa(df, ::Symbol) for rationale
-    if taxon_field == :accepted_name
+    return if taxon_field == :accepted_name
         drop_unresolved_taxa!(df, "species")
     else
         drop_unresolved_taxa!(df, String(taxon_field))
@@ -158,5 +159,5 @@ function drop_unresolved_taxa!(df::AbstractDataFrame, taxonomic_rank::AbstractSt
         subset!(df, rank_col => ByRow(v -> !ismissing(v) && !isempty(v)))
     end
 
-    df
+    return df
 end

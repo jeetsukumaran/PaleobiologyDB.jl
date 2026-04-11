@@ -1,4 +1,3 @@
-
 # ---------------------------------------------------------------------------
 # Taxonomy augmentation
 #
@@ -27,28 +26,28 @@ export augment_taxonomy
 # Lazy in-memory hierarchy indices
 # ---------------------------------------------------------------------------
 
-const _TaxonInfo = @NamedTuple{name::String, rank::String, accepted_no::Union{Int,Missing}, parent_no::Union{Int,Missing}}
+const _TaxonInfo = @NamedTuple{name::String, rank::String, accepted_no::Union{Int, Missing}, parent_no::Union{Int, Missing}}
 
 const _TAXA_HIERARCHY_NAME_INDEX = Ref{Union{Nothing, Dict{String, Int}}}(nothing)
-const _TAXA_HIERARCHY_NO_INDEX   = Ref{Union{Nothing, Dict{Int, _TaxonInfo}}}(nothing)
+const _TAXA_HIERARCHY_NO_INDEX = Ref{Union{Nothing, Dict{Int, _TaxonInfo}}}(nothing)
 
 const _PBDB_RANK_SET = Set{String}(PBDB_RANK_HIERARCHY)
 
 function _ensure_hierarchy_index(; force::Bool = false)
-    if isnothing(_TAXA_HIERARCHY_NAME_INDEX[]) || force
+    return if isnothing(_TAXA_HIERARCHY_NAME_INDEX[]) || force
         Depot._ensure_populated!(_TAXA_LIST_STORE; force = force)
         path = Depot._store_path(_TAXA_LIST_STORE)
         @debug "PBDB hierarchy index: loading snapshot …" path = path
 
         df = CSV.read(
             path, DataFrame;
-            missingstring   = ["", "missing"],
-            types           = Dict(
-                "orig_no"     => Union{Int, Missing},
+            missingstring = ["", "missing"],
+            types = Dict(
+                "orig_no" => Union{Int, Missing},
                 "accepted_no" => Union{Int, Missing},
-                "parent_no"   => Union{Int, Missing},
-                "taxon_name"  => String,
-                "taxon_rank"  => String,
+                "parent_no" => Union{Int, Missing},
+                "taxon_name" => String,
+                "taxon_rank" => String,
             ),
             silencewarnings = true,
         )
@@ -60,11 +59,11 @@ function _ensure_hierarchy_index(; force::Bool = false)
         no_to_info = Dict{Int, _TaxonInfo}()
 
         for row in eachrow(df)
-            no   = row.orig_no
+            no = row.orig_no
             name = row.taxon_name
             rank = row.taxon_rank
-            acc  = row.accepted_no       # may be missing
-            par  = row.parent_no         # may be missing
+            acc = row.accepted_no       # may be missing
+            par = row.parent_no         # may be missing
 
             # Full traversal index — every row
             no_to_info[no] = (name = name, rank = rank, accepted_no = acc, parent_no = par)
@@ -76,7 +75,7 @@ function _ensure_hierarchy_index(; force::Bool = false)
         end
 
         _TAXA_HIERARCHY_NAME_INDEX[] = name_to_no
-        _TAXA_HIERARCHY_NO_INDEX[]   = no_to_info
+        _TAXA_HIERARCHY_NO_INDEX[] = no_to_info
         @debug "PBDB hierarchy index: ready" n_accepted = length(name_to_no) n_total = length(no_to_info)
     end
 end
@@ -89,12 +88,12 @@ function _get_taxon_hierarchy(name::AbstractString)::Dict{String, String}
     name_to_no = _TAXA_HIERARCHY_NAME_INDEX[]
     no_to_info = _TAXA_HIERARCHY_NO_INDEX[]
 
-    result  = Dict{String, String}()
+    result = Dict{String, String}()
     orig_no = get(name_to_no, name, nothing)
     isnothing(orig_no) && return result
 
     visited = Set{Int}()
-    cur_no  = orig_no
+    cur_no = orig_no
 
     while !isnothing(cur_no)
         cur_no in visited && break          # cycle guard
@@ -110,7 +109,7 @@ function _get_taxon_hierarchy(name::AbstractString)::Dict{String, String}
         cur_no = ismissing(info.parent_no) ? nothing : info.parent_no
     end
 
-    result
+    return result
 end
 
 # ---------------------------------------------------------------------------
@@ -178,16 +177,18 @@ df3 = augment_taxonomy(df; nodata = "")
 See also [`PBDB_RANK_HIERARCHY`](@ref).
 """
 function augment_taxonomy(
-    df::AbstractDataFrame;
-    nodata::Any          = missing,
-    fieldname_prefix::String = "taxonomy_",
-    taxonomy_separator::String = " > ",
-)::DataFrame
+        df::AbstractDataFrame;
+        nodata::Any = missing,
+        fieldname_prefix::String = "taxonomy_",
+        taxonomy_separator::String = " > ",
+    )::DataFrame
     hasproperty(df, :accepted_name) ||
-        throw(ArgumentError(
+        throw(
+        ArgumentError(
             "augment_taxonomy requires an `accepted_name` column. " *
-            "Make sure you are passing an occurrences DataFrame from pbdb_occurrences."
-        ))
+                "Make sure you are passing an occurrences DataFrame from pbdb_occurrences."
+        )
+    )
 
     _ensure_hierarchy_index()
 
@@ -195,7 +196,7 @@ function augment_taxonomy(
     unique_names = unique(
         string(v) for v in df.accepted_name if !ismissing(v) && !isempty(strip(string(v)))
     )
-    hierarchy_cache = Dict{String, Dict{String,String}}(
+    hierarchy_cache = Dict{String, Dict{String, String}}(
         n => _get_taxon_hierarchy(n) for n in unique_names
     )
 
@@ -207,7 +208,7 @@ function augment_taxonomy(
         h = get(hierarchy_cache, string(accepted_name), nothing)
         isnothing(h) && return nodata
         v = get(h, rank, nothing)
-        isnothing(v) ? nodata : v
+        return isnothing(v) ? nodata : v
     end
 
     # Add one column per rank
@@ -230,5 +231,5 @@ function augment_taxonomy(
         join(parts, taxonomy_separator)
     end
 
-    result
+    return result
 end

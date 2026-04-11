@@ -73,14 +73,16 @@ end
 const _REGISTERED_STORES = Dict{Symbol, LocalStore}()
 
 function _register_store!(store::LocalStore)
-    _REGISTERED_STORES[store.name] = store
+    return _REGISTERED_STORES[store.name] = store
 end
 
 function _get_store(name::Symbol)
     haskey(_REGISTERED_STORES, name) ||
-        error("Unknown local store: :$name.  " *
-              "Registered stores: $(join(keys(_REGISTERED_STORES), ", "))")
-    _REGISTERED_STORES[name]
+        error(
+        "Unknown local store: :$name.  " *
+            "Registered stores: $(join(keys(_REGISTERED_STORES), ", "))"
+    )
+    return _REGISTERED_STORES[name]
 end
 
 # ---------------------------------------------------------------------------
@@ -89,12 +91,12 @@ end
 
 """Return (and create if necessary) the shared scratch directory."""
 function _curator_scratch_dir()
-    Scratch.get_scratch!(_PKG_UUID, "curator_data")
+    return Scratch.get_scratch!(_PKG_UUID, "curator_data")
 end
 
 """Absolute path to the local file for `store`."""
 function _store_path(store::LocalStore)
-    joinpath(_curator_scratch_dir(), store.filename)
+    return joinpath(_curator_scratch_dir(), store.filename)
 end
 
 # ---------------------------------------------------------------------------
@@ -103,7 +105,7 @@ end
 
 function _is_fresh(store::LocalStore)
     path = _store_path(store)
-    isfile(path) && (time() - mtime(path)) < store.max_age_days * 86400
+    return isfile(path) && (time() - mtime(path)) < store.max_age_days * 86400
 end
 
 # ---------------------------------------------------------------------------
@@ -112,24 +114,24 @@ end
 
 function _download_store!(store::LocalStore)
     path = _store_path(store)
-    dir  = dirname(path)
+    dir = dirname(path)
     isdir(dir) || mkpath(dir)
 
-    @info "$(store.description): starting download" url=store.url
+    @info "$(store.description): starting download" url = store.url
 
     last_logged = Ref(time())
     tmp = path * ".download"
 
-    try
+    return try
         Downloads.download(
             store.url, tmp;
             progress = (total, now) -> begin
                 now > 0 || return
                 time() - last_logged[] >= 2.0 || return
-                mb_n = round(now / 1e6; digits = 1)
+                mb_n = round(now / 1.0e6; digits = 1)
                 if total > 0
-                    pct  = round(100 * now / total; digits = 1)
-                    mb_t = round(total / 1e6; digits = 1)
+                    pct = round(100 * now / total; digits = 1)
+                    mb_t = round(total / 1.0e6; digits = 1)
                     @info "$(store.description): $mb_n / $mb_t MB ($pct%)"
                 else
                     @info "$(store.description): $mb_n MB received"
@@ -138,8 +140,8 @@ function _download_store!(store::LocalStore)
             end,
         )
         mv(tmp, path; force = true)
-        mb = round(stat(path).size / 1e6; digits = 1)
-        @info "$(store.description): download complete" size_mb=mb path=path
+        mb = round(stat(path).size / 1.0e6; digits = 1)
+        @info "$(store.description): download complete" size_mb = mb path = path
     catch
         isfile(tmp) && rm(tmp; force = true)
         rethrow()
@@ -151,7 +153,7 @@ end
 # ---------------------------------------------------------------------------
 
 function _ensure_populated!(store::LocalStore; force::Bool = false)
-    if force || !_is_fresh(store)
+    return if force || !_is_fresh(store)
         _download_store!(store)
     end
 end
@@ -161,17 +163,17 @@ end
 # ---------------------------------------------------------------------------
 
 function _refresh_store!(name::Symbol; force::Bool = true)
-    _ensure_populated!(_get_store(name); force = force)
+    return _ensure_populated!(_get_store(name); force = force)
 end
 
 function _delete_store!(name::Symbol)
     store = _get_store(name)
-    path  = _store_path(store)
-    if isfile(path)
+    path = _store_path(store)
+    return if isfile(path)
         rm(path)
-        @info "$(store.description): local snapshot deleted." path=path
+        @info "$(store.description): local snapshot deleted." path = path
     else
-        @info "$(store.description): no local snapshot found." path=path
+        @info "$(store.description): no local snapshot found." path = path
     end
 end
 
@@ -182,27 +184,27 @@ Fields: `name`, `description`, `path`, `exists`, `size_mb`, `age_days`,
 `max_age_days`, `is_fresh`.
 """
 function _store_info(name::Symbol)
-    store    = _get_store(name)
-    path     = _store_path(store)
-    exists   = isfile(path)
-    size_mb  = exists ? round(stat(path).size / 1e6; digits = 2) : nothing
+    store = _get_store(name)
+    path = _store_path(store)
+    exists = isfile(path)
+    size_mb = exists ? round(stat(path).size / 1.0e6; digits = 2) : nothing
     age_days = exists ? round((time() - mtime(path)) / 86400; digits = 1) : nothing
-    fresh    = exists && _is_fresh(store)
-    (
-        name         = name,
-        description  = store.description,
-        path         = path,
-        exists       = exists,
-        size_mb      = size_mb,
-        age_days     = age_days,
+    fresh = exists && _is_fresh(store)
+    return (
+        name = name,
+        description = store.description,
+        path = path,
+        exists = exists,
+        size_mb = size_mb,
+        age_days = age_days,
         max_age_days = store.max_age_days,
-        is_fresh     = fresh,
+        is_fresh = fresh,
     )
 end
 
 """Return a vector of info NamedTuples for all registered stores."""
 function _list_stores()
-    [_store_info(k) for k in sort!(collect(keys(_REGISTERED_STORES)))]
+    return [_store_info(k) for k in sort!(collect(keys(_REGISTERED_STORES)))]
 end
 
 """Force re-download of the named store (e.g. `:pbdb_taxa`)."""

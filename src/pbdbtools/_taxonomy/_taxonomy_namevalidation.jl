@@ -1,4 +1,3 @@
-
 # ---------------------------------------------------------------------------
 # Taxonomy name validation
 #
@@ -47,10 +46,10 @@ Depot._register_store!(_TAXA_LIST_STORE)
 const _TAXA_NAME_SET = Ref{Union{Nothing, Set{String}}}(nothing)
 
 function _ensure_taxa_index(; force::Bool = false)
-    if isnothing(_TAXA_NAME_SET[]) || force
+    return if isnothing(_TAXA_NAME_SET[]) || force
         Depot._ensure_populated!(_TAXA_LIST_STORE; force = force)
         path = Depot._store_path(_TAXA_LIST_STORE)
-        @debug "PBDB taxonomic authority: loading snapshot into memory …" path=path
+        @debug "PBDB taxonomic authority: loading snapshot into memory …" path = path
         df = CSV.read(
             path, DataFrame;
             missingstring = ["", "missing"],
@@ -59,7 +58,7 @@ function _ensure_taxa_index(; force::Bool = false)
         )
         df_valid = dropmissing(df, ["taxon_name"])
         _TAXA_NAME_SET[] = Set{String}(df_valid.taxon_name)
-        @debug "PBDB taxonomic authority: index ready" unique_names=length(_TAXA_NAME_SET[])
+        @debug "PBDB taxonomic authority: index ready" unique_names = length(_TAXA_NAME_SET[])
     end
 end
 
@@ -92,9 +91,9 @@ istaxon("Pliosauridae"; validation_authority = :query)  # live API call
 ```
 """
 function istaxon(
-    taxon_name::AbstractString;
-    validation_authority::Symbol = :snapshot,
-)::Bool
+        taxon_name::AbstractString;
+        validation_authority::Symbol = :snapshot,
+    )::Bool
     isempty(strip(taxon_name)) && return false
 
     if validation_authority == :query
@@ -108,7 +107,7 @@ function istaxon(
 
     # :snapshot path
     _ensure_taxa_index()
-    taxon_name in _TAXA_NAME_SET[]
+    return taxon_name in _TAXA_NAME_SET[]
 end
 
 """
@@ -133,27 +132,27 @@ df[mask, :]
 ```
 """
 function audit_taxonomy(
-    df::AbstractDataFrame,
-    taxon_field::Symbol;
-    validation_authority::Symbol = :snapshot,
-)::Vector{Bool}
+        df::AbstractDataFrame,
+        taxon_field::Symbol;
+        validation_authority::Symbol = :snapshot,
+    )::Vector{Bool}
     col = df[:, taxon_field]
 
     # Deduplicate: validate each unique non-missing, non-empty name once.
     unique_names = unique(
         string(v) for v in col
-        if !ismissing(v) && !isempty(strip(string(v)))
+            if !ismissing(v) && !isempty(strip(string(v)))
     )
     validity = Dict(
         n => istaxon(n; validation_authority)
-        for n in unique_names
+            for n in unique_names
     )
 
-    [
+    return [
         !ismissing(v) &&
-        !isempty(strip(string(v))) &&
-        get(validity, string(v), false)
-        for v in col
+            !isempty(strip(string(v))) &&
+            get(validity, string(v), false)
+            for v in col
     ]
 end
 
@@ -173,12 +172,12 @@ df_clean = drop_unrecognized_taxa(df, :family)
 ```
 """
 function drop_unrecognized_taxa(
-    df::AbstractDataFrame,
-    taxon_field::Symbol;
-    validation_authority::Symbol = :snapshot,
-)::DataFrame
+        df::AbstractDataFrame,
+        taxon_field::Symbol;
+        validation_authority::Symbol = :snapshot,
+    )::DataFrame
     mask = audit_taxonomy(df, taxon_field; validation_authority)
-    df[mask, :]
+    return df[mask, :]
 end
 
 """
@@ -195,11 +194,11 @@ drop_unrecognized_taxa!(df, :family)
 ```
 """
 function drop_unrecognized_taxa!(
-    df::AbstractDataFrame,
-    taxon_field::Symbol;
-    validation_authority::Symbol = :snapshot,
-)::DataFrame
+        df::AbstractDataFrame,
+        taxon_field::Symbol;
+        validation_authority::Symbol = :snapshot,
+    )::DataFrame
     mask = audit_taxonomy(df, taxon_field; validation_authority)
     deleteat!(df, findall(!, mask))
-    df
+    return df
 end

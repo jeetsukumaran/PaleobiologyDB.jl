@@ -18,29 +18,29 @@ using DataFrames
 import DataCaches: autocache
 
 export pbdb_occurrence, pbdb_occurrences, pbdb_ref_occurrences,
-	pbdb_collection, pbdb_collections, pbdb_collections_geo,
-	pbdb_ref_collections, pbdb_config,
-	pbdb_taxon, pbdb_taxa, pbdb_taxa_auto, pbdb_ref_taxa, pbdb_opinions_taxa,
-	pbdb_interval, pbdb_intervals, pbdb_scale, pbdb_scales,
-	pbdb_strata, pbdb_strata_auto,
-	pbdb_reference, pbdb_references,
-	pbdb_specimen, pbdb_specimens, pbdb_ref_specimens, pbdb_measurements,
-	pbdb_opinion, pbdb_opinions,
-	pbdb_count
+    pbdb_collection, pbdb_collections, pbdb_collections_geo,
+    pbdb_ref_collections, pbdb_config,
+    pbdb_taxon, pbdb_taxa, pbdb_taxa_auto, pbdb_ref_taxa, pbdb_opinions_taxa,
+    pbdb_interval, pbdb_intervals, pbdb_scale, pbdb_scales,
+    pbdb_strata, pbdb_strata_auto,
+    pbdb_reference, pbdb_references,
+    pbdb_specimen, pbdb_specimens, pbdb_ref_specimens, pbdb_measurements,
+    pbdb_opinion, pbdb_opinions,
+    pbdb_count
 
 # --- Internal helpers -------------------------------------------------------
 
 const _FORMAT_SUFFIX = Dict(
-	:json => ".json",
-	:csv => ".csv",
-	:tsv => ".tsv",
-	:txt => ".txt",
+    :json => ".json",
+    :csv => ".csv",
+    :tsv => ".tsv",
+    :txt => ".txt",
 )
 
 const _TEXT_DELIM = Dict(
-	:csv => ',',
-	:tsv => '	',
-	:txt => ',', # PBDB's .txt is comma-separated
+    :csv => ',',
+    :tsv => '	',
+    :txt => ',', # PBDB's .txt is comma-separated
 )
 
 pbdb_version() = _PBDB_VERSION
@@ -49,77 +49,79 @@ pbdb_version() = _PBDB_VERSION
 _joinvals(v) = v isa AbstractVector ? join(string.(v), ",") : v isa Bool ? (v ? "true" : "false") : string(v)
 
 # Build full URL for an endpoint with query parameters and chosen format
-function _build_url(endpoint::AbstractString; base_url::AbstractString = DEFAULT_BASE_URL,
-	format::Symbol = :csv, query::Dict{String, <:Any} = Dict{String, Any}())
-	suffix = get(_FORMAT_SUFFIX, format) do
-		error("Unsupported format: $format. Use one of $(collect(keys(_FORMAT_SUFFIX))).")
-	end
+function _build_url(
+        endpoint::AbstractString; base_url::AbstractString = DEFAULT_BASE_URL,
+        format::Symbol = :csv, query::Dict{String, <:Any} = Dict{String, Any}()
+    )
+    suffix = get(_FORMAT_SUFFIX, format) do
+        error("Unsupported format: $format. Use one of $(collect(keys(_FORMAT_SUFFIX))).")
+    end
 
-	# Merge-in default vocabulary if user didn't provide one
-	if !haskey(query, "vocab")
-		query = copy(query)
-		query["vocab"] = "pbdb"
-	end
+    # Merge-in default vocabulary if user didn't provide one
+    if !haskey(query, "vocab")
+        query = copy(query)
+        query["vocab"] = "pbdb"
+    end
 
-	# Assemble query string
-	pairs = String[]
-	for (k, v) in query
-		push!(pairs, string(HTTP.escapeuri(k), '=', HTTP.escapeuri(_joinvals(v))))
-	end
-	qs = isempty(pairs) ? "" : '?' * join(pairs, '&')
+    # Assemble query string
+    pairs = String[]
+    for (k, v) in query
+        push!(pairs, string(HTTP.escapeuri(k), '=', HTTP.escapeuri(_joinvals(v))))
+    end
+    qs = isempty(pairs) ? "" : '?' * join(pairs, '&')
 
-	return string(base_url, endpoint, suffix, qs)
+    return string(base_url, endpoint, suffix, qs)
 end
 
 # Parse PBDB JSON (records array) into a DataFrame
 function _json_to_df(body::Vector{UInt8})
-	obj = JSON3.read(body)
-	if hasproperty(obj, :error)
-		msg = try
-			String(obj.error)
-		catch
-			"PBDB returned an error"
-		end
-		error(msg)
-	end
-	if hasproperty(obj, :records)
-		recs = obj.records
-		return DataFrame(recs)  # handles missing fields automatically
-	else
-		return DataFrame([obj])
-	end
+    obj = JSON3.read(body)
+    if hasproperty(obj, :error)
+        msg = try
+            String(obj.error)
+        catch
+            "PBDB returned an error"
+        end
+        error(msg)
+    end
+    if hasproperty(obj, :records)
+        recs = obj.records
+        return DataFrame(recs)  # handles missing fields automatically
+    else
+        return DataFrame([obj])
+    end
 end
 
 # GET with simple retries
 function _get(
-    url::AbstractString; headers = Dict{String, String}(),
-    readtimeout::Integer = 300,
-    retries::Int = 3
-)
-	last_err = nothing
-	for attempt in 1:retries
-		try
-			return HTTP.get(url; headers = headers, readtimeout = Int(readtimeout))
-		catch err
-			last_err = err
-			if err isa HTTP.Exceptions.StatusError
-				body = String(err.response.body)
-				items = [m.match for m in eachmatch(r"<li>(.*?)</li>"s, body)]
-				if !isempty(items)
-					msg = "PBDB API error (HTTP $(err.status)):\n" * join("  • " .* strip.(items), "\n")
-				else
-					msg = "PBDB API error (HTTP $(err.status)): " * strip(replace(body, r"<[^>]+>" => ""))
-				end
-				error(msg)
-			end
-			if attempt == retries
-				rethrow(err)
-			else
-				sleep(0.5 * attempt)
-			end
-		end
-	end
-	throw(last_err)
+        url::AbstractString; headers = Dict{String, String}(),
+        readtimeout::Integer = 300,
+        retries::Int = 3
+    )
+    last_err = nothing
+    for attempt in 1:retries
+        try
+            return HTTP.get(url; headers = headers, readtimeout = Int(readtimeout))
+        catch err
+            last_err = err
+            if err isa HTTP.Exceptions.StatusError
+                body = String(err.response.body)
+                items = [m.match for m in eachmatch(r"<li>(.*?)</li>"s, body)]
+                if !isempty(items)
+                    msg = "PBDB API error (HTTP $(err.status)):\n" * join("  • " .* strip.(items), "\n")
+                else
+                    msg = "PBDB API error (HTTP $(err.status)): " * strip(replace(body, r"<[^>]+>" => ""))
+                end
+                error(msg)
+            end
+            if attempt == retries
+                rethrow(err)
+            else
+                sleep(0.5 * attempt)
+            end
+        end
+    end
+    throw(last_err)
 end
 
 # Strip PBDB metadata/warning lines from the top of a CSV/TSV body.
@@ -127,38 +129,38 @@ end
 # Lines matching "Records: ..." or blank lines are skipped.
 # Returns the body starting from the first real header/data line.
 function _preprocess_pbdb_text(body::AbstractString)
-	lines = split(body, '\n')
-	start_idx = length(lines) + 1
-	for (i, line) in enumerate(lines)
-		stripped = strip(line)
-		if isempty(stripped)
-			continue
-		elseif occursin(r"^\s*[Ww]arning\s*:"i, stripped)
-			msg = strip(replace(stripped, r"^\s*[Ww]arning\s*:\s*"i => ""))
-			@warn msg
-		elseif occursin(r"^\s*[Rr]ecords\s*:"i, stripped)
-			continue
-		else
-			start_idx = i
-			break
-		end
-	end
-	return join(lines[start_idx:end], '\n')
+    lines = split(body, '\n')
+    start_idx = length(lines) + 1
+    for (i, line) in enumerate(lines)
+        stripped = strip(line)
+        if isempty(stripped)
+            continue
+        elseif occursin(r"^\s*[Ww]arning\s*:"i, stripped)
+            msg = strip(replace(stripped, r"^\s*[Ww]arning\s*:\s*"i => ""))
+            @warn msg
+        elseif occursin(r"^\s*[Rr]ecords\s*:"i, stripped)
+            continue
+        else
+            start_idx = i
+            break
+        end
+    end
+    return join(lines[start_idx:end], '\n')
 end
 
 # Core request -> DataFrame
 function _fetch_df(url::AbstractString; format::Symbol = :csv, readtimeout::Integer = 300, retries::Int = 3)
-	if format == :json
-		resp = _get(url; headers = Dict("Accept" => "application/json"), readtimeout, retries)
-		return _json_to_df(resp.body)
-	elseif format in keys(_TEXT_DELIM)
-		resp = _get(url; headers = Dict("Accept" => "text/plain, text/csv"), readtimeout, retries)
-		cleaned = _preprocess_pbdb_text(String(resp.body))
-		io = IOBuffer(cleaned)
-		return DataFrame(CSV.File(io; normalizenames = true, ignorerepeated = true, delim = _TEXT_DELIM[format]))
-	else
-		error("Unsupported format: $format")
-	end
+    if format == :json
+        resp = _get(url; headers = Dict("Accept" => "application/json"), readtimeout, retries)
+        return _json_to_df(resp.body)
+    elseif format in keys(_TEXT_DELIM)
+        resp = _get(url; headers = Dict("Accept" => "text/plain, text/csv"), readtimeout, retries)
+        cleaned = _preprocess_pbdb_text(String(resp.body))
+        io = IOBuffer(cleaned)
+        return DataFrame(CSV.File(io; normalizenames = true, ignorerepeated = true, delim = _TEXT_DELIM[format]))
+    else
+        error("Unsupported format: $format")
+    end
 end
 
 # Public: central query function ---------------------------------------------
@@ -179,31 +181,30 @@ Notes:
 - JSON responses use PBDB's JSON schema and are converted from the `records` array.
 """
 function pbdb_query(
-    endpoint::AbstractString
-    ;
-    format::Symbol = :csv,
-    base_url::AbstractString = DEFAULT_BASE_URL,
-    readtimeout::Integer = 300,
-    retries::Int = 3,
-    _autocache_func::Union{Function,Nothing} = nothing,
-    kwargs...
-)
-	_do_fetch = () -> begin
-		q = Dict{String, Any}()
-		for (k, v) in pairs(kwargs)
-			q[string(k)] = v
-		end
-		url = _build_url(endpoint; base_url = base_url, format = format, query = q)
-		return _fetch_df(url; format, readtimeout, retries)
-	end
+        endpoint::AbstractString
+        ;
+        format::Symbol = :csv,
+        base_url::AbstractString = DEFAULT_BASE_URL,
+        readtimeout::Integer = 300,
+        retries::Int = 3,
+        _autocache_func::Union{Function, Nothing} = nothing,
+        kwargs...
+    )
+    _do_fetch = () -> begin
+        q = Dict{String, Any}()
+        for (k, v) in pairs(kwargs)
+            q[string(k)] = v
+        end
+        url = _build_url(endpoint; base_url = base_url, format = format, query = q)
+        return _fetch_df(url; format, readtimeout, retries)
+    end
 
-	if !isnothing(_autocache_func)
-		return autocache(_do_fetch, _autocache_func, endpoint, kwargs)
-	end
+    if !isnothing(_autocache_func)
+        return autocache(_do_fetch, _autocache_func, endpoint, kwargs)
+    end
 
-	return _do_fetch()
+    return _do_fetch()
 end
-
 
 
 # --- Thin, idiomatic wrappers (keywords mirror PBDB) ------------------------
@@ -231,7 +232,7 @@ pbdb_occurrence(1001; show = ["class", "coords"])
 ```
 """
 function pbdb_occurrence(id; kwargs...)
-	return pbdb_query("occs/single"; id = id, _autocache_func = pbdb_occurrence, kwargs...)
+    return pbdb_query("occs/single"; id = id, _autocache_func = pbdb_occurrence, kwargs...)
 end
 
 """
@@ -274,7 +275,7 @@ occs = pbdb_occurrences(
 ```
 """
 function pbdb_occurrences(; kwargs...)
-	return pbdb_query("occs/list"; _autocache_func = pbdb_occurrences, kwargs...)
+    return pbdb_query("occs/list"; _autocache_func = pbdb_occurrences, kwargs...)
 end
 
 """
@@ -298,7 +299,7 @@ pbdb_ref_occurrences(base_name = "Canis"; ref_pubyr = 2000)
 ```
 """
 function pbdb_ref_occurrences(; kwargs...)
-	return pbdb_query("occs/refs"; _autocache_func = pbdb_ref_occurrences, kwargs...)
+    return pbdb_query("occs/refs"; _autocache_func = pbdb_ref_occurrences, kwargs...)
 end
 
 # # Collections -----------------------------------------------------------------
@@ -330,7 +331,7 @@ pbdb_collection(
 ```
 """
 function pbdb_collection(id; kwargs...)
-	return pbdb_query("colls/single"; id = id, _autocache_func = pbdb_collection, kwargs...)
+    return pbdb_query("colls/single"; id = id, _autocache_func = pbdb_collection, kwargs...)
 end
 
 """
@@ -358,7 +359,7 @@ pbdb_collections(base_name = "Cetacea", interval = "Miocene"; show = ["ref", "lo
 ```
 """
 function pbdb_collections(; kwargs...)
-	return pbdb_query("colls/list"; _autocache_func = pbdb_collections, kwargs...)
+    return pbdb_query("colls/list"; _autocache_func = pbdb_collections, kwargs...)
 end
 
 """
@@ -382,8 +383,8 @@ pbdb_collections_geo(2; lngmin = 0.0, lngmax = 15.0, latmin = 0.0, latmax = 15.0
 ```
 """
 function pbdb_collections_geo(level; kwargs...)
-	isnothing(level) && error("Parameter `level` is required (see `pbdb_config(show = \"clusters\")`)")
-	return pbdb_query("colls/summary"; level = level, _autocache_func = pbdb_collections_geo, kwargs...)
+    isnothing(level) && error("Parameter `level` is required (see `pbdb_config(show = \"clusters\")`)")
+    return pbdb_query("colls/summary"; level = level, _autocache_func = pbdb_collections_geo, kwargs...)
 end
 
 """
@@ -408,8 +409,8 @@ pbdb_collections_geo(level = 2; lngmin = 0.0, lngmax = 15.0, latmin = 0.0, latma
 ```
 """
 function pbdb_collections_geo(; level, kwargs...)
-	isnothing(level) && error("Parameter `level` is required (see `pbdb_config(show = \"clusters\")`)")
-	return pbdb_query("colls/summary"; level = level, _autocache_func = pbdb_collections_geo, kwargs...)
+    isnothing(level) && error("Parameter `level` is required (see `pbdb_config(show = \"clusters\")`)")
+    return pbdb_query("colls/summary"; level = level, _autocache_func = pbdb_collections_geo, kwargs...)
 end
 
 # Taxa ------------------------------------------------------------------------
@@ -436,10 +437,10 @@ pbdb_taxon(name = "Canis"; show = ["attr", "app", "size"])
 ```
 """
 function pbdb_taxon(; kwargs...)
-	return pbdb_query("taxa/single"; _autocache_func = pbdb_taxon, kwargs...)
+    return pbdb_query("taxa/single"; _autocache_func = pbdb_taxon, kwargs...)
 end
 function pbdb_taxon(id; kwargs...)
-	return pbdb_taxon(; id = id, kwargs...)
+    return pbdb_taxon(; id = id, kwargs...)
 end
 
 """
@@ -465,7 +466,7 @@ pbdb_taxa(name = "Canidae"; rel = "all_parents", show = ["attr", "app", "size", 
 ```
 """
 function pbdb_taxa(; kwargs...)
-	return pbdb_query("taxa/list"; _autocache_func = pbdb_taxa, kwargs...)
+    return pbdb_query("taxa/list"; _autocache_func = pbdb_taxa, kwargs...)
 end
 
 """
@@ -488,7 +489,7 @@ pbdb_taxa_auto(name = "Cani"; limit = 10)
 ```
 """
 function pbdb_taxa_auto(; kwargs...)
-	return pbdb_query("taxa/auto"; format = :json, _autocache_func = pbdb_taxa_auto, kwargs...)
+    return pbdb_query("taxa/auto"; format = :json, _autocache_func = pbdb_taxa_auto, kwargs...)
 end
 
 # Intervals & scales ----------------------------------------------------------
@@ -516,10 +517,10 @@ pbdb_interval(id = 1)
 ```
 """
 function pbdb_interval(; kwargs...)
-	return pbdb_query("intervals/single"; _autocache_func = pbdb_interval, kwargs...)
+    return pbdb_query("intervals/single"; _autocache_func = pbdb_interval, kwargs...)
 end
 function pbdb_interval(id; kwargs...)
-	return pbdb_interval(; id = id, kwargs...)
+    return pbdb_interval(; id = id, kwargs...)
 end
 
 """
@@ -543,7 +544,7 @@ pbdb_intervals(min_ma = 0, max_ma = 5)
 ```
 """
 function pbdb_intervals(; kwargs...)
-	return pbdb_query("intervals/list"; _autocache_func = pbdb_intervals, kwargs...)
+    return pbdb_query("intervals/list"; _autocache_func = pbdb_intervals, kwargs...)
 end
 
 """
@@ -565,7 +566,7 @@ pbdb_scale(1)
 ```
 """
 function pbdb_scale(id; kwargs...)
-	return pbdb_query("scales/single"; id = id, _autocache_func = pbdb_scale, kwargs...)
+    return pbdb_query("scales/single"; id = id, _autocache_func = pbdb_scale, kwargs...)
 end
 
 """
@@ -586,7 +587,7 @@ pbdb_scales()
 ```
 """
 function pbdb_scales(; kwargs...)
-	return pbdb_query("scales/list"; _autocache_func = pbdb_scales, kwargs...)
+    return pbdb_query("scales/list"; _autocache_func = pbdb_scales, kwargs...)
 end
 
 # Strata ----------------------------------------------------------------------
@@ -613,7 +614,7 @@ pbdb_strata(rank = "formation", lngmin = -120, lngmax = -100, latmin = 30, latma
 ```
 """
 function pbdb_strata(; kwargs...)
-	return pbdb_query("strata/list"; _autocache_func = pbdb_strata, kwargs...)
+    return pbdb_query("strata/list"; _autocache_func = pbdb_strata, kwargs...)
 end
 
 """
@@ -637,7 +638,7 @@ pbdb_strata_auto(name = "Pin")
 ```
 """
 function pbdb_strata_auto(; kwargs...)
-	return pbdb_query("strata/auto"; format = :json, _autocache_func = pbdb_strata_auto, kwargs...)
+    return pbdb_query("strata/auto"; format = :json, _autocache_func = pbdb_strata_auto, kwargs...)
 end
 
 # References ------------------------------------------------------------------
@@ -662,7 +663,7 @@ pbdb_reference(1003; show = "both")
 ```
 """
 function pbdb_reference(id; kwargs...)
-	return pbdb_query("refs/single"; id = id, _autocache_func = pbdb_reference, kwargs...)
+    return pbdb_query("refs/single"; id = id, _autocache_func = pbdb_reference, kwargs...)
 end
 
 """
@@ -687,7 +688,7 @@ pbdb_references(ref_author = "Polly")
 ```
 """
 function pbdb_references(; kwargs...)
-	return pbdb_query("refs/list"; _autocache_func = pbdb_references, kwargs...)
+    return pbdb_query("refs/list"; _autocache_func = pbdb_references, kwargs...)
 end
 
 """
@@ -712,7 +713,7 @@ pbdb_ref_collections(base_name = "Canidae", interval = "Quaternary", cc = "ASI")
 ```
 """
 function pbdb_ref_collections(; kwargs...)
-	return pbdb_query("colls/refs"; _autocache_func = pbdb_ref_collections, kwargs...)
+    return pbdb_query("colls/refs"; _autocache_func = pbdb_ref_collections, kwargs...)
 end
 
 """
@@ -739,7 +740,7 @@ pbdb_ref_taxa(name = "Canidae"; show = ["both", "comments"])
 ```
 """
 function pbdb_ref_taxa(; kwargs...)
-	return pbdb_query("taxa/refs"; _autocache_func = pbdb_ref_taxa, kwargs...)
+    return pbdb_query("taxa/refs"; _autocache_func = pbdb_ref_taxa, kwargs...)
 end
 
 # Specimens & measurements -----------------------------------------------------
@@ -764,7 +765,7 @@ pbdb_specimen(30050; show = ["class", "loc", "refattr"])
 ```
 """
 function pbdb_specimen(id; kwargs...)
-	return pbdb_query("specs/single"; id = id, _autocache_func = pbdb_specimen, kwargs...)
+    return pbdb_query("specs/single"; id = id, _autocache_func = pbdb_specimen, kwargs...)
 end
 
 """
@@ -788,7 +789,7 @@ pbdb_specimens(base_name = "Cetacea", interval = "Miocene")
 ```
 """
 function pbdb_specimens(; kwargs...)
-	return pbdb_query("specs/list"; _autocache_func = pbdb_specimens, kwargs...)
+    return pbdb_query("specs/list"; _autocache_func = pbdb_specimens, kwargs...)
 end
 
 """
@@ -813,7 +814,7 @@ pbdb_ref_specimens(spec_id = [1505, 30050])
 ```
 """
 function pbdb_ref_specimens(; kwargs...)
-	return pbdb_query("specs/refs"; _autocache_func = pbdb_ref_specimens, kwargs...)
+    return pbdb_query("specs/refs"; _autocache_func = pbdb_ref_specimens, kwargs...)
 end
 
 """
@@ -838,7 +839,7 @@ pbdb_measurements(spec_id = [1505, 30050]; show = ["spec", "class", "methods"])
 ```
 """
 function pbdb_measurements(; kwargs...)
-	return pbdb_query("specs/measurements"; _autocache_func = pbdb_measurements, kwargs...)
+    return pbdb_query("specs/measurements"; _autocache_func = pbdb_measurements, kwargs...)
 end
 
 # Opinions --------------------------------------------------------------------
@@ -863,7 +864,7 @@ pbdb_opinion(1000; show = "full")
 ```
 """
 function pbdb_opinion(id; kwargs...)
-	return pbdb_query("opinions/single"; id = id, _autocache_func = pbdb_opinion, kwargs...)
+    return pbdb_query("opinions/single"; id = id, _autocache_func = pbdb_opinion, kwargs...)
 end
 
 """
@@ -888,7 +889,7 @@ pbdb_opinions(op_pubyr = 1818)
 ```
 """
 function pbdb_opinions(; kwargs...)
-	return pbdb_query("opinions/list"; _autocache_func = pbdb_opinions, kwargs...)
+    return pbdb_query("opinions/list"; _autocache_func = pbdb_opinions, kwargs...)
 end
 
 """
@@ -912,7 +913,7 @@ pbdb_opinions_taxa(base_name = "Canis")
 ```
 """
 function pbdb_opinions_taxa(; kwargs...)
-	return pbdb_query("taxa/opinions"; _autocache_func = pbdb_opinions_taxa, kwargs...)
+    return pbdb_query("taxa/opinions"; _autocache_func = pbdb_opinions_taxa, kwargs...)
 end
 
 """
@@ -942,32 +943,32 @@ pbdb_count("colls/list"; interval = "Miocene", cc = "ASI")
 ```
 """
 function pbdb_count(
-	endpoint::AbstractString;
-	base_url::AbstractString = DEFAULT_BASE_URL,
-	readtimeout::Integer = 300,
-	retries::Int = 3,
-	kwargs...,
-)
-	q = Dict{String, Any}("limit" => "0", "rowcount" => "1")
-	for (k, v) in pairs(kwargs)
-		q[string(k)] = v
-	end
-	url = _build_url(endpoint; base_url = base_url, format = :json, query = q)
-	resp = _get(url; headers = Dict("Accept" => "application/json"), readtimeout = readtimeout, retries = retries)
-	obj = JSON3.read(resp.body)
-	if hasproperty(obj, :error)
-		error(string(obj.error))
-	end
-	return hasproperty(obj, :records_found) ? Int(obj.records_found) : missing
+        endpoint::AbstractString;
+        base_url::AbstractString = DEFAULT_BASE_URL,
+        readtimeout::Integer = 300,
+        retries::Int = 3,
+        kwargs...,
+    )
+    q = Dict{String, Any}("limit" => "0", "rowcount" => "1")
+    for (k, v) in pairs(kwargs)
+        q[string(k)] = v
+    end
+    url = _build_url(endpoint; base_url = base_url, format = :json, query = q)
+    resp = _get(url; headers = Dict("Accept" => "application/json"), readtimeout = readtimeout, retries = retries)
+    obj = JSON3.read(resp.body)
+    if hasproperty(obj, :error)
+        error(string(obj.error))
+    end
+    return hasproperty(obj, :records_found) ? Int(obj.records_found) : missing
 end
 
 const _PBDB_COUNT_ENDPOINTS = Dict{Symbol, String}(
-	:occurrences => "occs/list",
-	:collections => "colls/list",
-	:taxa        => "taxa/list",
-	:references  => "refs/list",
-	:specimens   => "specs/list",
-	:opinions    => "opinions/list",
+    :occurrences => "occs/list",
+    :collections => "colls/list",
+    :taxa => "taxa/list",
+    :references => "refs/list",
+    :specimens => "specs/list",
+    :opinions => "opinions/list",
 )
 
 """
@@ -989,11 +990,11 @@ pbdb_count(:occurrences; params...)
 ```
 """
 pbdb_count(resource::Symbol; kwargs...) = pbdb_count(
-	get(_PBDB_COUNT_ENDPOINTS, resource) do
-		valid = join(sort!(string.(collect(keys(_PBDB_COUNT_ENDPOINTS)))), ", ")
-		error("pbdb_count: unknown resource :$resource. Valid: $valid")
-	end;
-	kwargs...,
+    get(_PBDB_COUNT_ENDPOINTS, resource) do
+        valid = join(sort!(string.(collect(keys(_PBDB_COUNT_ENDPOINTS)))), ", ")
+        error("pbdb_count: unknown resource :$resource. Valid: $valid")
+    end;
+    kwargs...,
 )
 
 """
@@ -1056,5 +1057,5 @@ pbdb_config(show = "ranks")
 ```
 """
 function pbdb_config(; kwargs...)
-	return pbdb_query("config"; _autocache_func = pbdb_config, kwargs...)
+    return pbdb_query("config"; _autocache_func = pbdb_config, kwargs...)
 end

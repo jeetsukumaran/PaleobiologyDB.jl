@@ -114,8 +114,8 @@ end
 
 # Each triple is (orig_no::Int, parent_orig_no::Union{Int,Missing}, info::_TaxonInfo)
 function _build_taxon_tree(
-    collected::Vector{Tuple{Int, Union{Int, Missing}, Any}},
-)::TaxonTree
+        collected::Vector{Tuple{Int, Union{Int, Missing}, Any}},
+    )::TaxonTree
     n = length(collected)
 
     # Vertex 1 = root (first element); rest follow BFS order
@@ -132,7 +132,7 @@ function _build_taxon_tree(
         end
     end
 
-    TaxonTree(g, taxa, vertex_of, 1)
+    return TaxonTree(g, taxa, vertex_of, 1)
 end
 
 # ---------------------------------------------------------------------------
@@ -218,14 +218,14 @@ See also [`root_taxon`](@ref), [`leaf_taxa`](@ref), [`taxa_at_rank`](@ref),
 [`child_taxa`](@ref), [`TaxonTree`](@ref).
 """
 function taxon_subtree(
-    taxon_name::AbstractString;
-    leaf_rank::Union{AbstractString, Nothing} = nothing,
-    strict_leaf_rank::Bool = true,
-)::TaxonTree
+        taxon_name::AbstractString;
+        leaf_rank::Union{AbstractString, Nothing} = nothing,
+        strict_leaf_rank::Bool = true,
+    )::TaxonTree
     _ensure_children_index()
 
-    name_to_no   = _TAXA_HIERARCHY_NAME_INDEX[]
-    no_to_info   = _TAXA_HIERARCHY_NO_INDEX[]
+    name_to_no = _TAXA_HIERARCHY_NAME_INDEX[]
+    no_to_info = _TAXA_HIERARCHY_NO_INDEX[]
     children_idx = _TAXA_CHILDREN_INDEX[]
 
     start_no = get(name_to_no, taxon_name, nothing)
@@ -304,7 +304,7 @@ function taxon_subtree(
         end
     end
 
-    _build_taxon_tree(collected)
+    return _build_taxon_tree(collected)
 end
 
 # ---------------------------------------------------------------------------
@@ -327,7 +327,7 @@ root_taxon(t).rank    # "order"
 See also [`leaf_taxa`](@ref), [`taxa_at_rank`](@ref).
 """
 function root_taxon(tree::TaxonTree)::TaxonNode
-    tree.taxa[tree.root]
+    return tree.taxa[tree.root]
 end
 
 """
@@ -354,7 +354,7 @@ See also [`root_taxon`](@ref), [`taxa_at_rank`](@ref).
 function leaf_taxa(tree::TaxonTree)::Vector{TaxonNode}
     g = tree.graph
     nodes = [tree.taxa[v] for v in Graphs.vertices(g) if isempty(Graphs.outneighbors(g, v))]
-    sort!(nodes; by = n -> n.name)
+    return sort!(nodes; by = n -> n.name)
 end
 
 """
@@ -377,10 +377,10 @@ taxa_at_rank(t, "genus")  |> length          # number of genera in Carnivora
 See also [`root_taxon`](@ref), [`leaf_taxa`](@ref).
 """
 function taxa_at_rank(
-    tree::TaxonTree,
-    rank::AbstractString,
-)::Vector{TaxonNode}
+        tree::TaxonTree,
+        rank::AbstractString,
+    )::Vector{TaxonNode}
     _pbdb_rank_index(rank)   # throws ArgumentError for unknown ranks
     nodes = [n for n in tree.taxa if n.rank == rank]
-    sort!(nodes; by = n -> n.name)
+    return sort!(nodes; by = n -> n.name)
 end

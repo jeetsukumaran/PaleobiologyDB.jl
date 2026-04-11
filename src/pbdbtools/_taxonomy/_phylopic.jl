@@ -1,4 +1,3 @@
-
 # ---------------------------------------------------------------------------
 # PhyloPic integration
 #
@@ -63,19 +62,19 @@ import DataCaches: autocache
 
 # Current PhyloPic build number, cached in memory with a TTL.
 # Re-fetched if missing or older than _PHYLOPIC_BUILD_TTL seconds.
-const _PHYLOPIC_BUILD      = Ref{Union{Nothing, Int}}(nothing)
+const _PHYLOPIC_BUILD = Ref{Union{Nothing, Int}}(nothing)
 const _PHYLOPIC_BUILD_TIME = Ref{Float64}(0.0)
-const _PHYLOPIC_BUILD_TTL  = 3600.0  # 1 hour
+const _PHYLOPIC_BUILD_TTL = 3600.0  # 1 hour
 
 # ---------------------------------------------------------------------------
 # Internal: HTTP helper
 # ---------------------------------------------------------------------------
 
 function _phylopic_get(
-    url::AbstractString;
-    retries::Int = 3,
-    readtimeout::Integer = 30,
-)::HTTP.Response
+        url::AbstractString;
+        retries::Int = 3,
+        readtimeout::Integer = 30,
+    )::HTTP.Response
     last_err = nothing
     for attempt in 1:retries
         try
@@ -101,11 +100,11 @@ function _ensure_phylopic_build(; force::Bool = false)::Int
     expired = (time() - _PHYLOPIC_BUILD_TIME[]) > _PHYLOPIC_BUILD_TTL
     if isnothing(_PHYLOPIC_BUILD[]) || expired || force
         resp = _phylopic_get(PHYLOPIC_BASE_URL)
-        obj  = JSON3.read(resp.body)
-        _PHYLOPIC_BUILD[]      = Int(obj.build)
+        obj = JSON3.read(resp.body)
+        _PHYLOPIC_BUILD[] = Int(obj.build)
         _PHYLOPIC_BUILD_TIME[] = time()
     end
-    _PHYLOPIC_BUILD[]
+    return _PHYLOPIC_BUILD[]
 end
 
 # ---------------------------------------------------------------------------
@@ -113,7 +112,7 @@ end
 # ---------------------------------------------------------------------------
 
 function _phylopic_null_record()::NamedTuple
-    NamedTuple{Tuple(_PHYLOPIC_BASE_COLUMNS)}(
+    return NamedTuple{Tuple(_PHYLOPIC_BASE_COLUMNS)}(
         ntuple(_ -> missing, length(_PHYLOPIC_BASE_COLUMNS))
     )
 end
@@ -163,7 +162,7 @@ function _phylopic_resolve_node(build::Int, lineage_nos::Vector{Int})::Union{Str
     url = "$PHYLOPIC_BASE_URL/resolve/paleobiodb.org/txn?build=$build&objectIDs=$ids_str"
     try
         resp = _phylopic_get(url)
-        obj  = JSON3.read(resp.body)
+        obj = JSON3.read(resp.body)
         # HTTP.jl follows the 308 redirect to the node endpoint.
         # The redirected response has a top-level :uuid field.
         hasproperty(obj, :uuid) && return string(obj.uuid)
@@ -206,7 +205,7 @@ function _largest_file_href(files_arr)::Union{String, Missing}
     isempty(files_arr) && return missing
     best = argmax(f -> _parse_img_width(get(f, :sizes, "0x0")), files_arr)
     href = get(best, :href, missing)
-    ismissing(href) ? missing : string(href)
+    return ismissing(href) ? missing : string(href)
 end
 
 # Derive a human-readable CC license identifier from a license URL.
@@ -215,7 +214,7 @@ function _cc_license_label(license_url::AbstractString)::String
     m = match(r"creativecommons\.org/licenses/([^/]+)/([^/]+)", license_url)
     if !isnothing(m)
         parts = uppercase(replace(m.captures[1], "-" => " "))
-        ver   = m.captures[2]
+        ver = m.captures[2]
         return "CC $parts $ver"
     end
     m2 = match(r"creativecommons\.org/publicdomain/([^/]+)/([^/]+)", license_url)
@@ -226,93 +225,109 @@ function _cc_license_label(license_url::AbstractString)::String
 end
 
 function _phylopic_extract_record(
-    node_obj,
-    pbdb_id::Union{Int, Missing},
-    lineage_str::Union{String, Missing},
-)::NamedTuple
-    node_uuid    = missing
+        node_obj,
+        pbdb_id::Union{Int, Missing},
+        lineage_str::Union{String, Missing},
+    )::NamedTuple
+    node_uuid = missing
     matched_name = missing
-    img_uuid     = missing
-    thumbnail    = missing
-    vector_url   = missing
-    raster_url   = missing
-    source_file  = missing
-    og_image     = missing
-    license_url  = missing
-    license      = missing
-    contributor  = missing
-    attribution  = missing
+    img_uuid = missing
+    thumbnail = missing
+    vector_url = missing
+    raster_url = missing
+    source_file = missing
+    og_image = missing
+    license_url = missing
+    license = missing
+    contributor = missing
+    attribution = missing
 
     try
-        node_uuid    = string(node_obj.uuid)
+        node_uuid = string(node_obj.uuid)
         matched_name = string(node_obj._links.self.title)
-    catch; end
+    catch
+    end
 
     # Drill into the embedded primary image
     img = nothing
     try
         img = node_obj._embedded.primaryImage
-    catch; end
+    catch
+    end
 
     if !isnothing(img)
-        try; img_uuid = string(img.uuid); catch; end
+        try
+            img_uuid = string(img.uuid)
+        catch
+        end
 
         img_links = nothing
-        try; img_links = img._links; catch; end
+        try
+            img_links = img._links
+        catch
+        end
 
         if !isnothing(img_links)
             try
                 thumbnail = _largest_file_href(img_links.thumbnailFiles)
-            catch; end
+            catch
+            end
 
             try
                 vector_url = string(img_links.vectorFile.href)
-            catch; end
+            catch
+            end
 
             try
                 raster_url = _largest_file_href(img_links.rasterFiles)
-            catch; end
+            catch
+            end
 
             try
                 source_file = string(img_links.sourceFile.href)
-            catch; end
+            catch
+            end
 
             # Special key with non-identifier characters — must use bracket notation
             try
                 og_image = string(img_links["http://ogp.me/ns#image"].href)
-            catch; end
+            catch
+            end
 
             try
                 contributor = string(img_links.contributor.href)
-            catch; end
+            catch
+            end
         end
 
         try
             lu = string(img._links.license.href)
             license_url = lu
-            license     = _cc_license_label(lu)
-        catch; end
+            license = _cc_license_label(lu)
+        catch
+        end
 
         try
             attribution = string(img.attribution)
-        catch; end
+        catch
+        end
     end
 
     return (
         pbdb_taxon_id = pbdb_id,
-        pbdb_lineage  = lineage_str,
-        node_uuid     = node_uuid,
-        matched_name  = matched_name,
-        uuid          = img_uuid,
-        thumbnail     = thumbnail,
-        vector        = vector_url,
-        raster        = raster_url,
-        source_file   = source_file,
-        og_image      = og_image,
-        license       = license,
-        license_url   = license_url,
-        contributor   = contributor,
-        attribution   = attribution,
+        pbdb_lineage = lineage_str,
+        node_uuid = node_uuid,
+        matched_name = matched_name,
+        uuid = img_uuid,
+        thumbnail = thumbnail,
+        vector = vector_url,
+        raster = raster_url,
+        source_file = source_file,
+        og_image = og_image,
+        license = license,
+        license_url = license_url,
+        contributor = contributor,
+        attribution = attribution,
     )
 end
 
@@ -334,9 +349,9 @@ function _phylopic_lookup_taxon(taxon_name::AbstractString; build::Int)::NamedTu
             @debug "PhyloPic: PBDB taxon resolved" taxon_name orig_no
 
             # Step 2: Lineage IDs
-            lineage_nos  = _pbdb_lineage_nos(orig_no)
-            lineage_str  = join(string.(lineage_nos), ",")
-            @debug "PhyloPic: lineage fetched" taxon_name n_ids=length(lineage_nos)
+            lineage_nos = _pbdb_lineage_nos(orig_no)
+            lineage_str = join(string.(lineage_nos), ",")
+            @debug "PhyloPic: lineage fetched" taxon_name n_ids = length(lineage_nos)
 
             # Step 3: Resolve PhyloPic node
             node_uuid = _phylopic_resolve_node(build, lineage_nos)
@@ -355,8 +370,10 @@ function _phylopic_lookup_taxon(taxon_name::AbstractString; build::Int)::NamedTu
                 @debug "PhyloPic: node fetch failed" taxon_name node_uuid
                 return merge(
                     _phylopic_null_record(),
-                    (pbdb_taxon_id = orig_no, pbdb_lineage = lineage_str,
-                     node_uuid = node_uuid),
+                    (
+                        pbdb_taxon_id = orig_no, pbdb_lineage = lineage_str,
+                        node_uuid = node_uuid,
+                    ),
                 )
             end
             @debug "PhyloPic: image fetched" taxon_name node_uuid
@@ -451,12 +468,12 @@ See also [`acquire_phylopic(df, ...)`](@ref) for the DataFrame variant and
 [`augment_phylopic`](@ref) to enrich a DataFrame in one call.
 """
 function acquire_phylopic(
-    taxon_name::AbstractString,
-    fieldname_prefix::AbstractString = "phylopic_";
-    kwargs...,
-)::NamedTuple
+        taxon_name::AbstractString,
+        fieldname_prefix::AbstractString = "phylopic_";
+        kwargs...,
+    )::NamedTuple
     build = _ensure_phylopic_build()
-    _apply_fieldname_prefix(_phylopic_lookup_taxon(taxon_name; build), fieldname_prefix)
+    return _apply_fieldname_prefix(_phylopic_lookup_taxon(taxon_name; build), fieldname_prefix)
 end
 
 """
@@ -503,16 +520,18 @@ pics.phylopic_thumbnail   # vector of URL strings / missings
 See also [`augment_phylopic`](@ref) for the one-call enrichment convenience function.
 """
 function acquire_phylopic(
-    df::AbstractDataFrame,
-    taxon_field::Symbol = :accepted_name,
-    fieldname_prefix::AbstractString = "phylopic_";
-    kwargs...,
-)::DataFrame
+        df::AbstractDataFrame,
+        taxon_field::Symbol = :accepted_name,
+        fieldname_prefix::AbstractString = "phylopic_";
+        kwargs...,
+    )::DataFrame
     hasproperty(df, taxon_field) ||
-        throw(ArgumentError(
+        throw(
+        ArgumentError(
             "acquire_phylopic: column `$taxon_field` not found in DataFrame. " *
-            "Available columns: $(join(propertynames(df), ", "))"
-        ))
+                "Available columns: $(join(propertynames(df), ", "))"
+        )
+    )
 
     build = _ensure_phylopic_build()
 
@@ -524,7 +543,7 @@ function acquire_phylopic(
         isempty(strip(s)) || (cache[s] = _phylopic_lookup_taxon(s; build = build))
     end
 
-    null_rec  = _phylopic_null_record()
+    null_rec = _phylopic_null_record()
     col_names = [Symbol(fieldname_prefix * string(col)) for col in _PHYLOPIC_BASE_COLUMNS]
 
     # Build each column
@@ -577,10 +596,10 @@ enriched_genus = augment_phylopic(df, :genus, "genus_phylopic_")
 See also [`acquire_phylopic`](@ref).
 """
 function augment_phylopic(
-    df::AbstractDataFrame,
-    taxon_field::Symbol = :accepted_name,
-    fieldname_prefix::AbstractString = "phylopic_";
-    kwargs...,
-)::DataFrame
-    hcat(copy(df), acquire_phylopic(df, taxon_field, fieldname_prefix; kwargs...))
+        df::AbstractDataFrame,
+        taxon_field::Symbol = :accepted_name,
+        fieldname_prefix::AbstractString = "phylopic_";
+        kwargs...,
+    )::DataFrame
+    return hcat(copy(df), acquire_phylopic(df, taxon_field, fieldname_prefix; kwargs...))
 end

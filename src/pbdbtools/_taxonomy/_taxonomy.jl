@@ -1,7 +1,6 @@
-
 # Applies both `drop_unresolved_taxa` and `drop_unrecognized_taxa` to `df`, after first mapping taxonomic_resolution to the correct String value and PBDB database field value ("genus" => ("genus", :genus), but "species" => ("species", :accepted_name)
 function _resolve_taxonomic_resolution(taxonomic_resolution::AbstractString)
-    if taxonomic_resolution == "species"
+    return if taxonomic_resolution == "species"
         ("species", :accepted_name)
     else
         (taxonomic_resolution, Symbol(taxonomic_resolution))
@@ -75,13 +74,13 @@ See also [`drop_unqualified_taxa!`](@ref) for the in-place variant,
 [`drop_unresolved_taxa`](@ref), [`drop_unrecognized_taxa`](@ref).
 """
 function drop_unqualified_taxa(
-    df::AbstractDataFrame,
-    taxonomic_resolution::AbstractString;
-    validation_authority::Symbol = :snapshot,
-)::DataFrame
+        df::AbstractDataFrame,
+        taxonomic_resolution::AbstractString;
+        validation_authority::Symbol = :snapshot,
+    )::DataFrame
     rank_str, taxon_field = _resolve_taxonomic_resolution(taxonomic_resolution)
     result = drop_unresolved_taxa(df, rank_str)
-    drop_unrecognized_taxa(result, taxon_field; validation_authority)
+    return drop_unrecognized_taxa(result, taxon_field; validation_authority)
 end
 
 """
@@ -130,11 +129,11 @@ drop_unqualified_taxa!(df, "species")
 See also [`drop_unqualified_taxa`](@ref) for the non-mutating variant.
 """
 function drop_unqualified_taxa!(
-    df::AbstractDataFrame,
-    taxonomic_resolution::AbstractString;
-    validation_authority::Symbol = :snapshot,
-)::DataFrame
+        df::AbstractDataFrame,
+        taxonomic_resolution::AbstractString;
+        validation_authority::Symbol = :snapshot,
+    )::DataFrame
     rank_str, taxon_field = _resolve_taxonomic_resolution(taxonomic_resolution)
     drop_unresolved_taxa!(df, rank_str)
-    drop_unrecognized_taxa!(df, taxon_field; validation_authority)
+    return drop_unrecognized_taxa!(df, taxon_field; validation_authority)
 end
