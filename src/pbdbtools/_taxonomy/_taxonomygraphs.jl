@@ -140,7 +140,7 @@ end
 # ---------------------------------------------------------------------------
 
 """
-    taxon_subtree(taxon_name; leaf_rank=nothing) -> TaxonTree{Nothing}
+    taxon_subtree(taxon_name; leaf_rank=nothing, strict_leaf_rank=true) -> TaxonTree
 
 Build and return a [`TaxonTree`](@ref) rooted at `taxon_name`, descending
 through the taxonomic hierarchy down to (and including) `leaf_rank`.
@@ -156,8 +156,8 @@ refreshed automatically when older than 30 days.
 - `leaf_rank::Union{AbstractString,Nothing}` (keyword, default `nothing`) —
   the rank at which to stop recursing.  Must be one of:
 
-      "subspecies" "species" "genus" "subtribe" "tribe" "subfamily"
-      "family" "superfamily" "infraorder" "suborder" "order"
+      "subspecies" "species" "subgenus" "genus" "subtribe" "tribe"
+      "subfamily" "family" "superfamily" "infraorder" "suborder" "order"
       "superorder" "infraclass" "subclass" "class" "superclass"
       "subphylum" "phylum" "kingdom"
 
@@ -165,6 +165,19 @@ refreshed automatically when older than 30 days.
   When given, nodes at `leaf_rank` become leaves of the returned tree;
   their children in the full PBDB tree are not included.  Intermediate ranks
   between the root rank and `leaf_rank` are included as interior nodes.
+
+- `strict_leaf_rank::Bool` (keyword, default `true`) — controls how nodes at
+  ranks finer than `leaf_rank` are handled.
+
+  In real PBDB data, taxa at finer ranks (e.g. a genus or species) are
+  sometimes direct children of coarse-rank nodes (e.g. an order) without an
+  intervening family.  When `strict_leaf_rank = true` (default), such nodes
+  are excluded entirely from the returned tree — the leaves will all be at
+  exactly `leaf_rank` (or at an unranked-clade rank if no ranked leaf was
+  reachable).  When `strict_leaf_rank = false`, finer-ranked nodes are
+  included as leaf nodes, preserving all PBDB parent–child edges.
+
+  Has no effect when `leaf_rank` is `nothing`.
 
 ## Returns
 
@@ -184,16 +197,21 @@ t = taxon_subtree("Carnivora")
 Graphs.nv(t.graph)           # thousands of nodes
 root_taxon(t).rank           # "order"
 
-# Truncate at family: Carnivora + all orders/suborders/... + families as leaves
+# Strict default: leaves are exactly families; orphaned genera excluded
 t2 = taxon_subtree("Carnivora"; leaf_rank = "family")
 leaf_taxa(t2) .|> (n -> n.name)   # ["Ailuridae", "Canidae", "Felidae", …]
+all(n.rank == "family" for n in leaf_taxa(t2))   # true
+
+# Non-strict: orphaned genera/species included as leaves
+t3 = taxon_subtree("Pterosauria"; leaf_rank = "family", strict_leaf_rank = false)
+# taxa at genus or species rank parented directly to order appear as leaves
 
 # Genus-level subtree of Canidae
-t3 = taxon_subtree("Canidae"; leaf_rank = "genus")
+t4 = taxon_subtree("Canidae"; leaf_rank = "genus")
 
 # Unknown taxon → single-node tree
-t4 = taxon_subtree("INVALID")
-Graphs.nv(t4.graph)          # 1
+t5 = taxon_subtree("INVALID")
+Graphs.nv(t5.graph)          # 1
 ```
 
 See also [`root_taxon`](@ref), [`leaf_taxa`](@ref), [`taxa_at_rank`](@ref),
@@ -202,6 +220,7 @@ See also [`root_taxon`](@ref), [`leaf_taxa`](@ref), [`taxa_at_rank`](@ref),
 function taxon_subtree(
     taxon_name::AbstractString;
     leaf_rank::Union{AbstractString, Nothing} = nothing,
+    strict_leaf_rank::Bool = true,
 )::TaxonTree
     _ensure_children_index()
 
@@ -260,9 +279,21 @@ function taxon_subtree(
                 push!(collected, (child_no, cur_no, info))
                 push!(queue, (child_no, cur_no))
 
-            elseif child_rank_idx <= target_rank_idx
-                # At or finer than leaf_rank → collect as leaf, do not recurse.
+            elseif child_rank_idx < target_rank_idx
+                # Strictly finer than leaf_rank.
                 # (PBDB_RANK_HIERARCHY is fine → coarse; smaller index = finer rank)
+                if strict_leaf_rank
+                    # Skip entirely — do not collect, do not recurse.
+                    # Orphaned finer-ranked taxa (e.g. a genus directly under an
+                    # order) are excluded from the returned tree.
+                    nothing
+                else
+                    # Non-strict: include as a leaf node, no recursion.
+                    push!(collected, (child_no, cur_no, info))
+                end
+
+            elseif child_rank_idx == target_rank_idx
+                # Exactly at leaf_rank → collect as leaf, do not recurse.
                 push!(collected, (child_no, cur_no, info))
 
             else
@@ -305,9 +336,11 @@ end
 Return all leaf nodes of `tree` — vertices with no outgoing edges (no
 children in the subtree) — sorted by name.
 
-When `taxon_subtree` was called with a `leaf_rank`, these are all nodes at
-that rank.  Without `leaf_rank`, they are the most finely resolved taxa
-included in the tree.
+When `taxon_subtree` was called with a `leaf_rank`, these are typically all
+nodes at exactly `leaf_rank`.  The exception is interior nodes at coarser
+ranks that have no `leaf_rank`-level descendants: those nodes are included in
+the tree but have no children, so they also appear as leaves.  Without
+`leaf_rank`, they are the most finely resolved taxa included in the tree.
 
 ## Examples
 

@@ -60,7 +60,7 @@ istaxon("NO_FAMILY_SPECIFIED")  # → false
 
 # ── Taxonomy augmentation ──────────────────────────────────────────────────
 
-# Add taxonomy_genus, taxonomy_family, …, taxonomy_kingdom, taxonomy_clades columns
+# Add taxonomy_subgenus, taxonomy_genus, taxonomy_family, …, taxonomy_kingdom, taxonomy_clades columns
 df2 = augment_taxonomy(df)
 df2.taxonomy_clades[1]
 # → "Animalia > Chordata > Mammalia > Carnivora > Canidae > Borophaginae > Epicyon"
@@ -69,7 +69,7 @@ df2.taxonomy_clades[1]
 
 # Valid rank names
 taxonomic_ranks()
-# → ["subspecies", "species", "genus", …, "kingdom"]
+# → ["subspecies", "species", "subgenus", "genus", …, "kingdom"]
 
 # Search accepted PBDB taxon names
 registered_taxa(r"^Canis\b")            # → ["Canis", "Canis aureus", "Canis lupus", …]

@@ -4,7 +4,8 @@
 Makie extension providing `@recipe`-based visualisation of [`TaxonTree`](@ref)
 objects as rectangular dendrograms.
 
-The extension activates automatically when any Makie backend is loaded:
+The extension activates automatically when any Makie backend (e.g. `CairoMakie`,
+`GLMakie`, `WGLMakie`) is loaded in the same Julia session as `PaleobiologyDB`:
 
 ```julia
 using PaleobiologyDB
@@ -61,7 +62,16 @@ function __init__()
     # callers can access it as PaleobiologyDB.TaxonTreeMakie after extension
     # load.  Julia 1.9+ extensions are top-level modules and are not
     # automatically installed as submodule bindings in the parent package.
-    Core.eval(PaleobiologyDB, :(const TaxonTreeMakie = $(@__MODULE__)))
+    #
+    # Guard against incremental precompilation: during precompilation of another
+    # extension that also triggers on Makie (e.g. PhyloPicMakie), Julia 1.12+
+    # restores cached modules and re-runs their __init__ functions.  Calling
+    # Core.eval into PaleobiologyDB at that point breaks incremental compilation
+    # because the parent module is "closed".  The guard below ensures the eval
+    # only runs at actual runtime, not during precompilation.
+    if ccall(:jl_generating_output, Cint, ()) == 0
+        Core.eval(PaleobiologyDB, :(const TaxonTreeMakie = $(@__MODULE__)))
+    end
 end
 
 end # module TaxonTreeMakie

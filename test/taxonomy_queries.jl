@@ -43,34 +43,55 @@ const _CHILDREN_IDX_REF = PaleobiologyDB.Taxonomy._TAXA_CHILDREN_INDEX
 const _TaxonInfo        = PaleobiologyDB.Taxonomy._TaxonInfo
 
 function _inject_mock_hierarchy!()
+    # Mock Carnivora hierarchy used by both taxonomy_queries.jl and
+    # taxonomy_graphs.jl.  Nodes #11 and #12 are rank-skipping: they are
+    # direct children of Carnivora (order) without any intervening family,
+    # exercising the strict_leaf_rank logic in taxon_subtree.
+    #
+    # Carnivora (order, #1)
+    # ├── Canidae (family, #2)
+    # │   ├── Canis (genus, #4)
+    # │   │   ├── Canis lupus (species, #7)
+    # │   │   └── Canis aureus (species, #8)
+    # │   └── Vulpes (genus, #5)
+    # │       └── Vulpes vulpes (species, #9)
+    # ├── Felidae (family, #3)
+    # │   └── Felis (genus, #6)
+    # │       └── Felis catus (species, #10)
+    # ├── Amphicyon (genus, #11)          ← rank-skipping: genus under order
+    # └── Carnivora incertae sedis (species, #12)  ← rank-skipping: species under order
     name_to_no = Dict{String, Int}(
-        "Carnivora"   => 1,
-        "Canidae"     => 2,
-        "Felidae"     => 3,
-        "Canis"       => 4,
-        "Vulpes"      => 5,
-        "Felis"       => 6,
-        "Canis lupus" => 7,
-        "Canis aureus"=> 8,
-        "Vulpes vulpes"=>9,
-        "Felis catus" => 10,
+        "Carnivora"                    => 1,
+        "Canidae"                      => 2,
+        "Felidae"                      => 3,
+        "Canis"                        => 4,
+        "Vulpes"                       => 5,
+        "Felis"                        => 6,
+        "Canis lupus"                  => 7,
+        "Canis aureus"                 => 8,
+        "Vulpes vulpes"                => 9,
+        "Felis catus"                  => 10,
+        "Amphicyon"                    => 11,
+        "Carnivora incertae sedis"     => 12,
     )
 
     no_to_info = Dict{Int, _TaxonInfo}(
-        1  => (name = "Carnivora",     rank = "order",   accepted_no = 1,  parent_no = missing),
-        2  => (name = "Canidae",       rank = "family",  accepted_no = 2,  parent_no = 1),
-        3  => (name = "Felidae",       rank = "family",  accepted_no = 3,  parent_no = 1),
-        4  => (name = "Canis",         rank = "genus",   accepted_no = 4,  parent_no = 2),
-        5  => (name = "Vulpes",        rank = "genus",   accepted_no = 5,  parent_no = 2),
-        6  => (name = "Felis",         rank = "genus",   accepted_no = 6,  parent_no = 3),
-        7  => (name = "Canis lupus",   rank = "species", accepted_no = 7,  parent_no = 4),
-        8  => (name = "Canis aureus",  rank = "species", accepted_no = 8,  parent_no = 4),
-        9  => (name = "Vulpes vulpes", rank = "species", accepted_no = 9,  parent_no = 5),
-        10 => (name = "Felis catus",   rank = "species", accepted_no = 10, parent_no = 6),
+        1  => (name = "Carnivora",                 rank = "order",   accepted_no = 1,  parent_no = missing),
+        2  => (name = "Canidae",                   rank = "family",  accepted_no = 2,  parent_no = 1),
+        3  => (name = "Felidae",                   rank = "family",  accepted_no = 3,  parent_no = 1),
+        4  => (name = "Canis",                     rank = "genus",   accepted_no = 4,  parent_no = 2),
+        5  => (name = "Vulpes",                    rank = "genus",   accepted_no = 5,  parent_no = 2),
+        6  => (name = "Felis",                     rank = "genus",   accepted_no = 6,  parent_no = 3),
+        7  => (name = "Canis lupus",               rank = "species", accepted_no = 7,  parent_no = 4),
+        8  => (name = "Canis aureus",              rank = "species", accepted_no = 8,  parent_no = 4),
+        9  => (name = "Vulpes vulpes",             rank = "species", accepted_no = 9,  parent_no = 5),
+        10 => (name = "Felis catus",               rank = "species", accepted_no = 10, parent_no = 6),
+        11 => (name = "Amphicyon",                 rank = "genus",   accepted_no = 11, parent_no = 1),
+        12 => (name = "Carnivora incertae sedis",  rank = "species", accepted_no = 12, parent_no = 1),
     )
 
     children = Dict{Int, Vector{Int}}(
-        1 => [2, 3],
+        1 => [2, 3, 11, 12],
         2 => [4, 5],
         3 => [6],
         4 => [7, 8],
@@ -96,7 +117,7 @@ end
 @testset "taxonomic_ranks" begin
     ranks = _ls_ranks()
     @test ranks isa Vector{String}
-    @test length(ranks) == 19
+    @test length(ranks) == 20
     @test ranks[1]   == "subspecies"
     @test ranks[end] == "kingdom"
     @test ranks == _PBDB_RANKS          # same order
@@ -119,6 +140,7 @@ end
             "Carnivora", "Canidae", "Felidae",
             "Canis", "Vulpes", "Felis",
             "Canis lupus", "Canis aureus", "Vulpes vulpes", "Felis catus",
+            "Amphicyon", "Carnivora incertae sedis",
         ])
         @test result == sort(result)
     end
@@ -354,12 +376,15 @@ end
 
     @testset "genus children spanning two families" begin
         result = _ls_children("Carnivora", "genus")
-        @test Set(result) == Set(["Canis", "Vulpes", "Felis"])
+        # Amphicyon is a genus directly under Carnivora (no family intermediate)
+        @test Set(result) == Set(["Canis", "Vulpes", "Felis", "Amphicyon"])
     end
 
     @testset "species children of order" begin
         result = _ls_children("Carnivora", "species")
-        expected = Set(["Canis lupus", "Canis aureus", "Vulpes vulpes", "Felis catus"])
+        # "Carnivora incertae sedis" is a species directly under Carnivora
+        expected = Set(["Canis lupus", "Canis aureus", "Vulpes vulpes", "Felis catus",
+                        "Carnivora incertae sedis"])
         @test Set(result) == expected
     end
 
@@ -385,6 +410,7 @@ end
             "Canidae", "Felidae",
             "Canis", "Vulpes", "Felis",
             "Canis lupus", "Canis aureus", "Vulpes vulpes", "Felis catus",
+            "Amphicyon", "Carnivora incertae sedis",
         ])
     end
 

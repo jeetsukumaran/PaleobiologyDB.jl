@@ -89,7 +89,16 @@ function __init__()
     # has been triggered.  This is necessary because Julia 1.9+ extensions are
     # loaded as top-level modules; they are not automatically installed as
     # submodule bindings in the parent package.
-    Core.eval(PaleobiologyDB, :(const PhyloPicMakie = $(@__MODULE__)))
+    #
+    # Guard against incremental precompilation: during precompilation of another
+    # extension that also triggers on Makie (e.g. TaxonTreeMakie), Julia 1.12+
+    # restores cached modules and re-runs their __init__ functions.  Calling
+    # Core.eval into PaleobiologyDB at that point breaks incremental compilation
+    # because the parent module is "closed".  The guard below ensures the eval
+    # only runs at actual runtime, not during precompilation.
+    if ccall(:jl_generating_output, Cint, ()) == 0
+        Core.eval(PaleobiologyDB, :(const PhyloPicMakie = $(@__MODULE__)))
+    end
 end
 
 end # module PhyloPicMakie

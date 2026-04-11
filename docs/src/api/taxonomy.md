@@ -211,30 +211,39 @@ root_taxon(tree).rank    # → "order"
 
 ### Truncating at a leaf rank
 
-Pass `leaf_rank` to stop the traversal at a given rank.  All nodes *at or
-finer than* that rank become leaves; the intermediate ranks between the root
-and the leaf rank are retained as interior nodes.
+Pass `leaf_rank` to stop the traversal at a given rank.  By default
+(`strict_leaf_rank = true`), only nodes at exactly `leaf_rank` become leaves;
+any taxa at finer ranks that are direct children of a coarser node (an PBDB
+data pattern common in less well-resolved groups) are excluded.
+The intermediate ranks between the root and `leaf_rank` are retained as
+interior nodes.
 
 ```julia
-# Carnivora subtree truncated at family level
+# Carnivora subtree truncated at family level (strict default)
 #   interior nodes: order, suborder, …, superfamily
-#   leaf nodes: all family-rank taxa
+#   leaf nodes: family-rank taxa only; orphaned genera/species excluded
 tree = taxon_subtree("Carnivora"; leaf_rank = "family")
 Graphs.nv(tree.graph)   # order + suborders + superfamilies + families
 Graphs.ne(tree.graph)   # one edge per parent → child pair
 
-# Genus-level subtree of Canidae
+# leaf_taxa returns exclusively family-rank nodes
+all(n.rank == "family" for n in leaf_taxa(tree))   # → true
+
+# Genus-level subtree of Canidae (strict default)
 #   interior: family, tribe, subfamily, …
-#   leaves: genera
+#   leaves: genus-rank taxa only
 t2 = taxon_subtree("Canidae"; leaf_rank = "genus")
 
 # The leaf nodes are exactly the genera
 leaf_taxa(t2) .|> (n -> n.name)
 # → ["Borophagus", "Canis", "Urocyon", "Vulpes", …]
 
+# Non-strict: also include orphaned finer-ranked taxa as leaves
+t3 = taxon_subtree("Pterosauria"; leaf_rank = "family", strict_leaf_rank = false)
+
 # Without leaf_rank → full descendant tree to finest available rank
-t3 = taxon_subtree("Canis"; leaf_rank = nothing)
-leaf_taxa(t3) |> length   # number of species under Canis
+t4 = taxon_subtree("Canis"; leaf_rank = nothing)
+leaf_taxa(t4) |> length   # number of species under Canis
 ```
 
 ### Accessor functions

@@ -11,7 +11,7 @@ export drop_unresolved_taxa, drop_unresolved_taxa!
     PBDB_RANK_HIERARCHY
 
 Vector of PBDB `accepted_rank` values ordered from most specific to most
-general: `"subspecies"`, `"species"`, `"genus"`, …, `"kingdom"`.
+general: `"subspecies"`, `"species"`, `"subgenus"`, `"genus"`, …, `"kingdom"`.
 
 Used internally to resolve "at least as specific as X" queries and to define
 the columns added by [`augment_taxonomy`](@ref).  Use
@@ -20,6 +20,7 @@ the columns added by [`augment_taxonomy`](@ref).  Use
 const PBDB_RANK_HIERARCHY = [
     "subspecies",
     "species",
+    "subgenus",
     "genus",
     "subtribe",
     "tribe",
@@ -70,9 +71,10 @@ taxonomic resolution specified by `taxonomic_rank`.
 
 Two criteria are applied:
 1. The `accepted_rank` column must be at `taxonomic_rank` or finer (more
-   specific). For example, `"genus"` accepts `"genus"`, `"species"`, and
-   `"subspecies"`; `"family"` additionally accepts `"subfamily"`, `"tribe"`,
-   `"subtribe"`. Rows with a missing `accepted_rank` are dropped.
+   specific). For example, `"genus"` accepts `"genus"`, `"subgenus"`,
+   `"species"`, and `"subspecies"`; `"family"` additionally accepts
+   `"subfamily"`, `"tribe"`, `"subtribe"`. Rows with a missing
+   `accepted_rank` are dropped.
 2. If `df` contains a column whose name matches `taxonomic_rank` (e.g. a
    `genus` or `family` column), that column must also be non-missing and
    non-empty.

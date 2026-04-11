@@ -83,8 +83,14 @@ if _CAIRO_TTM_AVAILABLE
             @test _rd_fn("order")      == 8
             @test _rd_fn("family")     == 12
             @test _rd_fn("genus")      == 16
-            @test _rd_fn("species")    == 17
-            @test _rd_fn("subspecies") == 18
+            @test _rd_fn("subgenus")   == 17
+            @test _rd_fn("species")    == 18
+            @test _rd_fn("subspecies") == 19
+        end
+
+        @testset "subgenus is between genus and species in depth" begin
+            @test _rd_fn("subgenus") > _rd_fn("genus")
+            @test _rd_fn("subgenus") < _rd_fn("species")
         end
 
         @testset "unknown / empty ranks return -1" begin

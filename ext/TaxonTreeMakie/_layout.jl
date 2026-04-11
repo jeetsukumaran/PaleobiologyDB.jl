@@ -16,7 +16,7 @@
 Mapping from PBDB rank name to integer x-depth for dendrogram layout.
 
 `"kingdom"` is assigned depth 0 (leftmost on the x-axis); `"subspecies"` is
-depth 18 (rightmost).  Ranks not present in this dict receive `-1` from
+depth 19 (rightmost).  Ranks not present in this dict receive `-1` from
 [`_rank_depth`](@ref) and are treated as interior structural nodes with
 approximate placement.
 """
@@ -38,8 +38,9 @@ const _RANK_DEPTH = Dict{String, Int}(
     "tribe"       => 14,
     "subtribe"    => 15,
     "genus"       => 16,
-    "species"     => 17,
-    "subspecies"  => 18,
+    "subgenus"    => 17,
+    "species"     => 18,
+    "subspecies"  => 19,
 )
 
 """
