@@ -265,7 +265,13 @@ function taxon_subtree(
                 push!(queue, (child_no, cur_no))
 
             elseif isnothing(child_rank_idx)
-                # Unknown rank — recurse in case useful descendants lie below
+                # Unknown rank (e.g. "unranked clade") — treat as an interior
+                # node: collect it so it gets a vertex index, then recurse so
+                # its descendants are also included.  Skipping collection but
+                # still recursing would leave dangling parent_no references in
+                # _build_taxon_tree (KeyError when any collected descendant's
+                # parent_no points to this uncollected node).
+                push!(collected, (child_no, cur_no, info))
                 push!(queue, (child_no, cur_no))
 
             elseif child_rank_idx <= target_rank_idx

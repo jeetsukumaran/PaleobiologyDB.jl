@@ -79,6 +79,28 @@ registered_taxa([r"^Canis\b", r"^Vulpes\b"])  # union of patterns
 child_taxa("Carnivora", "family")       # → ["Ailuridae", "Canidae", "Felidae", …]
 parent_taxa("Canis lupus", "family")    # → ["Canidae"]
 
+# ── Taxonomy tree graphs ───────────────────────────────────────────────────
+
+import Graphs
+
+# Build an explicit subtree of Carnivora, with families as leaves
+tree = taxon_subtree("Carnivora"; leaf_rank = "family")
+root_taxon(tree).name    # → "Carnivora"
+root_taxon(tree).rank    # → "order"
+
+# The leaf nodes are exactly the family-level taxa
+leaf_taxa(tree) .|> (n -> n.name)
+# → ["Ailuridae", "Amphicyonidae", "Canidae", "Felidae", …]
+
+# Pick all genera from a full genus-level Canidae subtree
+t2 = taxon_subtree("Canidae"; leaf_rank = "genus")
+taxa_at_rank(t2, "genus") .|> (n -> n.name)
+# → ["Borophagus", "Canis", "Urocyon", "Vulpes", …]
+
+# TaxonTree wraps a Graphs.jl SimpleDiGraph — full graph algorithm suite available
+Graphs.nv(tree.graph)    # → number of taxa in the subtree
+Graphs.ne(tree.graph)    # → number of parent → child edges
+
 # ── Row filtering ──────────────────────────────────────────────────────────
 
 # 2-arg: boolean mask across all taxonomy columns (auto-augments if needed)
@@ -267,7 +289,7 @@ fig = phylopic_thumbnail_grid(
 * Specimens: `pbdb_specimen`, `pbdb_specimens`, `pbdb_ref_specimens`, `pbdb_measurements`
 * Opinions: `pbdb_opinion`, `pbdb_opinions`
 * Counts: `pbdb_count`
-* Taxonomy (submodule): `drop_unqualified_taxa`, `drop_unresolved_taxa`, `drop_unrecognized_taxa`, `augment_taxonomy`, `child_taxa`, `parent_taxa`, `registered_taxa`, `taxon_occursin`, `contains_taxon`
+* Taxonomy (submodule): `drop_unqualified_taxa`, `drop_unresolved_taxa`, `drop_unrecognized_taxa`, `augment_taxonomy`, `child_taxa`, `parent_taxa`, `registered_taxa`, `taxon_occursin`, `contains_taxon`, `taxon_subtree`, `root_taxon`, `leaf_taxa`, `taxa_at_rank`
 * PhyloPic (submodule): `acquire_phylopic`, `augment_phylopic`
 * PhyloPicMakie (extension): `augment_phylopic!`, `augment_phylopic`, `augment_phylopic_ranges!`, `augment_phylopic_ranges`, `phylopic_thumbnail_grid!`, `phylopic_thumbnail_grid`
 
