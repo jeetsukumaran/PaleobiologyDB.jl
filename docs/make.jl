@@ -9,10 +9,13 @@ using CairoMakie
 using FileIO
 using PaleobiologyDB.PhyloPicMakie
 
+# Trigger TaxonTreeMakie extension (CairoMakie already loaded above)
+using PaleobiologyDB.TaxonTreeMakie
+
 makedocs(
     sitename = "PaleobiologyDB.jl",
     authors = "Jeet Sukumaran",
-    modules = [PaleobiologyDB, PaleobiologyDB.ApiHelp, PaleobiologyDB.Taxonomy, PaleobiologyDB.Depot, PaleobiologyDB.PhyloPicMakie],
+    modules = [PaleobiologyDB, PaleobiologyDB.ApiHelp, PaleobiologyDB.Taxonomy, PaleobiologyDB.Depot, PaleobiologyDB.PhyloPicMakie, PaleobiologyDB.TaxonTreeMakie],
     format = Documenter.HTML(
         prettyurls = get(ENV, "CI", nothing) == "true",
         canonical = "https://jeetsukumaran.github.io/PaleobiologyDB.jl",
@@ -22,6 +25,7 @@ makedocs(
         "Guide" => [
             "Quick Start"      => "guide/quickstart.md",
             "Caching"          => "guide/caching.md",
+            "TaxonTreeMakie"   => "guide/taxontree_makie.md",
             "PhyloPicMakie"    => "guide/phylopic_makie.md",
             "Contributing"     => "guide/contributing.md",
         ],
@@ -33,6 +37,7 @@ makedocs(
             "Other"            => "api/other.md",
             "Interactive Help" => "api/apihelp.md",
             "Taxonomy"         => "api/taxonomy.md",
+            "TaxonTreeMakie"   => "api/taxontree_makie.md",
             "PhyloPicMakie"    => "api/phylopic_makie.md",
         ],
     ],

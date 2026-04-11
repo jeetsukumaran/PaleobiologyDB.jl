@@ -127,11 +127,11 @@ combined taxonomy string column, all resolved from the Scratch-cached PBDB taxa 
 
 One column per rank, from most specific to most general:
 
-    taxonomy_subspecies  taxonomy_species  taxonomy_genus  taxonomy_subtribe  taxonomy_tribe
-    taxonomy_subfamily   taxonomy_family   taxonomy_superfamily  taxonomy_infraorder
-    taxonomy_suborder    taxonomy_order    taxonomy_superorder  taxonomy_infraclass
-    taxonomy_subclass    taxonomy_class    taxonomy_superclass  taxonomy_subphylum
-    taxonomy_phylum      taxonomy_kingdom
+    taxonomy_subspecies  taxonomy_species  taxonomy_subgenus  taxonomy_genus
+    taxonomy_subtribe    taxonomy_tribe    taxonomy_subfamily taxonomy_family
+    taxonomy_superfamily taxonomy_infraorder taxonomy_suborder taxonomy_order
+    taxonomy_superorder  taxonomy_infraclass taxonomy_subclass taxonomy_class
+    taxonomy_superclass  taxonomy_subphylum  taxonomy_phylum   taxonomy_kingdom
 
 Plus a summary column:
 

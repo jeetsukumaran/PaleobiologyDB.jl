@@ -37,7 +37,8 @@ end
         @testset "_pbdb_rank_index" begin
             @test _rank_index("subspecies") == 1
             @test _rank_index("species")    == 2
-            @test _rank_index("genus")      == 3
+            @test _rank_index("subgenus")   == 3
+            @test _rank_index("genus")      == 4
             @test _rank_index("kingdom")    == length(RANK_HIERARCHY)
             @test_throws ArgumentError _rank_index("bogus")
             @test_throws ArgumentError _rank_index("Domain")
@@ -46,12 +47,22 @@ end
         @testset "_pbdb_ranks_at_or_finer_than" begin
             @test _ranks_finer("subspecies") == ["subspecies"]
             @test _ranks_finer("species")    == ["subspecies", "species"]
-            @test _ranks_finer("genus")      == ["subspecies", "species", "genus"]
-            # "family" is index 7 in the hierarchy
-            @test _ranks_finer("family") == RANK_HIERARCHY[1:7]
+            @test _ranks_finer("subgenus")   == ["subspecies", "species", "subgenus"]
+            @test _ranks_finer("genus")      == ["subspecies", "species", "subgenus", "genus"]
+            # "family" is index 8 in the hierarchy (after subgenus was inserted)
+            @test _ranks_finer("family") == RANK_HIERARCHY[1:8]
             # "kingdom" returns the full hierarchy
             @test _ranks_finer("kingdom") == RANK_HIERARCHY
-            @test length(_ranks_finer("kingdom")) == 19
+            @test length(_ranks_finer("kingdom")) == 20
+        end
+
+        @testset "PBDB_RANK_HIERARCHY includes subgenus between species and genus" begin
+            genus_idx    = findfirst(==("genus"),    RANK_HIERARCHY)
+            subgenus_idx = findfirst(==("subgenus"), RANK_HIERARCHY)
+            species_idx  = findfirst(==("species"),  RANK_HIERARCHY)
+            @test !isnothing(subgenus_idx)
+            @test subgenus_idx > species_idx   # subgenus is coarser than species
+            @test subgenus_idx < genus_idx     # subgenus is finer than genus
         end
 
     end
@@ -64,8 +75,8 @@ end
         @testset "filter \"genus\"" begin
             result = _filter_res(all_ranks_df, "genus")
             @test result isa DataFrame
-            @test nrow(result) == 3   # subspecies, species, genus
-            @test Set(result.accepted_rank) == Set(["subspecies", "species", "genus"])
+            @test nrow(result) == 4   # subspecies, species, subgenus, genus
+            @test Set(result.accepted_rank) == Set(["subspecies", "species", "subgenus", "genus"])
         end
 
         @testset "filter \"species\"" begin
@@ -82,8 +93,9 @@ end
 
         @testset "filter \"family\"" begin
             result = _filter_res(all_ranks_df, "family")
-            @test nrow(result) == 7   # up to and including family
+            @test nrow(result) == 8   # up to and including family (subgenus added)
             @test "family"    in result.accepted_rank
+            @test "subgenus"  in result.accepted_rank
             @test "genus"     in result.accepted_rank
             @test !("superfamily" in result.accepted_rank)
             @test !("order"       in result.accepted_rank)
@@ -249,6 +261,27 @@ end
         df = _make_df(["genus"])
         @test_throws ArgumentError _filter_res(df,  "bogus")
         @test_throws ArgumentError _filter_res!(copy(df), "bogus")
+
+    end
+
+    # -----------------------------------------------------------------------
+    @testset "subgenus rank handling" begin
+
+        @testset "subgenus passes genus filter" begin
+            # A row with accepted_rank = "subgenus" is finer than genus and
+            # should be kept when filtering at genus resolution.
+            df = _make_df(["subgenus", "genus", "family"])
+            result = _filter_res(df, "genus")
+            @test nrow(result) == 2
+            @test Set(result.accepted_rank) == Set(["subgenus", "genus"])
+        end
+
+        @testset "subgenus is finer than genus, coarser than species" begin
+            valid_genus  = _ranks_finer("genus")
+            valid_species = _ranks_finer("species")
+            @test "subgenus" ∈ valid_genus
+            @test "subgenus" ∉ valid_species
+        end
 
     end
 

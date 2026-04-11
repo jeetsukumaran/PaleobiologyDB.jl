@@ -63,8 +63,8 @@ end
         t = taxon_subtree("Carnivora")
 
         @test t isa TaxonTree
-        @test Graphs.nv(t.graph) == 10
-        @test Graphs.ne(t.graph) == 9
+        @test Graphs.nv(t.graph) == 12
+        @test Graphs.ne(t.graph) == 11
         @test t.root == 1
 
         r = root_taxon(t)
@@ -72,12 +72,13 @@ end
         @test r.rank == "order"
         @test ismissing(r.parent_id)
 
-        # All 10 taxon names should be present
+        # All 12 taxon names should be present (including rank-skipping nodes)
         all_names = Set(n.name for n in t.taxa)
         @test all_names == Set([
             "Carnivora", "Canidae", "Felidae",
             "Canis", "Vulpes", "Felis",
             "Canis lupus", "Canis aureus", "Vulpes vulpes", "Felis catus",
+            "Amphicyon", "Carnivora incertae sedis",
         ])
 
         # vertex_of maps each pbdb_id to a valid vertex
@@ -105,31 +106,42 @@ end
         @test all(n.rank == "family" for n in leaves)
     end
 
-    @testset "leaf_rank = genus → 6 nodes" begin
+    @testset "leaf_rank = genus → 7 nodes (strict default)" begin
+        # Amphicyon (genus, #11) is directly under Carnivora (order) and is at
+        # exactly leaf_rank, so it IS collected as a leaf.
+        # Carnivora incertae sedis (species) is finer than genus → excluded.
         t = taxon_subtree("Carnivora"; leaf_rank = "genus")
 
-        @test Graphs.nv(t.graph) == 6
-        @test Graphs.ne(t.graph) == 5
+        @test Graphs.nv(t.graph) == 7
+        @test Graphs.ne(t.graph) == 6
 
         names = Set(n.name for n in t.taxa)
-        @test names == Set(["Carnivora", "Canidae", "Felidae", "Canis", "Vulpes", "Felis"])
+        @test names == Set(["Carnivora", "Canidae", "Felidae", "Canis", "Vulpes", "Felis", "Amphicyon"])
 
         leaves = leaf_taxa(t)
-        @test [n.name for n in leaves] == ["Canis", "Felis", "Vulpes"]
+        @test [n.name for n in leaves] == ["Amphicyon", "Canis", "Felis", "Vulpes"]
         @test all(n.rank == "genus" for n in leaves)
     end
 
     @testset "leaf_rank = species → same as full subtree" begin
+        # Carnivora incertae sedis (species, #12) is at exactly leaf_rank,
+        # so it IS collected as a leaf.  Amphicyon (genus, #11) is coarser
+        # than species so it is treated as an interior node and recurse is
+        # attempted; but it has no children in the mock, so it ends up as a
+        # leaf in the graph despite having rank "genus".
+        # The full tree is 12 nodes / 11 edges.
         t = taxon_subtree("Carnivora"; leaf_rank = "species")
 
-        @test Graphs.nv(t.graph) == 10
-        @test Graphs.ne(t.graph) == 9
+        @test Graphs.nv(t.graph) == 12
+        @test Graphs.ne(t.graph) == 11
 
         leaves = leaf_taxa(t)
-        @test all(n.rank == "species" for n in leaves)
-        @test Set(n.name for n in leaves) == Set([
-            "Canis lupus", "Canis aureus", "Vulpes vulpes", "Felis catus",
-        ])
+        # All 5 species are leaves
+        @test Set(n.name for n in leaves if n.rank == "species") ==
+              Set(["Canis lupus", "Canis aureus", "Vulpes vulpes",
+                   "Felis catus", "Carnivora incertae sedis"])
+        # Amphicyon (genus, no children) also appears as a leaf
+        @test any(n.name == "Amphicyon" && n.rank == "genus" for n in leaves)
     end
 
     @testset "rooted at a non-root node" begin
@@ -158,6 +170,46 @@ end
 
     @testset "bad leaf_rank → ArgumentError" begin
         @test_throws ArgumentError taxon_subtree("Carnivora"; leaf_rank = "NOTARANK")
+    end
+
+    @testset "strict_leaf_rank=true (default): orphaned genus/species excluded" begin
+        # Amphicyon (genus, #11) and Carnivora incertae sedis (species, #12)
+        # are direct children of Carnivora (order) — finer than family → excluded
+        t = taxon_subtree("Carnivora"; leaf_rank = "family")
+        names = Set(n.name for n in t.taxa)
+        @test "Amphicyon" ∉ names
+        @test "Carnivora incertae sedis" ∉ names
+        # Tree has exactly 3 nodes: Carnivora + Canidae + Felidae
+        @test Graphs.nv(t.graph) == 3
+        @test Graphs.ne(t.graph) == 2
+    end
+
+    @testset "strict_leaf_rank=false: orphaned genus/species included as leaves" begin
+        t = taxon_subtree("Carnivora"; leaf_rank = "family", strict_leaf_rank = false)
+        names = Set(n.name for n in t.taxa)
+        @test "Amphicyon" ∈ names
+        @test "Carnivora incertae sedis" ∈ names
+        # 5 nodes: Carnivora + Canidae + Felidae + Amphicyon + incertae sedis
+        @test Graphs.nv(t.graph) == 5
+        # Amphicyon and incertae sedis are leaves (no children collected under them)
+        amphicyon_v = t.vertex_of[11]
+        @test isempty(Graphs.outneighbors(t.graph, amphicyon_v))
+    end
+
+    @testset "strict_leaf_rank=true: leaf_taxa are exclusively at leaf_rank" begin
+        t = taxon_subtree("Carnivora"; leaf_rank = "family")
+        leaves = leaf_taxa(t)
+        @test all(n.rank == "family" for n in leaves)
+        @test [n.name for n in leaves] == ["Canidae", "Felidae"]
+    end
+
+    @testset "strict_leaf_rank=false: leaf_taxa may include finer ranks" begin
+        t = taxon_subtree("Carnivora"; leaf_rank = "family", strict_leaf_rank = false)
+        leaves = leaf_taxa(t)
+        leaf_ranks = Set(n.rank for n in leaves)
+        # Amphicyon (genus) and incertae sedis (species) are leaves
+        @test "genus" ∈ leaf_ranks
+        @test "species" ∈ leaf_ranks
     end
 
     _clear_mock_hierarchy!()
@@ -190,15 +242,18 @@ end
 @testset "leaf_taxa — offline mock" begin
     _inject_mock_hierarchy!()
 
-    @testset "full subtree leaves are species" begin
+    @testset "full subtree leaves — no leaf_rank" begin
+        # Without a leaf_rank filter, leaves are all nodes with no children.
+        # Amphicyon (#11) has no children → genus leaf.
+        # Carnivora incertae sedis (#12) has no children → species leaf.
         t = taxon_subtree("Carnivora")
         leaves = leaf_taxa(t)
         @test leaves isa Vector{TaxonNode}
-        @test length(leaves) == 4
-        @test [n.name for n in leaves] == sort([
+        @test length(leaves) == 6
+        @test Set(n.name for n in leaves) == Set([
             "Canis lupus", "Canis aureus", "Vulpes vulpes", "Felis catus",
+            "Amphicyon", "Carnivora incertae sedis",
         ])
-        @test all(n.rank == "species" for n in leaves)
     end
 
     @testset "leaf_rank=family → families are leaves, sorted" begin
@@ -229,7 +284,7 @@ end
     @testset "genera in full Carnivora subtree" begin
         genera = taxa_at_rank(t, "genus")
         @test genera isa Vector{TaxonNode}
-        @test [n.name for n in genera] == ["Canis", "Felis", "Vulpes"]
+        @test [n.name for n in genera] == ["Amphicyon", "Canis", "Felis", "Vulpes"]
         @test all(n.rank == "genus" for n in genera)
     end
 
@@ -266,20 +321,20 @@ end
     g = t.graph
 
     @test g isa Graphs.SimpleDiGraph{Int}
-    @test Graphs.nv(g) == 10
-    @test Graphs.ne(g) == 9
+    @test Graphs.nv(g) == 12
+    @test Graphs.ne(g) == 11
     @test Graphs.is_directed(g)
 
     # Root (vertex 1) should have outgoing edges (children) and no incoming edges
-    @test length(Graphs.outneighbors(g, t.root)) == 2   # Canidae + Felidae
+    @test length(Graphs.outneighbors(g, t.root)) == 4   # Canidae + Felidae + Amphicyon + incertae sedis
     @test isempty(Graphs.inneighbors(g, t.root))
 
-    # Leaf vertices should have no outgoing edges
-    for v in Graphs.vertices(g)
-        if isempty(Graphs.outneighbors(g, v))
-            @test t.taxa[v].rank == "species"
-        end
-    end
+    # Leaf vertices should have no outgoing edges; leaves are species or Amphicyon (genus)
+    leaf_names = Set(t.taxa[v].name for v in Graphs.vertices(g) if isempty(Graphs.outneighbors(g, v)))
+    @test leaf_names == Set([
+        "Canis lupus", "Canis aureus", "Vulpes vulpes", "Felis catus",
+        "Amphicyon", "Carnivora incertae sedis",
+    ])
 
     _clear_mock_hierarchy!()
 end
@@ -302,6 +357,8 @@ end
     end
 
     @testset "Carnivora leaf_rank=family" begin
+        # strict_leaf_rank=true (default) guarantees all leaves are exactly
+        # at "family" rank; orphaned genera/species are excluded.
         t = taxon_subtree("Carnivora"; leaf_rank = "family")
         leaves = leaf_taxa(t)
         @test all(n.rank == "family" for n in leaves)
