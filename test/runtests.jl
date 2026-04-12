@@ -7,6 +7,8 @@ import HTTP
 # Helper to access internals without export
 const _build_url = PaleobiologyDB._build_url
 const _joinvals  = PaleobiologyDB._joinvals
+# PhyloPicDB is a source dep accessed through PaleobiologyDB's Taxonomy module
+const PhyloPicDB = PaleobiologyDB.Taxonomy.PhyloPicDB
 
 # Live tests hit the real API and are disabled by default.
 # Enable by running with:  ENV["PBDB_LIVE"]="1"  (e.g., `PBDB_LIVE=1 julia --project -e 'using Pkg; Pkg.test()'`)
@@ -16,7 +18,8 @@ include("taxonomy_resolution.jl")
 include("taxonomy_namevalidation.jl")
 include("taxonomy_queries.jl")
 include("taxonomy_graphs.jl")
-include("taxonomy_phylopic.jl")
+include("taxonomy_phylopic_acquire.jl")
+include("taxonomy_phylopic_images.jl")
 include("phylopic_makie.jl")
 include("taxontree_makie.jl")
 

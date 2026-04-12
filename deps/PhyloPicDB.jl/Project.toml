@@ -1,7 +1,24 @@
 name = "PhyloPicDB"
 uuid = "c9272f45-9a18-4009-bf68-1964ca18c300"
-authors = ["Jeet Sukumaran <jeetsukumaran@gmail.com>"]
 version = "0.1.0"
+authors = ["Jeet Sukumaran <jeetsukumaran@gmail.com>"]
+
+[deps]
+DataCaches = "c1455f2b-6d6f-4f37-b463-919f923708a5"
+HTTP = "cd3eb016-35fb-5094-929b-558a96fad6f3"
+JSON3 = "0f8b85d8-7281-11e9-16c2-39a750bddbf1"
 
 [compat]
-julia = "1.10.10"
+Aqua = "0.8"
+DataCaches = "0.3.1"
+HTTP = "1.11.0"
+JSON3 = "1.14.3"
+Test = "1"
+julia = "1.10"
+
+[extras]
+Aqua = "4c88cf16-eb10-579e-8560-4a9242c79595"
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Aqua", "Test"]
