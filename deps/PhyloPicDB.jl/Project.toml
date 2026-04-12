@@ -1,0 +1,7 @@
+name = "PhyloPicDB"
+uuid = "c9272f45-9a18-4009-bf68-1964ca18c300"
+authors = ["Jeet Sukumaran <jeetsukumaran@gmail.com>"]
+version = "0.1.0"
+
+[compat]
+julia = "1.10.10"
