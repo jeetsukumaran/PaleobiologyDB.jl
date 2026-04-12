@@ -174,6 +174,12 @@ dendrogram.  Produced by [`taxontreeplot`](@ref) (standalone figure) or
 | `showinternal` | `false` | Show internal node name labels |
 | `internal_fontsize` | `7` | Internal label font size in points |
 | `internal_color` | `:gray40` | Internal label colour |
+| `show_phylopic` | `false` | Draw a PhyloPic silhouette to the right of each leaf tip label (requires `FileIO` to be loaded) |
+| `phylopic_glyph_size` | `0.4` | Half-height of each silhouette glyph in data units (total height = `2 × phylopic_glyph_size`) |
+| `phylopic_align` | `false` | When `true`, all silhouettes are placed at a single right-hand column; when `false`, each appears immediately right of its label |
+| `phylopic_xoffset` | `0.3` | Additional rightward gap in data units beyond the tip-label start position |
+| `phylopic_on_missing` | `:skip` | Policy when no PhyloPic image is found: `:skip` (omit), `:placeholder` (grey box), `:error` (throw) |
+| `phylopic_aspect` | `:preserve` | `:preserve` maintains the original image aspect ratio; `:stretch` renders as a square |
 
 ## Examples
 
@@ -219,6 +225,13 @@ See also [`taxontreeplot`](@ref), [`taxontreeplot!`](@ref),
         showinternal            = false,
         internal_fontsize       = 7,
         internal_color          = :gray40,
+        # PhyloPic silhouettes at leaf tips
+        show_phylopic           = false,
+        phylopic_glyph_size     = 0.4,
+        phylopic_align          = false,
+        phylopic_xoffset        = 0.3,
+        phylopic_on_missing     = :skip,
+        phylopic_aspect         = :preserve,
     )
 end
 
@@ -343,6 +356,23 @@ function Makie.plot!(p::TaxonTreePlot{<:Tuple{TaxonTree}})
         visible     = p[:showinternal],
         clip_planes = Makie.Plane3f[],
     )
+
+    # ── PhyloPic tip silhouettes ──────────────────────────────────────────
+    # Images are loaded once at plot-creation time (network results cached).
+    # Toggling show_phylopic after creation changes visibility without
+    # re-fetching.  Changing glyph_size, phylopic_align, the tree, or other
+    # layout attributes requires recreating the plot.
+    if p[:show_phylopic][]
+        _render_tip_phylopic!(
+            p, tree_obs[], layout_obs[]...;
+            glyph_size       = p[:phylopic_glyph_size][],
+            do_align         = p[:phylopic_align][],
+            phylopic_xoffset = p[:phylopic_xoffset][],
+            tip_xoffset      = p[:tip_xoffset][],
+            on_missing       = p[:phylopic_on_missing][],
+            aspect           = p[:phylopic_aspect][],
+        )
+    end
 
     return p
 end
@@ -471,9 +501,13 @@ function taxontreeplot(
     default_height = max(400, n_leaves * 18)
 
     effective_figure_kwargs = merge((; size = (900, default_height)), figure_kwargs)
-    # 30% right margin leaves room for tip labels; clip_planes = Plane3f[] on the
-    # text! calls ensures glyphs that extend beyond the axis edge are still shown.
-    effective_axis_kwargs = merge((; xautolimitmargin = (0.05f0, 0.30f0)), axis_kwargs)
+    # Right margin: 30% for tip labels alone; 50% when PhyloPic silhouettes
+    # are also requested (images extend further right than text).
+    # clip_planes = Plane3f[] on text! and image! calls ensures glyphs that
+    # extend beyond the axis edge are still shown.
+    has_phylopic = Bool(get(kwargs, :show_phylopic, false))
+    right_margin = has_phylopic ? 0.50f0 : 0.30f0
+    effective_axis_kwargs = merge((; xautolimitmargin = (0.05f0, right_margin)), axis_kwargs)
 
     fig = Makie.Figure(; effective_figure_kwargs...)
     ax  = Makie.Axis(fig[1, 1]; effective_axis_kwargs...)

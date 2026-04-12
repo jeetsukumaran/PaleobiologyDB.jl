@@ -149,6 +149,113 @@ set_rank_axis_ticks!(ax2, t_gen)
 display(fig)
 ```
 
+## PhyloPic silhouettes at leaf tips
+
+`taxontreeplot` can overlay [PhyloPic](https://www.phylopic.org/) silhouette
+images to the right of each leaf-tip label.  This requires `FileIO` to be
+loaded in the same session (which also activates `PhyloPicMakie`):
+
+```julia
+using PaleobiologyDB
+using CairoMakie
+using FileIO   # enables PhyloPic image decoding
+using PaleobiologyDB.TaxonTreeMakie
+```
+
+### Inline mode (default)
+
+Each silhouette appears immediately to the right of its taxon-name label.
+The horizontal gap is controlled by `phylopic_xoffset` (in data units):
+
+```julia
+tree = taxon_subtree("Carnivora"; leaf_rank = "family")
+
+fig, ax, p = taxontreeplot(tree;
+    showtips         = true,
+    show_phylopic    = true,
+    phylopic_xoffset = 0.5,
+)
+display(fig)
+```
+
+The result looks like:
+
+```
+────* Felidae     [IMG]
+────* Canidae  [IMG]
+```
+
+### Aligned mode
+
+Set `phylopic_align = true` to place all silhouettes in a single right-hand
+column, regardless of label length.  Increase `phylopic_xoffset` to control
+the column's distance from the deepest rank:
+
+```julia
+fig, ax, p = taxontreeplot(tree;
+    showtips         = true,
+    show_phylopic    = true,
+    phylopic_align   = true,
+    phylopic_xoffset = 2.0,
+)
+display(fig)
+```
+
+The result looks like:
+
+```
+────* Felidae                    [IMG]
+────* Canidae                    [IMG]
+────* Ursidae                    [IMG]
+```
+
+### Controlling glyph size and aspect ratio
+
+`phylopic_glyph_size` sets the half-height of each silhouette in data units
+(total height = `2 × phylopic_glyph_size`).  The default `0.4` works well for
+trees where leaves are spaced 1 unit apart.  Set `phylopic_aspect = :stretch`
+to force square glyphs instead of preserving the original image proportions:
+
+```julia
+fig, ax, p = taxontreeplot(tree;
+    showtips             = true,
+    show_phylopic        = true,
+    phylopic_glyph_size  = 0.35,
+    phylopic_aspect      = :preserve,   # default — maintains original proportions
+)
+```
+
+### Handling missing images
+
+Some taxa lack PhyloPic images.  The `phylopic_on_missing` attribute controls
+what happens:
+
+| Value | Behaviour |
+|---|---|
+| `:skip` (default) | Silently omit the glyph |
+| `:placeholder` | Draw a translucent grey rectangle in place of the image |
+| `:error` | Throw an `ErrorException` |
+
+```julia
+fig, ax, p = taxontreeplot(tree;
+    show_phylopic       = true,
+    phylopic_on_missing = :placeholder,
+)
+```
+
+### Note on reactivity
+
+PhyloPic images are loaded **once** when the plot is created.  Toggling
+`p[:show_phylopic][] = false` after creation hides/shows the existing images
+without re-downloading.  Changing `phylopic_glyph_size`, `phylopic_align`, or
+the tree itself requires recreating the plot with `taxontreeplot`.
+
+### Note on FileIO
+
+If `FileIO` is not loaded, `show_phylopic = true` emits a one-time warning
+and falls back to the `phylopic_on_missing` policy (default `:skip`, so no
+images and no error).
+
 ## Saving figures
 
 Makie's standard `save` function works with any output format:
@@ -202,6 +309,12 @@ All attributes can be passed as keyword arguments to `taxontreeplot` or
 | `showinternal` | `false` | Show internal node name labels |
 | `internal_fontsize` | `7` | Internal label font size in points |
 | `internal_color` | `:gray40` | Internal label colour |
+| `show_phylopic` | `false` | Draw a PhyloPic silhouette to the right of each leaf tip (requires `FileIO`) |
+| `phylopic_glyph_size` | `0.4` | Half-height of each silhouette in data units |
+| `phylopic_align` | `false` | Place all silhouettes in a single right-hand column |
+| `phylopic_xoffset` | `0.3` | Rightward gap in data units beyond the tip-label start position |
+| `phylopic_on_missing` | `:skip` | Policy when no image is found: `:skip`, `:placeholder`, `:error` |
+| `phylopic_aspect` | `:preserve` | `:preserve` (original proportions) or `:stretch` (square) |
 
 The following keywords are consumed by `taxontreeplot` (standalone) and are
 **not** passed to the recipe:

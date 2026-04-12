@@ -56,6 +56,7 @@ export TaxonTreePlot, taxontreeplot, taxontreeplot!, set_rank_axis_ticks!
 
 include("_layout.jl")
 include("_recipe.jl")
+include("_phylopic.jl")
 
 function __init__()
     # Bind this extension module to PaleobiologyDB.TaxonTreeMakie so that

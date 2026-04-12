@@ -276,6 +276,82 @@ if _CAIRO_TTM_AVAILABLE
         @test_nowarn taxontreeplot(tree)
     end
 
+    # ── PhyloPic silhouette smoke tests ──────────────────────────────────────
+    #
+    # FileIO IS present in the test project (it is also a test dep for
+    # PhyloPicMakie).  Most tests therefore exercise the live code path where
+    # PhyloPicMakie is loaded and images may be fetched from the network.
+    # Image results are cached so repeated test runs are fast after the first.
+    #
+    # The on_missing policy:
+    #   :skip        → leaves with no image are silently omitted
+    #   :placeholder → grey rectangles drawn in place of missing images
+    #   :error       → ErrorException raised for first missing image
+    #
+    # For the :error test we use a tree whose only leaf is named "INVALID" —
+    # a taxon that cannot resolve through the PBDB / PhyloPic pipeline,
+    # guaranteeing that _load_tip_phylopic_image returns nothing and
+    # the :error branch fires.
+
+    @testset "TaxonTreeMakie — PhyloPic silhouettes" begin
+        tree = _mock_carnivora_tree()
+
+        @testset "show_phylopic = false (default) does not error" begin
+            @test_nowarn taxontreeplot(tree; show_phylopic = false)
+        end
+
+        @testset "show_phylopic = true, on_missing = :skip does not error" begin
+            @test_nowarn taxontreeplot(tree; show_phylopic = true, phylopic_on_missing = :skip)
+        end
+
+        @testset "show_phylopic = true, phylopic_align = true does not error" begin
+            @test_nowarn taxontreeplot(
+                tree;
+                show_phylopic       = true,
+                phylopic_align      = true,
+                phylopic_xoffset    = 1.0,
+                phylopic_on_missing = :skip,
+            )
+        end
+
+        @testset "show_phylopic = true, on_missing = :placeholder does not error" begin
+            @test_nowarn taxontreeplot(
+                tree;
+                show_phylopic       = true,
+                phylopic_on_missing = :placeholder,
+            )
+        end
+
+        @testset "show_phylopic = true, on_missing = :error raises ErrorException for unresolvable taxon" begin
+            # _mock_single_node_tree has leaf name "INVALID" which cannot be
+            # resolved through PBDB / PhyloPic.  _load_tip_phylopic_image
+            # returns nothing, and :error policy then raises ErrorException.
+            tree_unresolvable = _mock_single_node_tree()
+            @test_throws ErrorException taxontreeplot(
+                tree_unresolvable;
+                show_phylopic       = true,
+                phylopic_on_missing = :error,
+            )
+        end
+
+        @testset "taxontreeplot right margin widens with show_phylopic = true" begin
+            # The standalone wrapper requests a 50% right margin when
+            # show_phylopic = true; the user may override via axis_kwargs.
+            fig, ax, _ = taxontreeplot(tree; show_phylopic = true, phylopic_on_missing = :skip)
+            @test fig isa CairoMakie.Figure
+            @test ax  isa CairoMakie.Axis
+        end
+
+        @testset "single-node tree with show_phylopic = true does not error" begin
+            tree_single = _mock_single_node_tree()
+            @test_nowarn taxontreeplot(
+                tree_single;
+                show_phylopic       = true,
+                phylopic_on_missing = :skip,
+            )
+        end
+    end
+
     @testset "TaxonTreeMakie — set_rank_axis_ticks!" begin
         tree = _mock_carnivora_tree()
         fig, ax, _p = taxontreeplot(tree; show_rank_ticks = false)
