@@ -56,9 +56,31 @@ const _PHYLOPIC_BASE_COLUMNS = [
     :attribution,
 ]
 
-export acquire_phylopic, augment_phylopic
+export acquire_phylopic, augment_phylopic, list_phylopic_images
 
 import DataCaches: autocache
+
+"""
+Base column keys for `list_phylopic_images` results (without any prefix).
+
+These differ from `_PHYLOPIC_BASE_COLUMNS`: each row represents one image,
+not one taxon lookup. `query_taxon_name` and `query_node_uuid` provide context
+about which taxon the query was for; the remaining fields describe the image.
+"""
+const _PHYLOPIC_IMAGE_LIST_COLUMNS = [
+    :query_taxon_name,  # input taxon name
+    :query_node_uuid,   # PhyloPic node UUID resolved for the query taxon
+    :uuid,              # image UUID
+    :thumbnail,         # URL of the largest thumbnail PNG
+    :vector,            # URL of the vector SVG
+    :raster,            # URL of the largest raster PNG
+    :source_file,       # URL of the original source file
+    :og_image,          # URL of the OG preview image
+    :license,           # human-readable license identifier (e.g. "CC BY 4.0")
+    :license_url,       # full license URL
+    :contributor,       # contributor resource href
+    :attribution,       # attribution text
+]
 
 # Current PhyloPic build number, cached in memory with a TTL.
 # Re-fetched if missing or older than _PHYLOPIC_BUILD_TTL seconds.
@@ -189,6 +211,114 @@ function _phylopic_fetch_node_with_image(node_uuid::AbstractString, build::Int)
     catch
         return nothing
     end
+end
+
+# Fetch one page of /images results with embed_items=true.
+# filter_param is "filter_clade" or "filter_node".
+# Returns the parsed JSON object, or nothing on error.
+function _phylopic_list_images_page(
+        node_uuid::AbstractString,
+        build::Int,
+        page::Int,
+        filter_param::AbstractString,
+    )
+    url = "$PHYLOPIC_BASE_URL/images?build=$build&$filter_param=$node_uuid&embed_items=true&page=$page"
+    try
+        resp = _phylopic_get(url)
+        return JSON3.read(resp.body)
+    catch
+        return nothing
+    end
+end
+
+# Extract one image-list NamedTuple from an embedded image object.
+# img_obj is an item from _embedded.items[] in a /images list response.
+# The structure is identical to the primaryImage embedded in a node response.
+function _phylopic_extract_image_list_record(
+        img_obj,
+        query_taxon_name::AbstractString,
+        query_node_uuid::AbstractString,
+    )::NamedTuple
+    img_uuid = missing
+    thumbnail = missing
+    vector_url = missing
+    raster_url = missing
+    source_file = missing
+    og_image = missing
+    license_url = missing
+    license = missing
+    contributor = missing
+    attribution = missing
+
+    try
+        img_uuid = string(img_obj.uuid)
+    catch
+    end
+
+    img_links = nothing
+    try
+        img_links = img_obj._links
+    catch
+    end
+
+    if !isnothing(img_links)
+        try
+            thumbnail = _largest_file_href(img_links.thumbnailFiles)
+        catch
+        end
+
+        try
+            vector_url = string(img_links.vectorFile.href)
+        catch
+        end
+
+        try
+            raster_url = _largest_file_href(img_links.rasterFiles)
+        catch
+        end
+
+        try
+            source_file = string(img_links.sourceFile.href)
+        catch
+        end
+
+        try
+            og_image = string(img_links["http://ogp.me/ns#image"].href)
+        catch
+        end
+
+        try
+            contributor = string(img_links.contributor.href)
+        catch
+        end
+
+        try
+            lu = string(img_links.license.href)
+            license_url = lu
+            license = _cc_license_label(lu)
+        catch
+        end
+    end
+
+    try
+        attribution = string(img_obj.attribution)
+    catch
+    end
+
+    return (
+        query_taxon_name = query_taxon_name,
+        query_node_uuid = query_node_uuid,
+        uuid = img_uuid,
+        thumbnail = thumbnail,
+        vector = vector_url,
+        raster = raster_url,
+        source_file = source_file,
+        og_image = og_image,
+        license = license,
+        license_url = license_url,
+        contributor = contributor,
+        attribution = attribution,
+    )
 end
 
 # Parse "WxH" size string → width integer (returns 0 on failure)
@@ -602,4 +732,150 @@ function augment_phylopic(
         kwargs...,
     )::DataFrame
     return hcat(copy(df), acquire_phylopic(df, taxon_field, fieldname_prefix; kwargs...))
+end
+
+"""
+    list_phylopic_images(taxon_name, fieldname_prefix = "phylopic_"; filter = :clade, max_pages = nothing) -> DataFrame
+
+Return a DataFrame of **all** PhyloPic images available for a taxon, with one row per image.
+
+Unlike [`acquire_phylopic`](@ref), which returns a single representative image per taxon,
+this function pages through the PhyloPic `/images` list endpoint and collects every
+image whose subject falls within the taxon's clade (or, when `filter = :node`, is tagged
+to exactly that node).
+
+## Arguments
+
+- `taxon_name`: A taxon name as it appears in the Paleobiology Database.
+- `fieldname_prefix`: String prepended to every column name. Default `"phylopic_"`.
+- `filter`: `:clade` (default) includes images for the taxon and all its descendants,
+  ordered by proximity to the query node. `:node` restricts to images tagged to exactly
+  the resolved node.
+- `max_pages`: If provided, fetch at most this many pages (each page contains up to 30
+  images). `nothing` (default) fetches all pages.
+
+## Returns
+
+A `DataFrame` with one row per image and the following base columns (each prefixed by
+`fieldname_prefix`):
+
+| Base key            | Content                                         |
+|---------------------|-------------------------------------------------|
+| `query_taxon_name`  | The input `taxon_name` string                   |
+| `query_node_uuid`   | PhyloPic node UUID resolved for the query taxon |
+| `uuid`              | Image UUID                                      |
+| `thumbnail`         | URL of the largest thumbnail PNG                |
+| `vector`            | URL of the vector SVG                           |
+| `raster`            | URL of the largest raster PNG                   |
+| `source_file`       | URL of the original source file                 |
+| `og_image`          | URL of the OG preview image                     |
+| `license`           | License identifier (e.g. `"CC BY 4.0"`)         |
+| `license_url`       | Full license URL                                |
+| `contributor`       | Contributor resource href                       |
+| `attribution`       | Attribution text                                |
+
+Returns an empty DataFrame (with all 12 columns present) if the taxon cannot be found
+in PBDB or PhyloPic, or if no images exist.
+
+## Examples
+
+```julia
+using PaleobiologyDB, PaleobiologyDB.Taxonomy
+
+# All images for the Carnivora clade (~557 rows)
+imgs = list_phylopic_images("Carnivora")
+nrow(imgs)
+imgs.phylopic_raster[1:5]
+
+# Only images tagged directly to the Carnivora node (far fewer)
+imgs_node = list_phylopic_images("Carnivora"; filter = :node)
+
+# Limit to first 2 pages (~60 images) for a quick preview
+imgs_quick = list_phylopic_images("Carnivora"; max_pages = 2)
+
+# Custom prefix
+imgs = list_phylopic_images("Canis", "dog_")
+imgs.dog_uuid
+```
+
+See also [`acquire_phylopic`](@ref) for returning one representative image per taxon.
+"""
+function list_phylopic_images(
+        taxon_name::AbstractString,
+        fieldname_prefix::AbstractString = "phylopic_";
+        filter::Symbol = :clade,
+        max_pages::Union{Int, Nothing} = nothing,
+    )::DataFrame
+    filter in (:clade, :node) ||
+        throw(ArgumentError("list_phylopic_images: `filter` must be :clade or :node, got :$filter"))
+
+    col_names = [Symbol(fieldname_prefix * string(col)) for col in _PHYLOPIC_IMAGE_LIST_COLUMNS]
+    _empty_result() = DataFrame(col_names .=> [Vector{Any}() for _ in _PHYLOPIC_IMAGE_LIST_COLUMNS])
+
+    build = _ensure_phylopic_build()
+
+    # Step 1: PBDB taxon ID
+    orig_no = _pbdb_taxon_orig_no(taxon_name)
+    if isnothing(orig_no)
+        @debug "list_phylopic_images: taxon not found in PBDB" taxon_name
+        return _empty_result()
+    end
+
+    # Step 2: Lineage IDs
+    lineage_nos = _pbdb_lineage_nos(orig_no)
+
+    # Step 3: Resolve PhyloPic node
+    node_uuid = _phylopic_resolve_node(build, lineage_nos)
+    if isnothing(node_uuid)
+        @debug "list_phylopic_images: no PhyloPic node found" taxon_name
+        return _empty_result()
+    end
+
+    filter_param = filter == :clade ? "filter_clade" : "filter_node"
+
+    # Step 4: Fetch page 0 to learn numberOfPages
+    page0 = _phylopic_list_images_page(node_uuid, build, 0, filter_param)
+    if isnothing(page0)
+        @debug "list_phylopic_images: page 0 fetch failed" taxon_name node_uuid
+        return _empty_result()
+    end
+
+    n_pages = try
+        Int(page0.numberOfPages)
+    catch
+        1
+    end
+    if !isnothing(max_pages)
+        n_pages = min(n_pages, max_pages)
+    end
+
+    # Collect records across all pages
+    records = NamedTuple[]
+
+    _collect_page!(page_obj) = begin
+        items = try
+            page_obj._embedded.items
+        catch
+            return
+        end
+        for img in items
+            push!(records, _phylopic_extract_image_list_record(img, taxon_name, node_uuid))
+        end
+    end
+
+    _collect_page!(page0)
+    for page in 1:(n_pages - 1)
+        obj = _phylopic_list_images_page(node_uuid, build, page, filter_param)
+        isnothing(obj) && continue
+        _collect_page!(obj)
+    end
+
+    isempty(records) && return _empty_result()
+
+    # Build DataFrame from collected NamedTuples
+    col_vecs = Vector{Vector{Any}}(undef, length(_PHYLOPIC_IMAGE_LIST_COLUMNS))
+    for (i, base_col) in enumerate(_PHYLOPIC_IMAGE_LIST_COLUMNS)
+        col_vecs[i] = [rec[base_col] for rec in records]
+    end
+    return DataFrame(col_names .=> col_vecs)
 end

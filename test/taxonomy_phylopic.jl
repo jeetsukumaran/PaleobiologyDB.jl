@@ -2,6 +2,7 @@
 # Tests for PaleobiologyDB.Taxonomy PhyloPic integration:
 #   acquire_phylopic (string and DataFrame variants)
 #   augment_phylopic
+#   list_phylopic_images
 #
 # Offline tests bypass network by injecting the build number Ref directly,
 # so _ensure_phylopic_build() is never triggered.
@@ -13,9 +14,11 @@ using DataFrames
 using DataCaches
 using PaleobiologyDB
 
-const _phylopic_acquire        = PaleobiologyDB.Taxonomy.acquire_phylopic
+const _phylopic_acquire              = PaleobiologyDB.Taxonomy.acquire_phylopic
 const _phylopic_augment              = PaleobiologyDB.Taxonomy.augment_phylopic
+const _phylopic_list_images          = PaleobiologyDB.Taxonomy.list_phylopic_images
 const _PHYLOPIC_BASE_COLUMNS         = PaleobiologyDB.Taxonomy._PHYLOPIC_BASE_COLUMNS
+const _PHYLOPIC_IMAGE_LIST_COLUMNS   = PaleobiologyDB.Taxonomy._PHYLOPIC_IMAGE_LIST_COLUMNS
 const _phylopic_null_record_fn       = PaleobiologyDB.Taxonomy._phylopic_null_record
 const _apply_prefix_fn               = PaleobiologyDB.Taxonomy._apply_fieldname_prefix
 const _cc_label_fn                   = PaleobiologyDB.Taxonomy._cc_license_label
@@ -308,5 +311,103 @@ end
         finally
             PaleobiologyDB.set_autocaching!(false, _phylopic_acquire)
         end
+    end
+end
+
+# ---------------------------------------------------------------------------
+# list_phylopic_images — offline / unit tests
+# ---------------------------------------------------------------------------
+
+@testset "list_phylopic_images — offline / unit" begin
+
+    @testset "_PHYLOPIC_IMAGE_LIST_COLUMNS has 12 entries" begin
+        @test length(_PHYLOPIC_IMAGE_LIST_COLUMNS) == 12
+    end
+
+    @testset "_PHYLOPIC_IMAGE_LIST_COLUMNS contains expected keys" begin
+        expected = [
+            :query_taxon_name, :query_node_uuid, :uuid,
+            :thumbnail, :vector, :raster, :source_file, :og_image,
+            :license, :license_url, :contributor, :attribution,
+        ]
+        @test _PHYLOPIC_IMAGE_LIST_COLUMNS == expected
+    end
+
+    @testset "invalid filter keyword throws ArgumentError" begin
+        # The ArgumentError is raised before any network call, so this is
+        # fully offline regardless of the build ref state.
+        @test_throws ArgumentError _phylopic_list_images("Canis"; filter = :bad_value)
+    end
+end
+
+# ---------------------------------------------------------------------------
+# list_phylopic_images — live tests
+# ---------------------------------------------------------------------------
+
+@testset "list_phylopic_images — live" begin
+    if !LIVE
+        @info "Live list_phylopic_images tests skipped. Set ENV[\"PBDB_LIVE\"]=\"1\" to enable."
+        return
+    end
+
+    @testset "Carnivora — clade filter returns many rows" begin
+        imgs = _phylopic_list_images("Carnivora")
+        @test imgs isa DataFrame
+        @test ncol(imgs) == 12
+        @test nrow(imgs) >= 10          # expect hundreds in practice
+        # Every row must have a non-missing UUID
+        @test all(!ismissing, imgs.phylopic_uuid)
+        # query context columns must be consistent
+        @test all(==("Carnivora"), imgs.phylopic_query_taxon_name)
+        @test !ismissing(imgs.phylopic_query_node_uuid[1])
+        @test all(==(imgs.phylopic_query_node_uuid[1]), imgs.phylopic_query_node_uuid)
+    end
+
+    @testset "filter = :node returns fewer rows than filter = :clade" begin
+        clade = _phylopic_list_images("Carnivora"; filter = :clade)
+        node  = _phylopic_list_images("Carnivora"; filter = :node)
+        @test nrow(node) <= nrow(clade)
+    end
+
+    @testset "max_pages = 1 limits results" begin
+        limited = _phylopic_list_images("Carnivora"; max_pages = 1)
+        all_pages = _phylopic_list_images("Carnivora")
+        @test nrow(limited) <= nrow(all_pages)
+        @test nrow(limited) >= 1
+    end
+
+    @testset "image URL columns are non-missing strings" begin
+        imgs = _phylopic_list_images("Canis"; max_pages = 1)
+        @test nrow(imgs) >= 1
+        for row in eachrow(imgs)
+            # raster and thumbnail should be present for well-formed images
+            !ismissing(row.phylopic_raster)    && @test startswith(row.phylopic_raster, "https://")
+            !ismissing(row.phylopic_thumbnail) && @test startswith(row.phylopic_thumbnail, "https://")
+        end
+    end
+
+    @testset "unknown taxon returns empty DataFrame with correct columns" begin
+        result = _phylopic_list_images("ZZZNOMATCH_FAKE_TAXON_XYZ_999")
+        @test result isa DataFrame
+        @test nrow(result) == 0
+        @test ncol(result) == 12
+        for col in _PHYLOPIC_IMAGE_LIST_COLUMNS
+            @test hasproperty(result, Symbol("phylopic_" * string(col)))
+        end
+    end
+
+    @testset "custom prefix produces correctly-named columns on empty result" begin
+        result = _phylopic_list_images("ZZZNOMATCH_FAKE_TAXON_XYZ_999", "x_")
+        @test ncol(result) == 12
+        @test hasproperty(result, :x_uuid)
+        @test hasproperty(result, :x_query_taxon_name)
+        @test !hasproperty(result, :phylopic_uuid)
+    end
+
+    @testset "custom prefix" begin
+        imgs = _phylopic_list_images("Canis", "dog_"; max_pages = 1)
+        @test hasproperty(imgs, :dog_uuid)
+        @test hasproperty(imgs, :dog_query_taxon_name)
+        @test !hasproperty(imgs, :phylopic_uuid)
     end
 end
