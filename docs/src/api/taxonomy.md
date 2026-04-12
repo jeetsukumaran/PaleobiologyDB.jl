@@ -671,10 +671,10 @@ PaleobiologyDB.Taxonomy.acquire_phylopic
 PaleobiologyDB.Taxonomy.augment_phylopic
 ```
 
-### list_phylopic_images — all images for a taxon
+### phylopic_images_dataframe — all images for a taxon
 
 `acquire_phylopic` returns one representative image per taxon — the primary
-image of the best-matching PhyloPic node.  `list_phylopic_images` does the
+image of the best-matching PhyloPic node.  `phylopic_images_dataframe` does the
 opposite: it pages through the PhyloPic `/images` endpoint and returns **every
 image** available for the taxon's clade (or just the node, with `filter = :node`),
 one row per image.
@@ -683,7 +683,7 @@ one row per image.
 using PaleobiologyDB, PaleobiologyDB.Taxonomy
 
 # All images within the Carnivora clade (one row per image, hundreds of rows)
-imgs = list_phylopic_images("Carnivora")
+imgs = phylopic_images_dataframe("Carnivora")
 
 nrow(imgs)                   # total number of PhyloPic images for Carnivora
 ncol(imgs)                   # 12 — see column reference below
@@ -696,18 +696,18 @@ imgs.phylopic_query_taxon_name[1]  # → "Carnivora"
 imgs.phylopic_query_node_uuid[1]   # → PhyloPic node UUID for Carnivora
 
 # Images tagged to exactly the Carnivora node only (no descendants)
-imgs_node = list_phylopic_images("Carnivora"; filter = :node)
+imgs_node = phylopic_images_dataframe("Carnivora"; filter = :node)
 
 # Fetch only the first page (~30 images) for a quick preview
-imgs_quick = list_phylopic_images("Carnivora"; max_pages = 1)
+imgs_quick = phylopic_images_dataframe("Carnivora"; max_pages = 1)
 
 # Custom column prefix
-imgs_dog = list_phylopic_images("Canis", "dog_")
+imgs_dog = phylopic_images_dataframe("Canis", "dog_")
 imgs_dog.dog_uuid
 imgs_dog.dog_raster
 
 # Unknown or unresolvable taxon → empty DataFrame with correct columns
-result = list_phylopic_images("NOT_A_REAL_TAXON_XYZ")
+result = phylopic_images_dataframe("NOT_A_REAL_TAXON_XYZ")
 nrow(result)   # → 0
 ncol(result)   # → 12
 ```
@@ -731,16 +731,16 @@ With the default prefix `"phylopic_"`:
 | `contributor`        | `phylopic_contributor`           | Contributor resource href                       |
 | `attribution`        | `phylopic_attribution`           | Attribution text                                |
 
-#### Choosing between acquire_phylopic and list_phylopic_images
+#### Choosing between acquire_phylopic and phylopic_images_dataframe
 
 | Need | Function |
 |------|---------|
 | One silhouette per taxon for a plot or DataFrame column | `acquire_phylopic` / `augment_phylopic` |
-| Browse or enumerate all images for a taxon (image gallery, selection UI) | `list_phylopic_images` |
-| Download all raster files for a clade for offline use | `list_phylopic_images` + `Downloads.download` |
+| Browse or enumerate all images for a taxon (image gallery, selection UI) | `phylopic_images_dataframe` |
+| Download all raster files for a clade for offline use | `phylopic_images_dataframe` + `Downloads.download` |
 
 ```@docs
-PaleobiologyDB.Taxonomy.list_phylopic_images
+PaleobiologyDB.Taxonomy.phylopic_images_dataframe
 ```
 
 ## Local data store management

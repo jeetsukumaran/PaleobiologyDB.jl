@@ -137,7 +137,7 @@ silhouette images.
 |----------|---------|---------|
 | `acquire_phylopic` | `NamedTuple` or `DataFrame` | One representative image per taxon |
 | `augment_phylopic` | `DataFrame` | Enrich an occurrences DataFrame in one call |
-| `list_phylopic_images` | `DataFrame` | All available images for a taxon (or clade) |
+| `phylopic_images_dataframe` | `DataFrame` | All available images for a taxon (or clade) |
 
 ```julia
 using PaleobiologyDB, PaleobiologyDB.Taxonomy
@@ -170,23 +170,23 @@ full.sp_phylopic_thumbnail
 
 # ── All available images for a taxon ──────────────────────────────────────
 
-# list_phylopic_images returns every image for the taxon's clade (one row per image)
-imgs = list_phylopic_images("Carnivora")
+# phylopic_images_dataframe returns every image for the taxon's clade (one row per image)
+imgs = phylopic_images_dataframe("Carnivora")
 nrow(imgs)                    # → hundreds (all images within Carnivora)
 imgs.phylopic_uuid[1:5]       # image UUIDs
 imgs.phylopic_raster[1:5]     # raster PNG URLs
 imgs.phylopic_thumbnail[1:5]  # thumbnail PNG URLs
 
 # Restrict to images tagged to exactly the Carnivora node (far fewer)
-imgs_node = list_phylopic_images("Carnivora"; filter = :node)
+imgs_node = phylopic_images_dataframe("Carnivora"; filter = :node)
 
 # Page limit — first ~30 images only
-imgs_quick = list_phylopic_images("Carnivora"; max_pages = 1)
+imgs_quick = phylopic_images_dataframe("Carnivora"; max_pages = 1)
 ```
 
 Each unique taxon name triggers one set of API calls; repeated names reuse the
 in-call result.  Unresolvable names return `missing` in every field (`acquire_phylopic`)
-or an empty DataFrame (`list_phylopic_images`) rather than raising an error.
+or an empty DataFrame (`phylopic_images_dataframe`) rather than raising an error.
 Enable `set_autocaching!` to persist results to disk across sessions:
 
 ```julia
@@ -359,7 +359,7 @@ fig = phylopic_thumbnail_grid(
 * Opinions: `pbdb_opinion`, `pbdb_opinions`
 * Counts: `pbdb_count`
 * Taxonomy (submodule): `drop_unqualified_taxa`, `drop_unresolved_taxa`, `drop_unrecognized_taxa`, `augment_taxonomy`, `child_taxa`, `parent_taxa`, `registered_taxa`, `taxon_occursin`, `contains_taxon`, `taxon_subtree`, `root_taxon`, `leaf_taxa`, `taxa_at_rank`
-* PhyloPic (submodule): `acquire_phylopic`, `augment_phylopic`, `list_phylopic_images`
+* PhyloPic (submodule): `acquire_phylopic`, `augment_phylopic`, `phylopic_images_dataframe`
 * PhyloPicMakie (extension): `augment_phylopic!`, `augment_phylopic`, `augment_phylopic_ranges!`, `augment_phylopic_ranges`, `phylopic_thumbnail_grid!`, `phylopic_thumbnail_grid`
 * TaxonTreeMakie (extension): `taxontreeplot`, `taxontreeplot!`, `TaxonTreePlot`, `set_rank_axis_ticks!`
 

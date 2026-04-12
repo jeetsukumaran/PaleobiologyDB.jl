@@ -18,13 +18,13 @@
 #   acquire_phylopic(taxon_name, prefix; image_selector)            → NamedTuple
 #   acquire_phylopic(df, taxon_field, prefix; image_selector)       → DataFrame
 #   augment_phylopic(df, taxon_field, prefix)                       → DataFrame
-#   list_phylopic_images(taxon_name, prefix; filter, max_pages)     → DataFrame
+#   phylopic_images_dataframe(taxon_name, prefix; filter, max_pages)     → DataFrame
 # ---------------------------------------------------------------------------
 
 import PhyloPicDB
 import DataCaches: autocache
 
-export acquire_phylopic, augment_phylopic, list_phylopic_images
+export acquire_phylopic, augment_phylopic, phylopic_images_dataframe
 export phylopic_node, phylopic_images
 
 # ---------------------------------------------------------------------------
@@ -55,7 +55,7 @@ const _PHYLOPIC_BASE_COLUMNS = [
 ]
 
 """
-Base column keys for `list_phylopic_images` results (without any prefix).
+Base column keys for `phylopic_images_dataframe` results (without any prefix).
 
 Each row represents one image, not one taxon.
 """
@@ -192,7 +192,7 @@ end
 
 Return all PhyloPic images for a PBDB taxon as a typed vector.
 
-Typed companion to [`list_phylopic_images`](@ref): returns the same images as a
+Typed companion to [`phylopic_images_dataframe`](@ref): returns the same images as a
 `Vector{PhyloPicDB.PhyloPicImage}` rather than a `DataFrame`, making it easy to
 pass the result directly to [`PhyloPicDB.select_image`](@ref).
 
@@ -216,7 +216,7 @@ imgs = phylopic_images("Carnivora"; max_pages = 2)
 chosen = PhyloPicDB.select_image(imgs, 3)
 ```
 
-See also [`list_phylopic_images`](@ref), [`phylopic_node`](@ref).
+See also [`phylopic_images_dataframe`](@ref), [`phylopic_node`](@ref).
 """
 function phylopic_images(
     taxon_name::AbstractString;
@@ -266,7 +266,7 @@ function _image_to_record(
     )
 end
 
-# Convert a PhyloPicImage to the 12-column NamedTuple used by list_phylopic_images.
+# Convert a PhyloPicImage to the 12-column NamedTuple used by phylopic_images_dataframe.
 function _image_list_row(
     img::PhyloPicDB.PhyloPicImage,
     query_taxon_name::AbstractString,
@@ -517,7 +517,7 @@ function augment_phylopic(
 end
 
 """
-    list_phylopic_images(taxon_name, fieldname_prefix = "phylopic_";
+    phylopic_images_dataframe(taxon_name, fieldname_prefix = "phylopic_";
                          filter = :clade, max_pages = nothing) -> DataFrame
 
 Return a DataFrame of all PhyloPic images for a taxon, one row per image.
@@ -542,20 +542,20 @@ be resolved or has no images.
 ## Examples
 
 ```julia
-imgs = list_phylopic_images("Carnivora")
+imgs = phylopic_images_dataframe("Carnivora")
 imgs.phylopic_thumbnail[1:5]
 
-imgs_node = list_phylopic_images("Carnivora"; filter = :node)
-imgs_quick = list_phylopic_images("Carnivora"; max_pages = 2)
+imgs_node = phylopic_images_dataframe("Carnivora"; filter = :node)
+imgs_quick = phylopic_images_dataframe("Carnivora"; max_pages = 2)
 
 # Custom prefix
-imgs = list_phylopic_images("Canis", "dog_")
+imgs = phylopic_images_dataframe("Canis", "dog_")
 imgs.dog_uuid
 ```
 
 See also [`acquire_phylopic`](@ref), [`phylopic_images`](@ref).
 """
-function list_phylopic_images(
+function phylopic_images_dataframe(
     taxon_name::AbstractString,
     fieldname_prefix::AbstractString = "phylopic_";
     filter::Symbol = :clade,
@@ -563,7 +563,7 @@ function list_phylopic_images(
 )::DataFrame
     filter in (:clade, :node) ||
         throw(ArgumentError(
-            "list_phylopic_images: `filter` must be :clade or :node, got :$filter",
+            "phylopic_images_dataframe: `filter` must be :clade or :node, got :$filter",
         ))
 
     col_names = [Symbol(fieldname_prefix * string(col)) for col in _PHYLOPIC_IMAGE_LIST_COLUMNS]

@@ -12,4 +12,5 @@ PaleobiologyDB = "c9cb2f45-518b-476d-9b58-4dd79871b05b"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [sources]
+DataCaches = {url = "https://github.com/JuliaData/DataCaches.jl.git"}
 PaleobiologyDB = {path = ".."}

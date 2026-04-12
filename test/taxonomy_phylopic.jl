@@ -2,7 +2,7 @@
 # Tests for PaleobiologyDB.Taxonomy PhyloPic integration:
 #   acquire_phylopic (string and DataFrame variants)
 #   augment_phylopic
-#   list_phylopic_images
+#   phylopic_images_dataframe
 #
 # Offline tests bypass network by injecting the build number Ref directly,
 # so _ensure_phylopic_build() is never triggered.
@@ -16,7 +16,7 @@ using PaleobiologyDB
 
 const _phylopic_acquire              = PaleobiologyDB.Taxonomy.acquire_phylopic
 const _phylopic_augment              = PaleobiologyDB.Taxonomy.augment_phylopic
-const _phylopic_list_images          = PaleobiologyDB.Taxonomy.list_phylopic_images
+const _phylopic_list_images          = PaleobiologyDB.Taxonomy.phylopic_images_dataframe
 const _PHYLOPIC_BASE_COLUMNS         = PaleobiologyDB.Taxonomy._PHYLOPIC_BASE_COLUMNS
 const _PHYLOPIC_IMAGE_LIST_COLUMNS   = PaleobiologyDB.Taxonomy._PHYLOPIC_IMAGE_LIST_COLUMNS
 const _phylopic_null_record_fn       = PaleobiologyDB.Taxonomy._phylopic_null_record
@@ -315,10 +315,10 @@ end
 end
 
 # ---------------------------------------------------------------------------
-# list_phylopic_images — offline / unit tests
+# phylopic_images_dataframe — offline / unit tests
 # ---------------------------------------------------------------------------
 
-@testset "list_phylopic_images — offline / unit" begin
+@testset "phylopic_images_dataframe — offline / unit" begin
 
     @testset "_PHYLOPIC_IMAGE_LIST_COLUMNS has 12 entries" begin
         @test length(_PHYLOPIC_IMAGE_LIST_COLUMNS) == 12
@@ -341,12 +341,12 @@ end
 end
 
 # ---------------------------------------------------------------------------
-# list_phylopic_images — live tests
+# phylopic_images_dataframe — live tests
 # ---------------------------------------------------------------------------
 
-@testset "list_phylopic_images — live" begin
+@testset "phylopic_images_dataframe — live" begin
     if !LIVE
-        @info "Live list_phylopic_images tests skipped. Set ENV[\"PBDB_LIVE\"]=\"1\" to enable."
+        @info "Live phylopic_images_dataframe tests skipped. Set ENV[\"PBDB_LIVE\"]=\"1\" to enable."
         return
     end
 

@@ -1,12 +1,12 @@
 # test/taxonomy_phylopic_images.jl
-# Tests for phylopic_node, phylopic_images, and list_phylopic_images.
+# Tests for phylopic_node, phylopic_images, and phylopic_images_dataframe.
 #
 # Offline: structural / type tests; invalid filter argument error.
 # Live:    real PBDB + PhyloPic round-trips.
 
 const _phylopic_node         = PaleobiologyDB.Taxonomy.phylopic_node
 const _phylopic_images       = PaleobiologyDB.Taxonomy.phylopic_images
-const _phylopic_list_images  = PaleobiologyDB.Taxonomy.list_phylopic_images
+const _phylopic_list_images  = PaleobiologyDB.Taxonomy.phylopic_images_dataframe
 const _PHYLOPIC_IMG_COLS     = PaleobiologyDB.Taxonomy._PHYLOPIC_IMAGE_LIST_COLUMNS
 
 # ---------------------------------------------------------------------------
@@ -28,7 +28,7 @@ const _PHYLOPIC_IMG_COLS     = PaleobiologyDB.Taxonomy._PHYLOPIC_IMAGE_LIST_COLU
         @test _PHYLOPIC_IMG_COLS == expected
     end
 
-    @testset "list_phylopic_images — invalid filter keyword throws ArgumentError" begin
+    @testset "phylopic_images_dataframe — invalid filter keyword throws ArgumentError" begin
         # ArgumentError raised before any network call.
         @test_throws ArgumentError _phylopic_list_images("Canis"; filter = :bad_value)
     end
@@ -98,7 +98,7 @@ end
         @test imgs isa Vector{PhyloPicDB.PhyloPicImage}
     end
 
-    @testset "list_phylopic_images — Carnivora clade returns many rows" begin
+    @testset "phylopic_images_dataframe — Carnivora clade returns many rows" begin
         imgs = _phylopic_list_images("Carnivora")
         @test imgs isa DataFrame
         @test ncol(imgs) == 12
@@ -109,20 +109,20 @@ end
         @test all(==(imgs.phylopic_query_node_uuid[1]), imgs.phylopic_query_node_uuid)
     end
 
-    @testset "list_phylopic_images — filter = :node returns fewer rows than :clade" begin
+    @testset "phylopic_images_dataframe — filter = :node returns fewer rows than :clade" begin
         clade = _phylopic_list_images("Carnivora"; filter = :clade)
         node  = _phylopic_list_images("Carnivora"; filter = :node)
         @test nrow(node) <= nrow(clade)
     end
 
-    @testset "list_phylopic_images — max_pages = 1 limits results" begin
+    @testset "phylopic_images_dataframe — max_pages = 1 limits results" begin
         limited   = _phylopic_list_images("Carnivora"; max_pages = 1)
         all_pages = _phylopic_list_images("Carnivora")
         @test nrow(limited) <= nrow(all_pages)
         @test nrow(limited) >= 1
     end
 
-    @testset "list_phylopic_images — URL columns are valid https strings" begin
+    @testset "phylopic_images_dataframe — URL columns are valid https strings" begin
         imgs = _phylopic_list_images("Canis"; max_pages = 1)
         @test nrow(imgs) >= 1
         for row in eachrow(imgs)
@@ -131,7 +131,7 @@ end
         end
     end
 
-    @testset "list_phylopic_images — unknown taxon returns empty DataFrame with correct columns" begin
+    @testset "phylopic_images_dataframe — unknown taxon returns empty DataFrame with correct columns" begin
         result = _phylopic_list_images("ZZZNOMATCH_FAKE_TAXON_XYZ_999")
         @test result isa DataFrame
         @test nrow(result) == 0
@@ -141,7 +141,7 @@ end
         end
     end
 
-    @testset "list_phylopic_images — custom prefix on empty result" begin
+    @testset "phylopic_images_dataframe — custom prefix on empty result" begin
         result = _phylopic_list_images("ZZZNOMATCH_FAKE_TAXON_XYZ_999", "x_")
         @test ncol(result) == 12
         @test  hasproperty(result, :x_uuid)
@@ -149,7 +149,7 @@ end
         @test !hasproperty(result, :phylopic_uuid)
     end
 
-    @testset "list_phylopic_images — custom prefix" begin
+    @testset "phylopic_images_dataframe — custom prefix" begin
         imgs = _phylopic_list_images("Canis", "dog_"; max_pages = 1)
         @test  hasproperty(imgs, :dog_uuid)
         @test  hasproperty(imgs, :dog_query_taxon_name)
