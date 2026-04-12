@@ -130,14 +130,19 @@ subset(df2, :taxonomy_genus    => taxon_occursin(["Canis", "Vulpes"]; combine=an
 
 ### PhyloPic silhouette images
 
-The `acquire_phylopic` and `augment_phylopic` functions map PBDB taxon names to
-[PhyloPic](https://www.phylopic.org/) silhouette images via the PhyloPic
-`/resolve/paleobiodb.org/txn` API endpoint.
+Three functions map PBDB taxon names to [PhyloPic](https://www.phylopic.org/)
+silhouette images.
+
+| Function | Returns | Use when |
+|----------|---------|---------|
+| `acquire_phylopic` | `NamedTuple` or `DataFrame` | One representative image per taxon |
+| `augment_phylopic` | `DataFrame` | Enrich an occurrences DataFrame in one call |
+| `list_phylopic_images` | `DataFrame` | All available images for a taxon (or clade) |
 
 ```julia
 using PaleobiologyDB, PaleobiologyDB.Taxonomy
 
-# ── Single taxon ───────────────────────────────────────────────────────────
+# ── Single taxon — one representative image ────────────────────────────────
 
 rec = acquire_phylopic("Tyrannosaurus")
 rec.phylopic_thumbnail   # → "https://images.phylopic.org/images/.../thumbnail/…"
@@ -145,7 +150,7 @@ rec.phylopic_vector      # → SVG URL
 rec.phylopic_license     # → "CC BY 4.0"
 rec.phylopic_attribution # → "Matt Martyniuk"
 
-# ── DataFrame: phylopic columns only (same row count) ─────────────────────
+# ── DataFrame: one phylopic row per occurrence row ─────────────────────────
 
 df   = pbdb_occurrences(base_name = "Ceratopsia", interval = "Cretaceous", show = "full")
 pics = acquire_phylopic(df)                # 14 phylopic columns, nrow(df) rows
@@ -157,19 +162,32 @@ enriched = augment_phylopic(df)            # all original columns + 14 phylopic 
 
 # ── Multi-level enrichment with custom prefixes ────────────────────────────
 
-# Different images at genus vs. species level
 genus_pics = acquire_phylopic(df, :genus,         "genus_phylopic_")
 sp_pics    = acquire_phylopic(df, :accepted_name, "sp_phylopic_")
 full       = hcat(df, genus_pics, sp_pics)
 full.genus_phylopic_thumbnail
 full.sp_phylopic_thumbnail
+
+# ── All available images for a taxon ──────────────────────────────────────
+
+# list_phylopic_images returns every image for the taxon's clade (one row per image)
+imgs = list_phylopic_images("Carnivora")
+nrow(imgs)                    # → hundreds (all images within Carnivora)
+imgs.phylopic_uuid[1:5]       # image UUIDs
+imgs.phylopic_raster[1:5]     # raster PNG URLs
+imgs.phylopic_thumbnail[1:5]  # thumbnail PNG URLs
+
+# Restrict to images tagged to exactly the Carnivora node (far fewer)
+imgs_node = list_phylopic_images("Carnivora"; filter = :node)
+
+# Page limit — first ~30 images only
+imgs_quick = list_phylopic_images("Carnivora"; max_pages = 1)
 ```
 
 Each unique taxon name triggers one set of API calls; repeated names reuse the
-in-call result.  Unresolvable names return `missing` in every field rather than
-raising an error.  Enable `set_autocaching!` to persist results to disk across
-sessions — the cache is keyed per taxon name, so two DataFrames sharing the same
-taxa produce zero redundant network requests:
+in-call result.  Unresolvable names return `missing` in every field (`acquire_phylopic`)
+or an empty DataFrame (`list_phylopic_images`) rather than raising an error.
+Enable `set_autocaching!` to persist results to disk across sessions:
 
 ```julia
 PaleobiologyDB.set_autocaching!(true, acquire_phylopic)
@@ -341,7 +359,7 @@ fig = phylopic_thumbnail_grid(
 * Opinions: `pbdb_opinion`, `pbdb_opinions`
 * Counts: `pbdb_count`
 * Taxonomy (submodule): `drop_unqualified_taxa`, `drop_unresolved_taxa`, `drop_unrecognized_taxa`, `augment_taxonomy`, `child_taxa`, `parent_taxa`, `registered_taxa`, `taxon_occursin`, `contains_taxon`, `taxon_subtree`, `root_taxon`, `leaf_taxa`, `taxa_at_rank`
-* PhyloPic (submodule): `acquire_phylopic`, `augment_phylopic`
+* PhyloPic (submodule): `acquire_phylopic`, `augment_phylopic`, `list_phylopic_images`
 * PhyloPicMakie (extension): `augment_phylopic!`, `augment_phylopic`, `augment_phylopic_ranges!`, `augment_phylopic_ranges`, `phylopic_thumbnail_grid!`, `phylopic_thumbnail_grid`
 * TaxonTreeMakie (extension): `taxontreeplot`, `taxontreeplot!`, `TaxonTreePlot`, `set_rank_axis_ticks!`
 
