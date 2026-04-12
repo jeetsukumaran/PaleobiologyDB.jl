@@ -343,15 +343,10 @@ end  # range table API
 
 
 @testset "PhyloPicMakie — thumbnail grid" begin
-    @testset "bang variant adds one image per taxon and labels" begin
-        taxa = ["Tyrannosaurus", "Triceratops", "Ankylosaurus", "Edmontosaurus"]
-        fig = Figure(); ax = Axis(fig[1, 1])
-        n0 = length(ax.scene.plots)
-        phylopic_thumbnail_grid!(ax, taxa; glyph_fraction = 0.5, ncols = 2, on_missing = :placeholder)
-        @test _count_images(ax) == 4
-        @test length(ax.scene.plots) ≥ n0 + 8
-    end
 
+    # These three tests are safe without network: empty/whitespace names are
+    # skipped by _resolve_images before acquire_phylopic is called, and the
+    # invalid-fraction test throws ArgumentError before _resolve_images runs.
     @testset "placeholder mode draws plot objects for missing thumbnails" begin
         fig = Figure(); ax = Axis(fig[1, 1])
         n0 = length(ax.scene.plots)
@@ -365,15 +360,29 @@ end  # range table API
         @test_throws ErrorException phylopic_thumbnail_grid!(ax, [""]; on_missing = :error)
     end
 
-    @testset "non-bang constructor returns a figure" begin
-        fig = phylopic_thumbnail_grid(["Tyrannosaurus", "Triceratops", "Ankylosaurus"]; ncols = 2)
-        @test fig isa Figure
-    end
-
     @testset "invalid glyph fraction throws" begin
         fig = Figure(); ax = Axis(fig[1, 1])
         @test_throws ArgumentError phylopic_thumbnail_grid!(ax, ["Tyrannosaurus"]; glyph_fraction = 1.0)
     end
+
+    if !LIVE
+        @info "Live thumbnail grid tests skipped. Set ENV[\"PBDB_LIVE\"]=\"1\" to enable."
+    else
+        @testset "bang variant adds one image per taxon and labels" begin
+            taxa = ["Tyrannosaurus", "Triceratops", "Ankylosaurus", "Edmontosaurus"]
+            fig = Figure(); ax = Axis(fig[1, 1])
+            n0 = length(ax.scene.plots)
+            phylopic_thumbnail_grid!(ax, taxa; glyph_fraction = 0.5, ncols = 2, on_missing = :placeholder)
+            @test _count_images(ax) == 4
+            @test length(ax.scene.plots) ≥ n0 + 8
+        end
+
+        @testset "non-bang constructor returns a figure" begin
+            fig = phylopic_thumbnail_grid(["Tyrannosaurus", "Triceratops", "Ankylosaurus"]; ncols = 2)
+            @test fig isa Figure
+        end
+    end
+
 end
 
 end  # if _EXT_AVAILABLE
