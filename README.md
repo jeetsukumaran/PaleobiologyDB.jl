@@ -262,11 +262,66 @@ Key attributes for `taxontreeplot` / `taxontreeplot!`:
 | Attribute | Default | Description |
 |---|---|---|
 | `showtips` | `true` | Show leaf taxon-name labels |
-| `color_by_rank` | `false` | Color branches and nodes by rank |
-| `ladderize` | `false` | Sort children by subtree size |
+| `tip_fontsize` | `9` | Leaf label font size (pts) |
+| `tip_xoffset` | `0.2` | Rightward offset for leaf labels in data units |
+| `color_by_rank` | `false` | Color branches and nodes by taxonomic rank |
+| `rank_palette` | `nothing` | `Dict{String,Any}` mapping rank → color; `nothing` uses built-in cycle |
+| `ladderize` | `false` | Sort children by subtree size (denser subtrees at bottom) |
 | `showinternal` | `false` | Show internal node labels |
-| `branch_color` | `:black` | Branch line color |
+| `branch_color` | `:black` | Branch line color (when `color_by_rank = false`) |
+| `branch_linewidth` | `1.5` | Branch line width (pts) |
 | `node_size` | `5` | Node marker size (pts) |
+| `show_nodes` | `true` | Draw a marker at every vertex |
+| `show_unifurcation_nodes` | `true` | When `false`, suppress markers at single-child nodes |
+| `show_phylopic` | `false` | Draw a PhyloPic silhouette at each leaf tip (requires `FileIO`) |
+| `phylopic_glyph_size` | `0.4` | Half-height of each silhouette glyph in data units |
+| `phylopic_align` | `false` | `true` → single right-hand column for all glyphs |
+| `phylopic_xoffset` | `0.3` | Extra rightward gap beyond the tip-label start (data units) |
+| `phylopic_on_missing` | `:skip` | `:skip` (omit) / `:placeholder` (grey box) / `:error` |
+| `phylopic_aspect` | `:preserve` | `:preserve` keeps original aspect ratio; `:stretch` renders square |
+| `phylopic_image_rendering` | `:thumbnail` | Image URL type: `:thumbnail` / `:raster` / `:og_image` / `:vector` / `:source_file` |
+
+### PhyloPic silhouettes on a tree
+
+PhyloPic silhouettes at leaf tips require `FileIO` and a PNG plugin in addition
+to a Makie backend:
+
+```
+pkg> add FileIO PNGFiles
+```
+
+```julia
+using PaleobiologyDB, PaleobiologyDB.Taxonomy
+using CairoMakie, FileIO
+using PaleobiologyDB.TaxonTreeMakie
+
+tree = taxon_subtree("Carnivora"; leaf_rank = "family")
+
+# Default: one thumbnail per leaf, placed immediately right of each label
+fig, ax, p = taxontreeplot(tree;
+    showtips      = true,
+    show_phylopic = true,
+)
+save("carnivora_phylopic.png", fig)
+
+# Aligned column: all silhouettes share one right-hand x position;
+# use :placeholder so a grey box appears when no image exists for a taxon
+fig2, ax2, p2 = taxontreeplot(tree;
+    showtips             = true,
+    show_phylopic        = true,
+    phylopic_align       = true,
+    phylopic_glyph_size  = 0.35,
+    phylopic_xoffset     = 0.5,
+    phylopic_on_missing  = :placeholder,
+)
+
+# Full-resolution PNG instead of thumbnail
+fig3, ax3, p3 = taxontreeplot(tree;
+    showtips                 = true,
+    show_phylopic            = true,
+    phylopic_image_rendering = :raster,
+)
+```
 
 See the [TaxonTreeMakie guide](https://jeetsukumaran.github.io/PaleobiologyDB.jl/dev/guide/taxontree_makie/) for the full attribute reference and worked examples.
 
@@ -323,13 +378,50 @@ for full documentation.
 ### PhyloPic thumbnail gallery
 
 ```julia
-# Thumbnail gallery with bounded-width automatic layout
-fig = phylopic_thumbnail_grid(
-    ["Tyrannosaurus", "Triceratops", "Ankylosaurus",
-     "Pachycephalosaurus", "Edmontosaurus", "Maiasaura"];
-    ncols = 3,
-    label_fontsize = 18,
-    title = "Latest Cretaceous thumbnail gallery",
+taxa = ["Tyrannosaurus", "Triceratops", "Ankylosaurus",
+        "Pachycephalosaurus", "Edmontosaurus", "Maiasaura",
+        "Spinosaurus", "Brachiosaurus", "Stegosaurus"]
+
+# ── Minimal: 3-column grid, default thumbnails ────────────────────────────────
+fig = phylopic_thumbnail_grid(taxa; ncols = 3)
+
+# ── Primary image only — one image per taxon, fastest ─────────────────────────
+fig2 = phylopic_thumbnail_grid(taxa;
+    ncols        = 3,
+    image_filter = :primary,           # :primary | :clade (default) | :node
+)
+
+# ── All clade images, one block per taxon, page-limited ───────────────────────
+fig3 = phylopic_thumbnail_grid(taxa;
+    ncols           = 3,
+    image_filter    = :clade,
+    image_layout    = :blocks,         # :blocks (default) | :flat | :rows
+    image_max_pages = 1,               # ≈ 30 images per page
+)
+
+# ── Richer label: index + node name + taxon name ──────────────────────────────
+fig4 = phylopic_thumbnail_grid(taxa;
+    ncols       = 3,
+    image_label = :BASICFIELDS,        # :BASICFIELDS (default) | :ALLFIELDS | [:node_name, :license] | nothing
+)
+
+# ── High-resolution PNG instead of thumbnail ──────────────────────────────────
+# image_rendering: :thumbnail (default) | :raster | :og_image | :vector | :source_file
+# Note: :vector and :source_file may be SVG and require an SVG-capable FileIO plugin.
+fig5 = phylopic_thumbnail_grid(taxa;
+    ncols            = 3,
+    image_rendering  = :raster,
+    label_fontsize   = 14,
+)
+
+# ── Custom layout and title ───────────────────────────────────────────────────
+fig6 = phylopic_thumbnail_grid(taxa;
+    ncols          = 3,
+    cell_width     = 1.2,
+    cell_height    = 1.8,
+    glyph_fraction = 0.65,
+    label_fontsize = 12,
+    title          = "Late Cretaceous taxa",
 )
 ```
 
