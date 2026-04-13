@@ -129,10 +129,17 @@ end
         nrows::Integer;
         cell_width::Real,
         cell_height::Real,
+        glyph_y_in_row::Real = Float64(cell_height) / 2.0,
     ) -> Vector{Tuple{Float64, Float64}}
 
-Return the `(x, y)` centre coordinates for `n` thumbnail cells laid out in a
-row-major grid.
+Return the `(x, y)` glyph-centre coordinates for `n` thumbnail cells laid out
+in a row-major grid.
+
+`cell_height` controls the row spacing (distance between row baselines).
+`glyph_y_in_row` is the distance from a row's bottom edge to the glyph centre;
+it defaults to `cell_height / 2` (centred glyph).  Pass a larger value (e.g.
+`eff_cell_height - 0.5 * nominal_cell_height`) to push the glyph toward the top
+of an expanded row, keeping label space below.
 """
 function _thumbnail_grid_positions(
     n::Integer,
@@ -140,13 +147,14 @@ function _thumbnail_grid_positions(
     nrows::Integer;
     cell_width::Real,
     cell_height::Real,
+    glyph_y_in_row::Real = Float64(cell_height) / 2.0,
 )::Vector{Tuple{Float64, Float64}}
     positions = Vector{Tuple{Float64, Float64}}(undef, n)
     for i in 1:n
         row_index = cld(i, ncols)
         col_index = ((i - 1) % ncols) + 1
         x = (Float64(col_index) - 0.5) * Float64(cell_width)
-        y = (Float64(nrows - row_index) + 0.5) * Float64(cell_height)
+        y = Float64(nrows - row_index) * Float64(cell_height) + Float64(glyph_y_in_row)
         positions[i] = (x, y)
     end
     return positions
@@ -353,6 +361,7 @@ function _rows_grid_positions(
     group_sizes::AbstractVector{<:Integer};
     cell_width::Real,
     cell_height::Real,
+    glyph_y_in_row::Real = Float64(cell_height) / 2.0,
 )::Tuple{Vector{Tuple{Float64, Float64}}, Int, Int}
     non_empty  = [g for g in group_sizes if g > 0]
     total_rows = length(non_empty)
@@ -363,7 +372,7 @@ function _rows_grid_positions(
         g == 0 && continue
         for j in 1:g
             x = (Float64(j) - 0.5) * Float64(cell_width)
-            y = (Float64(total_rows - 1 - row_idx) + 0.5) * Float64(cell_height)
+            y = Float64(total_rows - 1 - row_idx) * Float64(cell_height) + Float64(glyph_y_in_row)
             push!(positions, (x, y))
         end
         row_idx += 1
@@ -586,6 +595,7 @@ function _grouped_grid_positions(
     ncols::Integer;
     cell_width::Real,
     cell_height::Real,
+    glyph_y_in_row::Real = Float64(cell_height) / 2.0,
 )::Vector{Tuple{Float64, Float64}}
     total_rows = _grouped_grid_total_rows(group_sizes, ncols)
     positions  = Tuple{Float64, Float64}[]
@@ -597,7 +607,7 @@ function _grouped_grid_positions(
             col_idx   = ((j - 1) % ncols) + 1
             global_r  = row_offset + group_row
             x = (Float64(col_idx) - 0.5) * Float64(cell_width)
-            y = (Float64(total_rows - 1 - global_r) + 0.5) * Float64(cell_height)
+            y = Float64(total_rows - 1 - global_r) * Float64(cell_height) + Float64(glyph_y_in_row)
             push!(positions, (x, y))
         end
         row_offset += cld(g, ncols)
@@ -624,7 +634,7 @@ end
         image_selector = nothing,
         image_max_pages::Union{Int, Nothing} = nothing,
         image_layout::Symbol = :blocks,
-        image_label = nothing,
+        image_label = :DEFAULT,
         labeljoin::AbstractString = "\n",
         label_lines::Union{Int, Nothing} = nothing,
     ) -> Nothing
@@ -681,8 +691,8 @@ the same behaviour as before this feature was added.
     left to right with no wrapping; grid width equals the largest group size.
   - `:flat` — single row-major grid ignoring taxon boundaries.
 - `image_label`: Controls the per-cell caption.  Accepts:
-  - `nothing` (default) — `"taxon"` for single-image groups, `"taxon [k]"` for multi.
-  - `:DEFAULT` — `"[k] taxon"` regardless of group size.
+  - `:DEFAULT` (default) — `"[k] taxon"` regardless of group size.
+  - `nothing` — `"taxon"` for single-image groups, `"taxon [k]"` for multi.
   - `:ALLFIELDS` — all fields in [`ALLFIELDS_IMAGE_LABEL`](@ref) joined with `labeljoin`; `missing`/empty omitted.
   - `:BASICFIELDS` — `:name`, `:index`, `:uuid` joined with `labeljoin`.
   - Any single field symbol from [`ALLFIELDS_IMAGE_LABEL`](@ref) — that field, falling back to the default label if `missing`/`nothing`.
@@ -724,7 +734,7 @@ function phylopic_thumbnail_grid!(
     image_selector = nothing,
     image_max_pages::Union{Int, Nothing} = nothing,
     image_layout::Symbol = :blocks,
-    image_label = nothing,
+    image_label = :DEFAULT,
     labeljoin::AbstractString = "\n",
     label_lines::Union{Int, Nothing} = nothing,
 )::Nothing
@@ -767,32 +777,36 @@ function phylopic_thumbnail_grid!(
 
     # Compute effective cell height to accommodate multi-line labels.
     # slls = data-unit height allocated to one label line by the default geometry:
-    #   slls = 0.5 * cell_height - glyph_half - label_gap
-    #        = cell_height * (1 - glyph_fraction) / 2 - label_gap
-    # For N lines: eff_cell_height = cell_height + 2 * (N - 1) * slls
+    #   slls = 0.5 * cell_height * (1 - glyph_fraction) - label_gap
+    # For N label lines the cell needs to be taller by (N-1)*slls so that all
+    # lines fit below the glyph.  The glyph is shifted to the top of the expanded
+    # cell (glyph_y_in_row = eff_cell_height - 0.5*cell_height), keeping the same
+    # headroom above the glyph as in the standard layout.
     auto_lines = isempty(cell_labels) ? 1 :
         maximum(count('\n', lbl) + 1 for lbl in cell_labels)
     n_label_lines   = isnothing(label_lines) ? auto_lines : max(1, Int(label_lines))
     slls            = Float64(cell_height) * (1.0 - Float64(glyph_fraction)) / 2.0 -
                       Float64(label_gap)
     eff_cell_height = Float64(cell_height) +
-                      2.0 * Float64(n_label_lines - 1) * max(0.0, slls)
+                      Float64(n_label_lines - 1) * max(0.0, slls)
+    # Distance from a row's bottom edge to the glyph centre (top-biased placement).
+    glyph_y_in_row  = eff_cell_height - 0.5 * Float64(cell_height)
 
     # Compute cell positions and grid dimensions according to layout.
     local positions::Vector{Tuple{Float64, Float64}}
     cols, rows = if image_layout === :flat
         c, r = _infer_thumbnail_grid_shape(total_cells; ncols = ncols, nrows = nrows)
         positions = _thumbnail_grid_positions(total_cells, c, r;
-            cell_width = cell_width, cell_height = eff_cell_height)
+            cell_width, cell_height = eff_cell_height, glyph_y_in_row)
         c, r
     elseif image_layout === :blocks
         bc = isnothing(ncols) ? DEFAULT_THUMBNAIL_GRID_MAX_COLUMNS : Int(ncols)
         positions = _grouped_grid_positions(group_sizes, bc;
-            cell_width = cell_width, cell_height = eff_cell_height)
+            cell_width, cell_height = eff_cell_height, glyph_y_in_row)
         bc, max(_grouped_grid_total_rows(group_sizes, bc), 1)
     else  # :rows
         pos, r, c = _rows_grid_positions(group_sizes;
-            cell_width = cell_width, cell_height = eff_cell_height)
+            cell_width, cell_height = eff_cell_height, glyph_y_in_row)
         positions = pos
         c, r
     end
@@ -909,7 +923,7 @@ function phylopic_thumbnail_grid(
     image_selector = nothing,
     image_max_pages::Union{Int, Nothing} = nothing,
     image_layout::Symbol = :blocks,
-    image_label = nothing,
+    image_label = :DEFAULT,
     labeljoin::AbstractString = "\n",
     label_lines::Union{Int, Nothing} = nothing,
     kwargs...,
