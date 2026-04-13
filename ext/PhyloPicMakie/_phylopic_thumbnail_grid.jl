@@ -709,7 +709,7 @@ function phylopic_thumbnail_grid(
     # est_rows.  Using the same pixels-per-data-height ratio as the initial
     # size ensures consistent cell proportions.
     if isnothing(figure_size)
-        _, yhi = Makie.ylims(ax)
+        yhi = Float64(ax.limits[][4])  # set by ylims! inside the bang: (xlo,xhi,ylo,yhi)
         px_per_data_h =
             Float64(DEFAULT_THUMBNAIL_GRID_CELL_HEIGHT_PX) / DEFAULT_THUMBNAIL_GRID_CELL_HEIGHT
         actual_h_px =
