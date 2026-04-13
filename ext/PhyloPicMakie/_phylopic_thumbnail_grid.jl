@@ -650,10 +650,13 @@ end
 
 Create a new figure containing a thumbnail-grid gallery for `taxon`.
 
-The figure size is inferred from the grid shape using large-screen defaults and
-bounded width, so larger galleries generally grow downward instead of becoming
-arbitrarily wide.  Pass `figure_size` to override the inferred size.  Any
-entries of the `axis` named tuple are forwarded to the `Axis` constructor.
+The figure width is inferred from the column count.  The figure height is
+initially estimated from `length(taxon)` and then corrected after image
+fetching: when `image_filter = :clade` or `:node` returns multiple images per
+taxon the figure grows to fit the actual number of grid rows, so the rendered
+silhouettes are not distorted.  Pass `figure_size` to fix both dimensions and
+bypass the auto-resize.  Any entries of the `axis` named tuple are forwarded to
+the `Axis` constructor.
 
 See [`phylopic_thumbnail_grid!`](@ref) for full documentation of
 `image_filter`, `image_selector`, `image_max_pages`, and `image_layout`.
@@ -672,18 +675,22 @@ function phylopic_thumbnail_grid(
     image_layout::Symbol = :grouped,
     kwargs...,
 )::Makie.Figure
-    cols, rows = _infer_thumbnail_grid_shape(length(taxon); ncols = ncols, nrows = nrows)
+    # Estimate grid shape from taxon count for initial figure sizing.
+    # The bang variant may produce more rows than `est_rows` when
+    # image_filter != :primary or image_selector == nothing with multi-image
+    # filters; the figure is resized after the bang based on actual layout.
+    cols, est_rows = _infer_thumbnail_grid_shape(length(taxon); ncols = ncols, nrows = nrows)
 
-    resolved_figure_size = if isnothing(figure_size)
+    init_fig_size = if isnothing(figure_size)
         (
             cols * DEFAULT_THUMBNAIL_GRID_CELL_WIDTH_PX + DEFAULT_THUMBNAIL_GRID_FIGURE_MARGIN_PX,
-            rows * DEFAULT_THUMBNAIL_GRID_CELL_HEIGHT_PX + DEFAULT_THUMBNAIL_GRID_FIGURE_MARGIN_PX,
+            max(est_rows, 1) * DEFAULT_THUMBNAIL_GRID_CELL_HEIGHT_PX + DEFAULT_THUMBNAIL_GRID_FIGURE_MARGIN_PX,
         )
     else
         figure_size
     end
 
-    fig = Makie.Figure(size = resolved_figure_size)
+    fig = Makie.Figure(size = init_fig_size)
     ax = Makie.Axis(fig[1, 1]; axis...)
     phylopic_thumbnail_grid!(
         ax,
@@ -696,5 +703,21 @@ function phylopic_thumbnail_grid(
         image_layout = image_layout,
         kwargs...,
     )
+
+    # Resize figure height to match the actual grid layout produced by the
+    # bang.  The bang sets ylims! from the real row count, which may exceed
+    # est_rows.  Using the same pixels-per-data-height ratio as the initial
+    # size ensures consistent cell proportions.
+    if isnothing(figure_size)
+        _, yhi = Makie.ylims(ax)
+        px_per_data_h =
+            Float64(DEFAULT_THUMBNAIL_GRID_CELL_HEIGHT_PX) / DEFAULT_THUMBNAIL_GRID_CELL_HEIGHT
+        actual_h_px =
+            round(Int, yhi * px_per_data_h) + DEFAULT_THUMBNAIL_GRID_FIGURE_MARGIN_PX
+        if actual_h_px != init_fig_size[2]
+            Makie.resize!(fig, (init_fig_size[1], actual_h_px))
+        end
+    end
+
     return fig
 end
