@@ -9,6 +9,7 @@ Graphs = "86223c79-3864-5bf0-83f7-82e725a168b6"
 HTTP = "cd3eb016-35fb-5094-929b-558a96fad6f3"
 Makie = "ee78f7c6-11fb-53f2-987a-cfe4a2b5a57a"
 PaleobiologyDB = "c9cb2f45-518b-476d-9b58-4dd79871b05b"
+PhyloPicDB = "c9272f45-9a18-4009-bf68-1964ca18c300"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [sources]

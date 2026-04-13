@@ -32,6 +32,33 @@ Valid `image_layout` symbols for the thumbnail grid.
 const VALID_IMAGE_LAYOUTS = (:flat, :blocks, :rows)
 
 """
+All field symbols recognized by [`_extract_image_field`](@ref) and accepted in
+the `AbstractVector{Symbol}` form of `image_label`.  Includes virtual fields
+(`:name`, `:index`) computed from the cell context, and every field of
+[`PhyloPicDB.PhyloPicImage`](@ref).
+"""
+const ALLFIELDS_IMAGE_LABEL = Symbol[
+    :name,
+    :index,
+    :uuid,
+    :thumbnail_url,
+    :vector_url,
+    :raster_url,
+    :source_file_url,
+    :license,
+    :license_url,
+    :attribution,
+    :contributor,
+    :specific_node_uuid,
+    :general_node_uuid,
+]
+
+"""
+Field symbols used by the `:BASICFIELDS` image label preset.
+"""
+const BASICFIELDS_IMAGE_LABEL = Symbol[:name, :index, :uuid]
+
+"""
     _infer_thumbnail_grid_shape(
         n::Integer;
         ncols::Union{Integer, Nothing} = nothing,
@@ -345,24 +372,103 @@ function _rows_grid_positions(
 end
 
 """
+    _extract_image_field(
+        field::Symbol,
+        taxon_name::AbstractString,
+        k::Int,
+        img::PhyloPicDB.PhyloPicImage,
+    ) -> Union{String, Missing, Nothing}
+
+Extract a single label field from the grid-cell context.
+
+Virtual fields are computed from the taxon name and image index:
+- `:name`  — `taxon_name`
+- `:index` — `string(k)`
+
+All other recognized symbols map directly to the corresponding field of `img`
+(see [`ALLFIELDS_IMAGE_LABEL`](@ref) for the full list).  Unrecognized symbols
+throw an `ArgumentError`.
+"""
+function _extract_image_field(
+    field::Symbol,
+    taxon_name::AbstractString,
+    k::Int,
+    img::PhyloPicDB.PhyloPicImage,
+)::Union{String, Missing, Nothing}
+    field === :name               && return String(taxon_name)
+    field === :index              && return string(k)
+    field === :uuid               && return img.uuid
+    field === :thumbnail_url      && return img.thumbnail_url
+    field === :vector_url         && return img.vector_url
+    field === :raster_url         && return img.raster_url
+    field === :source_file_url    && return img.source_file_url
+    field === :license            && return img.license
+    field === :license_url        && return img.license_url
+    field === :attribution        && return img.attribution
+    field === :contributor        && return img.contributor_href
+    field === :specific_node_uuid && return img.specific_node_uuid
+    field === :general_node_uuid  && return img.general_node_uuid
+    throw(ArgumentError(
+        "_extract_image_field: unknown field symbol :$field. " *
+        "Valid field symbols: $(join(string.(':', ALLFIELDS_IMAGE_LABEL), ", ")). " *
+        "Preset symbols handled by _build_label: :DEFAULT, :ALLFIELDS, :BASICFIELDS."
+    ))
+end
+
+"""
+    _join_fields(
+        fields::AbstractVector{Symbol},
+        taxon_name::AbstractString,
+        k::Int,
+        img::PhyloPicDB.PhyloPicImage,
+        sep::AbstractString,
+    ) -> String
+
+Collect the values of `fields` for the given cell context, drop entries that
+are `missing`, `nothing`, or empty strings, and join the survivors with `sep`.
+
+Calls [`_extract_image_field`](@ref) per symbol; unknown symbols propagate its
+`ArgumentError`.
+"""
+function _join_fields(
+    fields::AbstractVector{Symbol},
+    taxon_name::AbstractString,
+    k::Int,
+    img::PhyloPicDB.PhyloPicImage,
+    sep::AbstractString,
+)::String
+    vals = (_extract_image_field(f, taxon_name, k, img) for f in fields)
+    parts = String[v::String for v in vals if v isa String && !isempty(v)]
+    return join(parts, sep)
+end
+
+"""
     _build_label(
         taxon_name::AbstractString,
         k::Int,
         is_multi::Bool,
         img::PhyloPicDB.PhyloPicImage,
         image_label,
+        labeljoin::AbstractString,
     ) -> String
 
 Generate the display label for a single grid cell.
 
+## Dispatch on `image_label`
+
 | `image_label` | Label |
 |---|---|
-| `nothing` | `"taxon"` (single image) or `"taxon [k]"` (multi-image group) |
-| `:attribution` | `img.attribution`, falls back to default if `missing` |
-| `:license` | `img.license`, falls back to default if `missing` |
-| `:contributor` | `img.contributor_href`, falls back to default if `missing` |
-| `:uuid` | `img.uuid` |
+| `nothing` | `"taxon"` (single) or `"taxon [k]"` (multi-image group) |
+| `:DEFAULT` | `"[k] taxon"` regardless of group size |
+| `:ALLFIELDS` | All fields in [`ALLFIELDS_IMAGE_LABEL`](@ref), joined with `labeljoin`; `missing`/empty omitted |
+| `:BASICFIELDS` | `:name`, `:index`, `:uuid` joined with `labeljoin` |
+| Any other `Symbol` | Corresponding image field from [`_extract_image_field`](@ref); falls back to default if `missing`/`nothing` |
+| `AbstractVector{Symbol}` | Listed fields joined with `labeljoin`; `missing`/empty omitted |
 | Callable `f` | `f(taxon_name, k, img)` — must return a `String` |
+
+`labeljoin` is only applied for vector and preset-expansion cases (`:ALLFIELDS`,
+`:BASICFIELDS`, `AbstractVector{Symbol}`); single-symbol and `nothing` cases
+produce a single string.  Unrecognized symbols throw `ArgumentError`.
 """
 function _build_label(
     taxon_name::AbstractString,
@@ -370,26 +476,19 @@ function _build_label(
     is_multi::Bool,
     img::PhyloPicDB.PhyloPicImage,
     image_label,
+    labeljoin::AbstractString,
 )::String
-    default = is_multi ? "$(taxon_name) [$k]" : String(taxon_name)
-    isnothing(image_label) && return default
+    isnothing(image_label) && return is_multi ? "$(taxon_name) [$k]" : String(taxon_name)
     if image_label isa Symbol
-        val = if image_label === :attribution
-            img.attribution
-        elseif image_label === :license
-            img.license
-        elseif image_label === :contributor
-            img.contributor_href
-        elseif image_label === :uuid
-            img.uuid
-        else
-            throw(ArgumentError(
-                "_build_label: unknown image_label symbol :$image_label. " *
-                "Valid symbols: :attribution, :license, :contributor, :uuid."
-            ))
-        end
-        return ismissing(val) ? default : String(val)
+        image_label === :DEFAULT     && return "[$k] $(taxon_name)"
+        image_label === :ALLFIELDS   && return _join_fields(ALLFIELDS_IMAGE_LABEL,  taxon_name, k, img, labeljoin)
+        image_label === :BASICFIELDS && return _join_fields(BASICFIELDS_IMAGE_LABEL, taxon_name, k, img, labeljoin)
+        # Single structural field — fall back to default if absent.
+        val = _extract_image_field(image_label, taxon_name, k, img)
+        (ismissing(val) || isnothing(val)) && return is_multi ? "$(taxon_name) [$k]" : String(taxon_name)
+        return String(val)
     end
+    image_label isa AbstractVector && return _join_fields(image_label, taxon_name, k, img, labeljoin)
     # Callable
     return String(image_label(taxon_name, k, img))
 end
@@ -401,6 +500,7 @@ end
         image_selector,
         image_max_pages::Union{Int, Nothing},
         image_label,
+        labeljoin::AbstractString,
     ) -> Tuple{Vector{String}, Vector{Union{Matrix{RGBA{N0f8}}, Nothing}}, Vector{Int}}
 
 Build the flat cell list for the thumbnail grid.
@@ -410,9 +510,9 @@ Returns three parallel arrays:
 - `cell_images` — decoded thumbnail matrix or `nothing` per cell.
 - `group_sizes` — number of cells contributed by each taxon (in input order).
 
-Labels are generated by [`_build_label`](@ref) from `image_label`.  The
-default (`image_label = nothing`) uses the taxon name for single-image groups
-and `"name [k]"` for multi-image groups.
+Labels are generated by [`_build_label`](@ref) using `image_label` and
+`labeljoin`.  The default (`image_label = nothing`) uses the taxon name for
+single-image groups and `"name [k]"` for multi-image groups.
 
 Taxa that produce no images (empty name, unresolvable, or filtered to empty) contribute
 a `group_sizes` entry of `0` and no cells.
@@ -423,6 +523,7 @@ function _build_grid_cells(
     image_selector,
     image_max_pages::Union{Int, Nothing},
     image_label,
+    labeljoin::AbstractString,
 )::Tuple{
     Vector{String},
     Vector{Union{Matrix{RGBA{N0f8}}, Nothing}},
@@ -440,7 +541,7 @@ function _build_grid_cells(
         push!(group_sizes, count)
         multi = count > 1
         for (k, img) in enumerate(selected)
-            lbl = _build_label(s, k, multi, img, image_label)
+            lbl = _build_label(s, k, multi, img, image_label, labeljoin)
             push!(labels, lbl)
             push!(cell_images, _download_thumbnail(img, lbl))
         end
@@ -524,6 +625,8 @@ end
         image_max_pages::Union{Int, Nothing} = nothing,
         image_layout::Symbol = :blocks,
         image_label = nothing,
+        labeljoin::AbstractString = "\n",
+        label_lines::Union{Int, Nothing} = nothing,
     ) -> Nothing
 
 Render a gallery of PhyloPic thumbnail silhouettes into the existing Makie
@@ -542,10 +645,17 @@ the same behaviour as before this feature was added.
 ## Layout keywords
 
 - `ncols`, `nrows`: Explicit grid dimensions.  Supply either, both, or neither.
-- `cell_width`, `cell_height`: Cell size in axis data units.
+- `cell_width`, `cell_height`: Nominal cell size in axis data units.  The
+  effective cell height is expanded automatically when labels span multiple lines
+  (see `label_lines`).
 - `glyph_fraction`: Fraction of `cell_height` allocated to the image.
 - `label_gap`: Vertical gap between thumbnail and text label.
 - `label_fontsize`: Font size for cell labels.
+- `label_lines`: Override the automatic line-count used to expand cell height for
+  multi-line labels.  `nothing` (default) detects the maximum number of
+  `'\\n'`-delimited lines across all built labels.  Pass an explicit `Int ≥ 1` to
+  fix the expansion regardless of actual label content (e.g. `label_lines = 1`
+  disables expansion).
 - `title`: Optional axis title drawn above the grid.
 - `title_gap`: Additional vertical padding reserved for the title.
 
@@ -570,13 +680,16 @@ the same behaviour as before this feature was added.
   - `:rows` — each non-empty taxon occupies exactly one row; images placed
     left to right with no wrapping; grid width equals the largest group size.
   - `:flat` — single row-major grid ignoring taxon boundaries.
-- `image_label`: Controls the per-cell caption.  `nothing` (default) uses the
-  taxon name, or `"name [k]"` for multi-image groups.  Accepts:
-  - `nothing` — default label.
-  - `:attribution`, `:license`, `:contributor`, `:uuid` — read the
-    corresponding field from the [`PhyloPicDB.PhyloPicImage`](@ref); falls
-    back to the default label for `missing` values.
+- `image_label`: Controls the per-cell caption.  Accepts:
+  - `nothing` (default) — `"taxon"` for single-image groups, `"taxon [k]"` for multi.
+  - `:DEFAULT` — `"[k] taxon"` regardless of group size.
+  - `:ALLFIELDS` — all fields in [`ALLFIELDS_IMAGE_LABEL`](@ref) joined with `labeljoin`; `missing`/empty omitted.
+  - `:BASICFIELDS` — `:name`, `:index`, `:uuid` joined with `labeljoin`.
+  - Any single field symbol from [`ALLFIELDS_IMAGE_LABEL`](@ref) — that field, falling back to the default label if `missing`/`nothing`.
+  - `AbstractVector{Symbol}` — listed fields joined with `labeljoin`; `missing`/empty omitted.
   - Callable `f(taxon_name, k, img) -> String` — fully custom label.
+- `labeljoin`: Separator string used when `image_label` is `:ALLFIELDS`,
+  `:BASICFIELDS`, or an `AbstractVector{Symbol}`.  Default `"\\n"` (newline).
 
 ## Missing-image policy
 
@@ -612,6 +725,8 @@ function phylopic_thumbnail_grid!(
     image_max_pages::Union{Int, Nothing} = nothing,
     image_layout::Symbol = :blocks,
     image_label = nothing,
+    labeljoin::AbstractString = "\n",
+    label_lines::Union{Int, Nothing} = nothing,
 )::Nothing
     cell_width > 0 || throw(ArgumentError(
         "phylopic_thumbnail_grid!: `cell_width` must be positive. Got $cell_width."
@@ -647,24 +762,37 @@ function phylopic_thumbnail_grid!(
 
     # Build the flat cell list across all taxa.
     cell_labels, cell_images, group_sizes =
-        _build_grid_cells(taxon, image_filter, image_selector, image_max_pages, image_label)
+        _build_grid_cells(taxon, image_filter, image_selector, image_max_pages, image_label, labeljoin)
     total_cells = length(cell_labels)
+
+    # Compute effective cell height to accommodate multi-line labels.
+    # slls = data-unit height allocated to one label line by the default geometry:
+    #   slls = 0.5 * cell_height - glyph_half - label_gap
+    #        = cell_height * (1 - glyph_fraction) / 2 - label_gap
+    # For N lines: eff_cell_height = cell_height + 2 * (N - 1) * slls
+    auto_lines = isempty(cell_labels) ? 1 :
+        maximum(count('\n', lbl) + 1 for lbl in cell_labels)
+    n_label_lines   = isnothing(label_lines) ? auto_lines : max(1, Int(label_lines))
+    slls            = Float64(cell_height) * (1.0 - Float64(glyph_fraction)) / 2.0 -
+                      Float64(label_gap)
+    eff_cell_height = Float64(cell_height) +
+                      2.0 * Float64(n_label_lines - 1) * max(0.0, slls)
 
     # Compute cell positions and grid dimensions according to layout.
     local positions::Vector{Tuple{Float64, Float64}}
     cols, rows = if image_layout === :flat
         c, r = _infer_thumbnail_grid_shape(total_cells; ncols = ncols, nrows = nrows)
         positions = _thumbnail_grid_positions(total_cells, c, r;
-            cell_width = cell_width, cell_height = cell_height)
+            cell_width = cell_width, cell_height = eff_cell_height)
         c, r
     elseif image_layout === :blocks
         bc = isnothing(ncols) ? DEFAULT_THUMBNAIL_GRID_MAX_COLUMNS : Int(ncols)
         positions = _grouped_grid_positions(group_sizes, bc;
-            cell_width = cell_width, cell_height = cell_height)
+            cell_width = cell_width, cell_height = eff_cell_height)
         bc, max(_grouped_grid_total_rows(group_sizes, bc), 1)
     else  # :rows
         pos, r, c = _rows_grid_positions(group_sizes;
-            cell_width = cell_width, cell_height = cell_height)
+            cell_width = cell_width, cell_height = eff_cell_height)
         positions = pos
         c, r
     end
@@ -725,8 +853,8 @@ function phylopic_thumbnail_grid!(
     xmin, xmax, ymin, ymax = _thumbnail_grid_axis_limits(
         cols,
         rows;
-        cell_width = cell_width,
-        cell_height = cell_height,
+        cell_width  = cell_width,
+        cell_height = eff_cell_height,
     )
     Makie.xlims!(ax, xmin, xmax)
     Makie.ylims!(ax, ymin, ymax)
@@ -751,6 +879,7 @@ end
         image_max_pages::Union{Int, Nothing} = nothing,
         image_layout::Symbol = :blocks,
         image_label = nothing,
+        labeljoin::AbstractString = "\n",
         kwargs...,
     ) -> Makie.Figure
 
@@ -765,8 +894,8 @@ the auto-resize.  Any entries of the `axis` named tuple are forwarded to the
 `Axis` constructor.
 
 See [`phylopic_thumbnail_grid!`](@ref) for full documentation of
-`image_filter`, `image_selector`, `image_max_pages`, `image_layout`, and
-`image_label`.
+`image_filter`, `image_selector`, `image_max_pages`, `image_layout`,
+`image_label`, `labeljoin`, and `label_lines`.
 
 Returns the created `Makie.Figure`.
 """
@@ -781,6 +910,8 @@ function phylopic_thumbnail_grid(
     image_max_pages::Union{Int, Nothing} = nothing,
     image_layout::Symbol = :blocks,
     image_label = nothing,
+    labeljoin::AbstractString = "\n",
+    label_lines::Union{Int, Nothing} = nothing,
     kwargs...,
 )::Makie.Figure
     # Initial figure size: use DEFAULT_THUMBNAIL_GRID_MAX_COLUMNS (or user ncols)
@@ -802,13 +933,15 @@ function phylopic_thumbnail_grid(
     phylopic_thumbnail_grid!(
         ax,
         taxon;
-        ncols         = ncols,
-        nrows         = nrows,
-        image_filter  = image_filter,
+        ncols           = ncols,
+        nrows           = nrows,
+        image_filter    = image_filter,
         image_selector  = image_selector,
         image_max_pages = image_max_pages,
-        image_layout  = image_layout,
-        image_label   = image_label,
+        image_layout    = image_layout,
+        image_label     = image_label,
+        labeljoin       = labeljoin,
+        label_lines     = label_lines,
         kwargs...,
     )
 

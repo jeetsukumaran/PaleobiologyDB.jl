@@ -28,6 +28,8 @@ if _EXT_AVAILABLE
     @eval using FileIO
     # Explicitly reference the extension module to ensure it is bound.
     @eval using PaleobiologyDB.PhyloPicMakie
+    # PhyloPicDB is loaded as a transitive dep; import it for unit-test helpers.
+    @eval using PhyloPicDB
 end
 
 # ---------------------------------------------------------------------------
@@ -156,6 +158,118 @@ if _EXT_AVAILABLE
         @test infer_shape(6; nrows = 2) == (3, 2)
         @test_throws ArgumentError infer_shape(6; ncols = 0)
         @test_throws ArgumentError infer_shape(6; ncols = 2, nrows = 2)
+    end
+
+    # Unit tests for _extract_image_field, _join_fields, _build_label.
+    # Uses PhyloPicDB._null_image to construct a minimal PhyloPicImage offline.
+    @testset "PhyloPicMakie — _extract_image_field" begin
+        extract  = PaleobiologyDB.PhyloPicMakie._extract_image_field
+        null_img = PhyloPicDB._null_image(1)   # all optional fields missing/nothing, uuid = ""
+
+        @testset "virtual field :name" begin
+            @test extract(:name, "Felidae", 3, null_img) == "Felidae"
+        end
+
+        @testset "virtual field :index" begin
+            @test extract(:index, "Felidae", 3, null_img) == "3"
+        end
+
+        @testset ":uuid always returns a String (empty for null image)" begin
+            val = extract(:uuid, "Felidae", 1, null_img)
+            @test val isa String
+        end
+
+        @testset ":attribution missing on null image" begin
+            @test ismissing(extract(:attribution, "Felidae", 1, null_img))
+        end
+
+        @testset ":license missing on null image" begin
+            @test ismissing(extract(:license, "Felidae", 1, null_img))
+        end
+
+        @testset ":specific_node_uuid nothing on null image" begin
+            @test isnothing(extract(:specific_node_uuid, "Felidae", 1, null_img))
+        end
+
+        @testset "unknown symbol throws ArgumentError" begin
+            @test_throws ArgumentError extract(:notafield, "Felidae", 1, null_img)
+        end
+    end
+
+    @testset "PhyloPicMakie — _join_fields" begin
+        join_f   = PaleobiologyDB.PhyloPicMakie._join_fields
+        null_img = PhyloPicDB._null_image(1)
+
+        @testset "virtual-only fields always present" begin
+            result = join_f([:name, :index], "Felidae", 2, null_img, " | ")
+            @test result == "Felidae | 2"
+        end
+
+        @testset "missing structural field skipped" begin
+            # :attribution is missing → only :name survives
+            result = join_f([:name, :attribution], "Felidae", 1, null_img, "\n")
+            @test result == "Felidae"
+        end
+
+        @testset "empty uuid skipped" begin
+            # null_img.uuid == "" → skipped
+            result = join_f([:name, :uuid], "Felidae", 1, null_img, "\n")
+            @test result == "Felidae"
+        end
+
+        @testset "empty field list → empty string" begin
+            @test join_f(Symbol[], "Felidae", 1, null_img, "\n") == ""
+        end
+
+        @testset "custom separator respected" begin
+            result = join_f([:name, :index], "Carnivora", 5, null_img, " :: ")
+            @test result == "Carnivora :: 5"
+        end
+    end
+
+    @testset "PhyloPicMakie — _build_label" begin
+        bl       = PaleobiologyDB.PhyloPicMakie._build_label
+        null_img = PhyloPicDB._null_image(1)
+
+        @testset "nothing, single-image group → name only" begin
+            @test bl("Felidae", 1, false, null_img, nothing, "\n") == "Felidae"
+        end
+
+        @testset "nothing, multi-image group → name [k]" begin
+            @test bl("Felidae", 3, true, null_img, nothing, "\n") == "Felidae [3]"
+        end
+
+        @testset ":DEFAULT always uses [k] name format" begin
+            @test bl("Felidae", 1, false, null_img, :DEFAULT, "\n") == "[1] Felidae"
+            @test bl("Felidae", 4, true,  null_img, :DEFAULT, "\n") == "[4] Felidae"
+        end
+
+        @testset ":BASICFIELDS includes name and index; skips empty uuid" begin
+            result = bl("Felidae", 2, true, null_img, :BASICFIELDS, " | ")
+            @test startswith(result, "Felidae")
+            @test occursin("2", result)
+        end
+
+        @testset "Vector{Symbol}: missing fields dropped, labeljoin used" begin
+            # :attribution missing → only :name
+            @test bl("Felidae", 1, false, null_img, [:name, :attribution], "\n") == "Felidae"
+            # :name + :index with custom sep
+            @test bl("Carnivora", 3, true, null_img, [:name, :index], " — ") == "Carnivora — 3"
+        end
+
+        @testset "single known symbol missing → falls back to default" begin
+            @test bl("Felidae", 1, false, null_img, :attribution, "\n") == "Felidae"
+            @test bl("Felidae", 2, true,  null_img, :attribution, "\n") == "Felidae [2]"
+        end
+
+        @testset "callable receives name, k, img" begin
+            f = (name, k, img) -> "$(name):$(k)"
+            @test bl("Felidae", 7, true, null_img, f, "\n") == "Felidae:7"
+        end
+
+        @testset "unknown Symbol throws ArgumentError" begin
+            @test_throws ArgumentError bl("Felidae", 1, false, null_img, :notafield, "\n")
+        end
     end
 
 else
@@ -458,6 +572,58 @@ end  # range table API
         fig = Figure(); ax = Axis(fig[1, 1])
         @test_nowarn phylopic_thumbnail_grid!(ax, ["", "", ""];
             image_filter = :primary, ncols = 1, nrows = 1)
+    end
+
+    @testset "image_label = :DEFAULT, empty names → no crash" begin
+        fig = Figure(); ax = Axis(fig[1, 1])
+        @test_nowarn phylopic_thumbnail_grid!(ax, ["", " "];
+            image_filter = :primary, image_label = :DEFAULT)
+    end
+
+    @testset "image_label = :ALLFIELDS, empty names → no crash" begin
+        fig = Figure(); ax = Axis(fig[1, 1])
+        @test_nowarn phylopic_thumbnail_grid!(ax, ["", " "];
+            image_filter = :primary, image_label = :ALLFIELDS)
+    end
+
+    @testset "image_label = :BASICFIELDS, empty names → no crash" begin
+        fig = Figure(); ax = Axis(fig[1, 1])
+        @test_nowarn phylopic_thumbnail_grid!(ax, ["", " "];
+            image_filter = :primary, image_label = :BASICFIELDS)
+    end
+
+    @testset "image_label = Vector{Symbol}, empty names → no crash" begin
+        fig = Figure(); ax = Axis(fig[1, 1])
+        @test_nowarn phylopic_thumbnail_grid!(ax, ["", " "];
+            image_filter = :primary, image_label = [:name, :index, :uuid])
+    end
+
+    @testset "labeljoin forwarded through non-bang, empty names → no crash" begin
+        @test_nowarn phylopic_thumbnail_grid(["", " "];
+            image_filter = :primary, image_label = :BASICFIELDS, labeljoin = " | ")
+    end
+
+    @testset "label_lines = 1 suppresses eff_cell_height expansion" begin
+        # Empty names → no cells; ymax = 1 row × eff_cell_height.
+        # With label_lines = 1, eff_cell_height equals the nominal cell_height.
+        fig1 = Figure(); ax1 = Axis(fig1[1, 1])
+        phylopic_thumbnail_grid!(ax1, ["", " "]; image_filter = :primary)
+        fig2 = Figure(); ax2 = Axis(fig2[1, 1])
+        phylopic_thumbnail_grid!(ax2, ["", " "]; image_filter = :primary, label_lines = 1)
+        @test ax1.limits[] == ax2.limits[]
+    end
+
+    @testset "label_lines = 3 expands eff_cell_height above nominal" begin
+        fig = Figure(); ax = Axis(fig[1, 1])
+        phylopic_thumbnail_grid!(ax, ["", " "]; image_filter = :primary, label_lines = 3)
+        ymax         = ax.limits[][2][2]
+        default_cell = PhyloPicMakie.DEFAULT_THUMBNAIL_GRID_CELL_HEIGHT
+        @test ymax > default_cell
+    end
+
+    @testset "label_lines forwarded through non-bang, empty names → no crash" begin
+        @test_nowarn phylopic_thumbnail_grid(["", " "];
+            image_filter = :primary, label_lines = 2)
     end
 
     if !LIVE
