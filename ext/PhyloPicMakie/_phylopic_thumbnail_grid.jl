@@ -888,6 +888,26 @@ function phylopic_thumbnail_grid!(
 end
 
 """
+    phylopic_thumbnail_grid!(
+        ax::Makie.Axis,
+        taxon_name::AbstractString;
+        kwargs...,
+    ) -> Nothing
+
+Single-taxon convenience wrapper.  Equivalent to
+`phylopic_thumbnail_grid!(ax, [taxon_name]; kwargs...)`.
+
+See [`phylopic_thumbnail_grid!`](@ref) for full keyword documentation.
+"""
+function phylopic_thumbnail_grid!(
+    ax::Makie.Axis,
+    taxon_name::AbstractString;
+    kwargs...,
+)::Nothing
+    return phylopic_thumbnail_grid!(ax, [taxon_name]; kwargs...)
+end
+
+"""
     phylopic_thumbnail_grid(
         taxon::AbstractVector{<:AbstractString};
         figure_size::Union{Tuple{<:Integer, <:Integer}, Nothing} = nothing,
@@ -979,4 +999,22 @@ function phylopic_thumbnail_grid(
     end
 
     return fig
+end
+
+"""
+    phylopic_thumbnail_grid(
+        taxon_name::AbstractString;
+        kwargs...,
+    ) -> Makie.Figure
+
+Single-taxon convenience wrapper.  Equivalent to
+`phylopic_thumbnail_grid([taxon_name]; kwargs...)`.
+
+See [`phylopic_thumbnail_grid`](@ref) for full keyword documentation.
+"""
+function phylopic_thumbnail_grid(
+    taxon_name::AbstractString;
+    kwargs...,
+)::Makie.Figure
+    return phylopic_thumbnail_grid([taxon_name]; kwargs...)
 end
