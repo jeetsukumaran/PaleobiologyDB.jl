@@ -709,9 +709,10 @@ end
 Render a gallery of PhyloPic silhouettes into the existing Makie `Axis` `ax`.
 
 Each taxon in `taxon` contributes one or more cells to the grid depending on
-`image_filter` and `image_selector`.  With the defaults (`image_filter =
-:primary`, `image_selector = nothing`) each taxon produces exactly one cell —
-the same behaviour as before this feature was added.
+`image_filter` and `image_selector`.  With `image_filter = :primary` and
+`image_selector = nothing` each taxon produces exactly one cell; with the
+default `image_filter = :clade` a taxon may produce multiple cells (one per
+image in its clade).
 
 ## Arguments
 

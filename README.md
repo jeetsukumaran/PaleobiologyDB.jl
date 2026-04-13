@@ -377,45 +377,129 @@ for full documentation.
 
 ### PhyloPic thumbnail gallery
 
+#### Exploring a single taxon
+
+Pass a single taxon name to browse all PhyloPic images available for that taxon
+and its descendants.  Each image in the clade gets its own cell:
+
+```julia
+using PaleobiologyDB
+using CairoMakie, FileIO
+using PaleobiologyDB.PhyloPicMakie
+
+# All clade images for Felis (one cell per image, auto-sized figure)
+fig = phylopic_thumbnail_grid("Felis")
+
+# Limit to the first page (≈ 30 images) to keep it fast
+fig2 = phylopic_thumbnail_grid("Felis";
+    image_max_pages = 1,
+    ncols           = 4,
+    title           = "Felis — first page of clade images",
+)
+
+# Primary image only — the single designated representative silhouette
+fig3 = phylopic_thumbnail_grid("Felis";
+    image_filter = :primary,
+    title        = "Felis — primary image",
+)
+
+# Images tagged to this node exactly (not descendants)
+fig4 = phylopic_thumbnail_grid("Felis";
+    image_filter = :node,
+    title        = "Felis — node-level images only",
+)
+```
+
+#### Comparing multiple taxa
+
+Pass a vector of names — each taxon occupies its own block of cells:
+
+```julia
+# Side-by-side comparison of two genera
+fig = phylopic_thumbnail_grid(["Felis", "Canis"];
+    image_filter = :clade,
+    image_layout = :blocks,     # :blocks (default) | :flat | :rows
+    ncols        = 4,
+)
+
+# Primary image per taxon — compact one-image-per-name layout
+fig2 = phylopic_thumbnail_grid(["Felis", "Canis", "Panthera", "Lynx"];
+    image_filter   = :primary,
+    ncols          = 2,
+    image_label    = :BASICFIELDS,   # shows index + node name + taxon name
+    label_fontsize = 11,
+)
+
+# All images laid out flat (no per-taxon grouping) with license labels
+fig3 = phylopic_thumbnail_grid(["Felis", "Canis"];
+    image_filter = :clade,
+    image_layout = :flat,
+    image_label  = [:node_name, :license],   # custom field selection
+    labeljoin    = "\n",
+    ncols        = 5,
+)
+```
+
+#### Exploring a clade with `child_taxa`
+
+`child_taxa` returns a `Vector{String}` and feeds directly into
+`phylopic_thumbnail_grid`:
+
+```julia
+using PaleobiologyDB, PaleobiologyDB.Taxonomy
+using CairoMakie, FileIO
+using PaleobiologyDB.PhyloPicMakie
+
+# Primary image for every family in Pterosauria
+pterosaur_families = child_taxa("Pterosauria", "family")
+fig = phylopic_thumbnail_grid(pterosaur_families;
+    image_filter = :primary,
+    ncols        = 4,
+    title        = "Pterosauria families",
+)
+
+# All clade images for each family — :blocks layout keeps each family together
+fig2 = phylopic_thumbnail_grid(pterosaur_families;
+    image_filter    = :clade,
+    image_layout    = :blocks,
+    image_max_pages = 1,
+    ncols           = 5,
+    title           = "Pterosauria families — clade images",
+)
+
+# Same, with full metadata labels
+fig3 = phylopic_thumbnail_grid(pterosaur_families;
+    image_filter = :primary,
+    image_label  = :ALLFIELDS,
+    ncols        = 3,
+    label_fontsize = 8,
+)
+
+# Canidae genera — raster (high-res) rendering
+canid_genera = child_taxa("Canidae", "genus")
+fig4 = phylopic_thumbnail_grid(canid_genera;
+    image_filter    = :primary,
+    image_rendering = :raster,    # :thumbnail (default) | :raster | :og_image | :vector | :source_file
+    ncols           = 4,
+    title           = "Canidae genera",
+)
+```
+
+> **Note on SVG renderings:** `image_rendering = :vector` and `:source_file` may
+> return SVG URLs.  `FileIO.load` requires an SVG-capable plugin
+> (e.g. [Rsvg.jl](https://github.com/lobingera/Rsvg.jl)) to decode them; without
+> one the download step will fail with a `FileIO` error.
+
+#### Layout and display options
+
 ```julia
 taxa = ["Tyrannosaurus", "Triceratops", "Ankylosaurus",
         "Pachycephalosaurus", "Edmontosaurus", "Maiasaura",
         "Spinosaurus", "Brachiosaurus", "Stegosaurus"]
 
-# ── Minimal: 3-column grid, default thumbnails ────────────────────────────────
-fig = phylopic_thumbnail_grid(taxa; ncols = 3)
-
-# ── Primary image only — one image per taxon, fastest ─────────────────────────
-fig2 = phylopic_thumbnail_grid(taxa;
-    ncols        = 3,
-    image_filter = :primary,           # :primary | :clade (default) | :node
-)
-
-# ── All clade images, one block per taxon, page-limited ───────────────────────
-fig3 = phylopic_thumbnail_grid(taxa;
-    ncols           = 3,
-    image_filter    = :clade,
-    image_layout    = :blocks,         # :blocks (default) | :flat | :rows
-    image_max_pages = 1,               # ≈ 30 images per page
-)
-
-# ── Richer label: index + node name + taxon name ──────────────────────────────
-fig4 = phylopic_thumbnail_grid(taxa;
-    ncols       = 3,
-    image_label = :BASICFIELDS,        # :BASICFIELDS (default) | :ALLFIELDS | [:node_name, :license] | nothing
-)
-
-# ── High-resolution PNG instead of thumbnail ──────────────────────────────────
-# image_rendering: :thumbnail (default) | :raster | :og_image | :vector | :source_file
-# Note: :vector and :source_file may be SVG and require an SVG-capable FileIO plugin.
-fig5 = phylopic_thumbnail_grid(taxa;
-    ncols            = 3,
-    image_rendering  = :raster,
-    label_fontsize   = 14,
-)
-
-# ── Custom layout and title ───────────────────────────────────────────────────
-fig6 = phylopic_thumbnail_grid(taxa;
+# Custom cell proportions and title
+fig = phylopic_thumbnail_grid(taxa;
+    image_filter   = :primary,
     ncols          = 3,
     cell_width     = 1.2,
     cell_height    = 1.8,
