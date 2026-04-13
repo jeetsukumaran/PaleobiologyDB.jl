@@ -428,7 +428,7 @@ function _extract_image_field(
     throw(ArgumentError(
         "_extract_image_field: unknown field symbol :$field. " *
         "Valid field symbols: $(join(string.(':', ALLFIELDS_IMAGE_LABEL), ", ")). " *
-        "Preset symbols handled by _build_label: :DEFAULT, :ALLFIELDS, :BASICFIELDS."
+        "Preset symbols handled by _build_label: :ALLFIELDS, :BASICFIELDS."
     ))
 end
 
@@ -476,9 +476,8 @@ Generate the display label for a single grid cell.
 | `image_label` | Label |
 |---|---|
 | `nothing` | `"taxon"` (single) or `"taxon [k]"` (multi-image group) |
-| `:DEFAULT` | `"[k] node_name (taxon)"` when `node_name` is set; `"[k] taxon"` otherwise |
 | `:ALLFIELDS` | All fields in [`ALLFIELDS_IMAGE_LABEL`](@ref), joined with `labeljoin`; `missing`/`nothing`/empty omitted |
-| `:BASICFIELDS` | `:index`, `:node_name`, `:taxon_name` joined with `labeljoin` |
+| `:BASICFIELDS` (default) | `:index`, `:node_name`, `:taxon_name` joined with `labeljoin` |
 | Any other `Symbol` | Corresponding image field from [`_extract_image_field`](@ref); falls back to default if `missing`/`nothing` |
 | `AbstractVector{Symbol}` | Listed fields joined with `labeljoin`; `missing`/`nothing`/empty omitted |
 | Callable `f` | `f(taxon_name, k, img)` — must return a `String` |
@@ -497,11 +496,6 @@ function _build_label(
 )::String
     isnothing(image_label) && return is_multi ? "$(taxon_name) [$k]" : String(taxon_name)
     if image_label isa Symbol
-        if image_label === :DEFAULT
-            nn = img.node_name
-            return isnothing(nn) ? "[$k] $(taxon_name)" :
-                                   "[$k] $nn ($(taxon_name))"
-        end
         image_label === :ALLFIELDS   && return _join_fields(ALLFIELDS_IMAGE_LABEL,  taxon_name, k, img, labeljoin)
         image_label === :BASICFIELDS && return _join_fields(BASICFIELDS_IMAGE_LABEL, taxon_name, k, img, labeljoin)
         # Single structural field — fall back to default if absent.
@@ -646,7 +640,7 @@ end
         image_selector = nothing,
         image_max_pages::Union{Int, Nothing} = nothing,
         image_layout::Symbol = :blocks,
-        image_label = :DEFAULT,
+        image_label = :BASICFIELDS,
         labeljoin::AbstractString = "\n",
         label_lines::Union{Int, Nothing} = nothing,
     ) -> Nothing
@@ -703,7 +697,7 @@ the same behaviour as before this feature was added.
     left to right with no wrapping; grid width equals the largest group size.
   - `:flat` — single row-major grid ignoring taxon boundaries.
 - `image_label`: Controls the per-cell caption.  Accepts:
-  - `:DEFAULT` (default) — `"[k] taxon"` regardless of group size.
+  - `:BASICFIELDS` (default) — `:index`, `:node_name`, `:taxon_name` joined with `labeljoin`.
   - `nothing` — `"taxon"` for single-image groups, `"taxon [k]"` for multi.
   - `:ALLFIELDS` — all fields in [`ALLFIELDS_IMAGE_LABEL`](@ref) joined with `labeljoin`; `missing`/empty omitted.
   - `:BASICFIELDS` — `:index`, `:node_name`, `:taxon_name` joined with `labeljoin`.
@@ -746,7 +740,7 @@ function phylopic_thumbnail_grid!(
     image_selector = nothing,
     image_max_pages::Union{Int, Nothing} = nothing,
     image_layout::Symbol = :blocks,
-    image_label = :DEFAULT,
+    image_label = :BASICFIELDS,
     labeljoin::AbstractString = "\n",
     label_lines::Union{Int, Nothing} = nothing,
 )::Nothing
@@ -935,7 +929,7 @@ function phylopic_thumbnail_grid(
     image_selector = nothing,
     image_max_pages::Union{Int, Nothing} = nothing,
     image_layout::Symbol = :blocks,
-    image_label = :DEFAULT,
+    image_label = :BASICFIELDS,
     labeljoin::AbstractString = "\n",
     label_lines::Union{Int, Nothing} = nothing,
     kwargs...,

@@ -249,11 +249,6 @@ if _EXT_AVAILABLE
             @test bl("Felidae", 3, true, null_img, nothing, "\n") == "Felidae [3]"
         end
 
-        @testset ":DEFAULT falls back to [k] taxon when node_name is nothing" begin
-            # null_img.node_name == nothing → "[k] taxon_name" fallback
-            @test bl("Felidae", 1, false, null_img, :DEFAULT, "\n") == "[1] Felidae"
-            @test bl("Felidae", 4, true,  null_img, :DEFAULT, "\n") == "[4] Felidae"
-        end
 
         @testset ":BASICFIELDS is [:index, :node_name, :taxon_name]; node_name absent on null" begin
             # null_img: node_name=nothing → skipped; index and taxon_name survive
@@ -588,10 +583,10 @@ end  # range table API
             image_filter = :primary, ncols = 1, nrows = 1)
     end
 
-    @testset "image_label = :DEFAULT, empty names → no crash" begin
+    @testset "image_label = :BASICFIELDS (default), empty names → no crash" begin
         fig = Figure(); ax = Axis(fig[1, 1])
         @test_nowarn phylopic_thumbnail_grid!(ax, ["", " "];
-            image_filter = :primary, image_label = :DEFAULT)
+            image_filter = :primary, image_label = :BASICFIELDS)
     end
 
     @testset "image_label = :ALLFIELDS, empty names → no crash" begin
