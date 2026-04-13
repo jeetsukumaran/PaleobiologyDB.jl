@@ -399,13 +399,55 @@ end  # range table API
         @test length(ax.scene.plots) == n0
     end
 
-    @testset "image_filter = :node, empty names, grouped layout → no cells" begin
+    @testset "image_filter = :node, empty names, blocks layout → no cells" begin
         fig = Figure(); ax = Axis(fig[1, 1])
         n0 = length(ax.scene.plots)
         phylopic_thumbnail_grid!(ax, ["", " "];
-            image_filter = :node, image_layout = :grouped)
+            image_filter = :node, image_layout = :blocks)
         @test _count_images(ax) == 0
         @test length(ax.scene.plots) == n0
+    end
+
+    @testset "image_layout = :rows, empty names → no cells" begin
+        fig = Figure(); ax = Axis(fig[1, 1])
+        n0 = length(ax.scene.plots)
+        phylopic_thumbnail_grid!(ax, ["", " "]; image_filter = :node, image_layout = :rows)
+        @test _count_images(ax) == 0
+        @test length(ax.scene.plots) == n0
+    end
+
+    @testset "image_layout = :grouped now throws ArgumentError (renamed to :blocks)" begin
+        fig = Figure(); ax = Axis(fig[1, 1])
+        @test_throws ArgumentError phylopic_thumbnail_grid!(
+            ax, ["Tyrannosaurus"]; image_layout = :grouped)
+    end
+
+    @testset "image_label = :attribution, empty names → no crash" begin
+        fig = Figure(); ax = Axis(fig[1, 1])
+        @test_nowarn phylopic_thumbnail_grid!(ax, ["", " "];
+            image_filter = :primary, image_label = :attribution)
+    end
+
+    @testset "image_label callable, empty names → no crash" begin
+        fig = Figure(); ax = Axis(fig[1, 1])
+        @test_nowarn phylopic_thumbnail_grid!(ax, ["", " "];
+            image_filter = :primary, image_label = (name, k, img) -> "$name-$k")
+    end
+
+    @testset "_rows_grid_positions: empty groups → 1×1 grid, no positions" begin
+        pos, r, c = PaleobiologyDB.PhyloPicMakie._rows_grid_positions(
+            Int[]; cell_width = 1.0, cell_height = 1.6)
+        @test isempty(pos)
+        @test r == 1
+        @test c == 1
+    end
+
+    @testset "_rows_grid_positions: two groups of sizes [2, 3]" begin
+        pos, r, c = PaleobiologyDB.PhyloPicMakie._rows_grid_positions(
+            [2, 3]; cell_width = 1.0, cell_height = 1.6)
+        @test length(pos) == 5   # 2 + 3
+        @test r == 2             # two non-empty groups
+        @test c == 3             # widest group has 3
     end
 
     @testset "non-bang: nrows not over-constrained by taxon count (regression)" begin
@@ -449,10 +491,10 @@ end  # range table API
             @test length(ax.scene.plots) ≥ 1
         end
 
-        @testset "node filter, all images, grouped layout" begin
+        @testset "node filter, all images, blocks layout" begin
             fig = Figure(); ax = Axis(fig[1, 1])
             phylopic_thumbnail_grid!(ax, ["Tyrannosaurus"];
-                image_filter = :node, image_layout = :grouped,
+                image_filter = :node, image_layout = :blocks,
                 image_max_pages = 1, on_missing = :placeholder, ncols = 4)
             @test length(ax.scene.plots) ≥ 1
         end
