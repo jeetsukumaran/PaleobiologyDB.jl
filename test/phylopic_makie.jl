@@ -344,41 +344,128 @@ end  # range table API
 
 @testset "PhyloPicMakie — thumbnail grid" begin
 
-    # These three tests are safe without network: empty/whitespace names are
-    # skipped by _resolve_images before acquire_phylopic is called, and the
-    # invalid-fraction test throws ArgumentError before _resolve_images runs.
-    @testset "placeholder mode draws plot objects for missing thumbnails" begin
+    # Offline tests: no network needed.
+    #
+    # Note on empty-name behaviour: the new image-pool resolution returns an
+    # empty pool for blank/whitespace names, so they contribute zero cells to
+    # the grid.  The `on_missing` policy applies only to cells whose selected
+    # image could not be downloaded — not to taxa that produced no pool at all.
+
+    @testset "empty names produce no cells (skip mode)" begin
+        fig = Figure(); ax = Axis(fig[1, 1])
+        n0 = length(ax.scene.plots)
+        phylopic_thumbnail_grid!(ax, ["", " "]; on_missing = :skip, ncols = 1)
+        @test _count_images(ax) == 0
+        @test length(ax.scene.plots) == n0   # nothing drawn for empty names
+    end
+
+    @testset "empty names produce no cells (placeholder mode)" begin
         fig = Figure(); ax = Axis(fig[1, 1])
         n0 = length(ax.scene.plots)
         phylopic_thumbnail_grid!(ax, ["", " "]; on_missing = :placeholder, ncols = 1)
         @test _count_images(ax) == 0
-        @test length(ax.scene.plots) ≥ n0 + 4
+        @test length(ax.scene.plots) == n0   # blank names → no pool → no cells
     end
 
-    @testset "error mode throws for unresolved thumbnails" begin
+    @testset "empty names do not trigger error mode" begin
+        # Empty names yield 0 cells; on_missing=:error only fires for cells
+        # with a selected image whose download failed — not for missing pools.
         fig = Figure(); ax = Axis(fig[1, 1])
-        @test_throws ErrorException phylopic_thumbnail_grid!(ax, [""]; on_missing = :error)
+        @test_nowarn phylopic_thumbnail_grid!(ax, [""]; on_missing = :error)
     end
 
-    @testset "invalid glyph fraction throws" begin
+    @testset "invalid glyph fraction throws ArgumentError" begin
         fig = Figure(); ax = Axis(fig[1, 1])
         @test_throws ArgumentError phylopic_thumbnail_grid!(ax, ["Tyrannosaurus"]; glyph_fraction = 1.0)
+    end
+
+    @testset "invalid image_filter throws ArgumentError" begin
+        fig = Figure(); ax = Axis(fig[1, 1])
+        @test_throws ArgumentError phylopic_thumbnail_grid!(
+            ax, ["Tyrannosaurus"]; image_filter = :universe)
+    end
+
+    @testset "invalid image_layout throws ArgumentError" begin
+        fig = Figure(); ax = Axis(fig[1, 1])
+        @test_throws ArgumentError phylopic_thumbnail_grid!(
+            ax, ["Tyrannosaurus"]; image_layout = :diagonal)
+    end
+
+    @testset "image_filter = :clade, empty names → no cells" begin
+        fig = Figure(); ax = Axis(fig[1, 1])
+        n0 = length(ax.scene.plots)
+        phylopic_thumbnail_grid!(ax, ["", " "]; image_filter = :clade)
+        @test _count_images(ax) == 0
+        @test length(ax.scene.plots) == n0
+    end
+
+    @testset "image_filter = :node, empty names, grouped layout → no cells" begin
+        fig = Figure(); ax = Axis(fig[1, 1])
+        n0 = length(ax.scene.plots)
+        phylopic_thumbnail_grid!(ax, ["", " "];
+            image_filter = :node, image_layout = :grouped)
+        @test _count_images(ax) == 0
+        @test length(ax.scene.plots) == n0
     end
 
     if !LIVE
         @info "Live thumbnail grid tests skipped. Set ENV[\"PBDB_LIVE\"]=\"1\" to enable."
     else
-        @testset "bang variant adds one image per taxon and labels" begin
+        @testset "primary filter — one image per taxon" begin
             taxa = ["Tyrannosaurus", "Triceratops", "Ankylosaurus", "Edmontosaurus"]
             fig = Figure(); ax = Axis(fig[1, 1])
             n0 = length(ax.scene.plots)
-            phylopic_thumbnail_grid!(ax, taxa; glyph_fraction = 0.5, ncols = 2, on_missing = :placeholder)
+            phylopic_thumbnail_grid!(ax, taxa;
+                image_filter = :primary, glyph_fraction = 0.5,
+                ncols = 2, on_missing = :placeholder)
             @test _count_images(ax) == 4
-            @test length(ax.scene.plots) ≥ n0 + 8
+            @test length(ax.scene.plots) ≥ n0 + 8   # 4 images + 4 labels
         end
 
-        @testset "non-bang constructor returns a figure" begin
-            fig = phylopic_thumbnail_grid(["Tyrannosaurus", "Triceratops", "Ankylosaurus"]; ncols = 2)
+        @testset "clade filter, :first selector — one cell per taxon" begin
+            taxa = ["Tyrannosaurus", "Triceratops"]
+            fig = Figure(); ax = Axis(fig[1, 1])
+            phylopic_thumbnail_grid!(ax, taxa;
+                image_filter = :clade, image_selector = :first,
+                on_missing = :placeholder, ncols = 2)
+            @test length(ax.scene.plots) ≥ 2
+        end
+
+        @testset "clade filter, integer selector — one cell per taxon" begin
+            fig = Figure(); ax = Axis(fig[1, 1])
+            phylopic_thumbnail_grid!(ax, ["Tyrannosaurus"];
+                image_filter = :clade, image_selector = 1,
+                on_missing = :placeholder, ncols = 2)
+            @test length(ax.scene.plots) ≥ 1
+        end
+
+        @testset "node filter, all images, grouped layout" begin
+            fig = Figure(); ax = Axis(fig[1, 1])
+            phylopic_thumbnail_grid!(ax, ["Tyrannosaurus"];
+                image_filter = :node, image_layout = :grouped,
+                image_max_pages = 1, on_missing = :placeholder, ncols = 4)
+            @test length(ax.scene.plots) ≥ 1
+        end
+
+        @testset "callable selector returns list" begin
+            fig = Figure(); ax = Axis(fig[1, 1])
+            phylopic_thumbnail_grid!(ax, ["Carnivora"];
+                image_filter = :clade,
+                image_selector = imgs -> isempty(imgs) ? imgs : [imgs[1]],
+                image_layout = :flat, image_max_pages = 1, ncols = 4)
+            @test length(ax.scene.plots) ≥ 1
+        end
+
+        @testset "non-bang constructor returns a Figure" begin
+            fig = phylopic_thumbnail_grid(
+                ["Tyrannosaurus", "Triceratops", "Ankylosaurus"]; ncols = 2)
+            @test fig isa Figure
+        end
+
+        @testset "non-bang with clade filter returns a Figure" begin
+            fig = phylopic_thumbnail_grid(
+                ["Tyrannosaurus"];
+                image_filter = :clade, image_selector = :first, ncols = 2)
             @test fig isa Figure
         end
     end

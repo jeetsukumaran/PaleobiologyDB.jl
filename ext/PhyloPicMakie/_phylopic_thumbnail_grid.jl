@@ -7,6 +7,8 @@
 # ---------------------------------------------------------------------------
 
 import Makie
+import PhyloPicDB
+using PaleobiologyDB.Taxonomy: phylopic_images, phylopic_node
 
 const DEFAULT_THUMBNAIL_GRID_MAX_COLUMNS = 4
 const DEFAULT_THUMBNAIL_GRID_CELL_WIDTH = 1.0
@@ -18,6 +20,16 @@ const DEFAULT_THUMBNAIL_GRID_FIGURE_MARGIN_PX = 80
 const DEFAULT_THUMBNAIL_GRID_CELL_WIDTH_PX = 320
 const DEFAULT_THUMBNAIL_GRID_CELL_HEIGHT_PX = 260
 const DEFAULT_THUMBNAIL_GRID_TITLE_GAP = 0.12
+
+"""
+Valid `image_filter` symbols for the thumbnail grid.
+"""
+const VALID_IMAGE_FILTERS = (:primary, :clade, :node)
+
+"""
+Valid `image_layout` symbols for the thumbnail grid.
+"""
+const VALID_IMAGE_LAYOUTS = (:flat, :grouped)
 
 """
     _infer_thumbnail_grid_shape(
@@ -196,6 +208,213 @@ function _draw_thumbnail_placeholder!(
     return nothing
 end
 
+# ---------------------------------------------------------------------------
+# Image resolution for the thumbnail grid
+# ---------------------------------------------------------------------------
+
+"""
+    _apply_image_selector(
+        pool::AbstractVector{PhyloPicDB.PhyloPicImage},
+        image_selector,
+    ) -> Vector{PhyloPicDB.PhyloPicImage}
+
+Apply `image_selector` to `pool` and always return a
+`Vector{PhyloPicDB.PhyloPicImage}`.
+
+This is a pure function — no I/O, no network calls.
+
+| `image_selector` | Result |
+|---|---|
+| `nothing` | All images in `pool` |
+| `:first` | `[pool[1]]`, or `[]` if empty |
+| `Int n` | `[pool[n]]`, or `[]` if out of bounds |
+| Callable `f` | `f(pool)`; must return `AbstractVector{PhyloPicDB.PhyloPicImage}` |
+
+Callable results that are a single `PhyloPicDB.PhyloPicImage` are coerced to a
+1-element vector as a convenience.  Any other return type yields `[]`.
+"""
+function _apply_image_selector(
+    pool::AbstractVector{PhyloPicDB.PhyloPicImage},
+    image_selector,
+)::Vector{PhyloPicDB.PhyloPicImage}
+    isnothing(image_selector) && return collect(pool)
+    if image_selector === :first
+        return isempty(pool) ? PhyloPicDB.PhyloPicImage[] : [pool[1]]
+    end
+    if image_selector isa Int
+        n = image_selector
+        return (1 ≤ n ≤ length(pool)) ? [pool[n]] : PhyloPicDB.PhyloPicImage[]
+    end
+    # Callable — must return AbstractVector{PhyloPicImage}.
+    result = image_selector(pool)
+    result isa AbstractVector && return collect(PhyloPicDB.PhyloPicImage, result)
+    # Coerce single-image return defensively.
+    result isa PhyloPicDB.PhyloPicImage && return [result]
+    return PhyloPicDB.PhyloPicImage[]
+end
+
+"""
+    _fetch_taxon_image_pool(
+        name::AbstractString,
+        image_filter::Symbol,
+        image_max_pages::Union{Int, Nothing},
+    ) -> Vector{PhyloPicDB.PhyloPicImage}
+
+Fetch the raw image pool for a single taxon name from the PhyloPic API.
+
+Returns an empty vector for blank names, unresolvable taxa, or any error.
+
+- `:primary` — resolves `name` to a PhyloPic node via the PBDB pipeline and
+  returns `[primary_image]` (1-element vector).
+- `:clade` / `:node` — returns all images from
+  [`PaleobiologyDB.Taxonomy.phylopic_images`](@ref).
+"""
+function _fetch_taxon_image_pool(
+    name::AbstractString,
+    image_filter::Symbol,
+    image_max_pages::Union{Int, Nothing},
+)::Vector{PhyloPicDB.PhyloPicImage}
+    isempty(strip(name)) && return PhyloPicDB.PhyloPicImage[]
+    if image_filter === :primary
+        node = phylopic_node(name)
+        isnothing(node) && return PhyloPicDB.PhyloPicImage[]
+        img = PhyloPicDB.primary_image(node.uuid)
+        return isnothing(img) ? PhyloPicDB.PhyloPicImage[] : [img]
+    end
+    return phylopic_images(name; filter = image_filter, max_pages = image_max_pages)
+end
+
+"""
+    _download_thumbnail(
+        img::PhyloPicDB.PhyloPicImage,
+        label::AbstractString,
+    ) -> Union{Matrix{RGBA{N0f8}}, Nothing}
+
+Download and decode the thumbnail for `img`.
+
+Returns `nothing` when `img.thumbnail_url` is `missing` or the download fails.
+Download failures are logged via `@warn` with `label` included for diagnostics.
+"""
+function _download_thumbnail(
+    img::PhyloPicDB.PhyloPicImage,
+    label::AbstractString,
+)::Union{Matrix{RGBA{N0f8}}, Nothing}
+    ismissing(img.thumbnail_url) && return nothing
+    try
+        return _load_phylopic_image(img.thumbnail_url)
+    catch err
+        @warn "phylopic_thumbnail_grid: could not load thumbnail for \"$label\"" exception = err
+        return nothing
+    end
+end
+
+"""
+    _build_grid_cells(
+        taxon::AbstractVector{<:AbstractString},
+        image_filter::Symbol,
+        image_selector,
+        image_max_pages::Union{Int, Nothing},
+    ) -> Tuple{Vector{String}, Vector{Union{Matrix{RGBA{N0f8}}, Nothing}}, Vector{Int}}
+
+Build the flat cell list for the thumbnail grid.
+
+Returns three parallel arrays:
+- `labels` — display label for each cell.
+- `cell_images` — decoded thumbnail matrix or `nothing` per cell.
+- `group_sizes` — number of cells contributed by each taxon (in input order).
+
+Labels are the taxon name for single-image groups and `"name [k]"` for
+multi-image groups (where `k` is the 1-based image index within the group).
+
+Taxa that produce no images (empty name, unresolvable, or filtered to empty) contribute
+a `group_sizes` entry of `0` and no cells.
+"""
+function _build_grid_cells(
+    taxon::AbstractVector{<:AbstractString},
+    image_filter::Symbol,
+    image_selector,
+    image_max_pages::Union{Int, Nothing},
+)::Tuple{
+    Vector{String},
+    Vector{Union{Matrix{RGBA{N0f8}}, Nothing}},
+    Vector{Int},
+}
+    labels      = String[]
+    cell_images = Union{Matrix{RGBA{N0f8}}, Nothing}[]
+    group_sizes = Int[]
+
+    for name in taxon
+        s        = string(name)
+        pool     = _fetch_taxon_image_pool(s, image_filter, image_max_pages)
+        selected = _apply_image_selector(pool, image_selector)
+        count    = length(selected)
+        push!(group_sizes, count)
+        multi = count > 1
+        for (k, img) in enumerate(selected)
+            lbl = multi ? "$s [$k]" : s
+            push!(labels, lbl)
+            push!(cell_images, _download_thumbnail(img, lbl))
+        end
+    end
+
+    return (labels, cell_images, group_sizes)
+end
+
+"""
+    _grouped_grid_total_rows(
+        group_sizes::AbstractVector{<:Integer},
+        ncols::Integer,
+    ) -> Int
+
+Return the total number of grid rows required for a grouped layout where each
+non-empty group starts on a fresh row and wraps at `ncols`.
+"""
+function _grouped_grid_total_rows(
+    group_sizes::AbstractVector{<:Integer},
+    ncols::Integer,
+)::Int
+    return sum(cld(g, ncols) for g in group_sizes if g > 0; init = 0)
+end
+
+"""
+    _grouped_grid_positions(
+        group_sizes::AbstractVector{<:Integer},
+        ncols::Integer;
+        cell_width::Real,
+        cell_height::Real,
+    ) -> Vector{Tuple{Float64, Float64}}
+
+Return `(x, y)` centre coordinates for a grouped layout where each non-empty
+group (taxon) starts on a fresh row.
+
+Within a group, cells are placed left to right and wrap at `ncols`.  A new
+group always begins at the leftmost column of the next available row below the
+preceding group.
+"""
+function _grouped_grid_positions(
+    group_sizes::AbstractVector{<:Integer},
+    ncols::Integer;
+    cell_width::Real,
+    cell_height::Real,
+)::Vector{Tuple{Float64, Float64}}
+    total_rows = _grouped_grid_total_rows(group_sizes, ncols)
+    positions  = Tuple{Float64, Float64}[]
+    row_offset = 0
+    for g in group_sizes
+        g == 0 && continue
+        for j in 1:g
+            group_row = cld(j, ncols) - 1
+            col_idx   = ((j - 1) % ncols) + 1
+            global_r  = row_offset + group_row
+            x = (Float64(col_idx) - 0.5) * Float64(cell_width)
+            y = (Float64(total_rows - 1 - global_r) + 0.5) * Float64(cell_height)
+            push!(positions, (x, y))
+        end
+        row_offset += cld(g, ncols)
+    end
+    return positions
+end
+
 """
     phylopic_thumbnail_grid!(
         ax::Makie.Axis,
@@ -211,42 +430,69 @@ end
         title_gap::Real = DEFAULT_THUMBNAIL_GRID_TITLE_GAP,
         on_missing::Symbol = :skip,
         image_interpolate::Bool = true,
+        image_filter::Symbol = :primary,
+        image_selector = nothing,
+        image_max_pages::Union{Int, Nothing} = nothing,
+        image_layout::Symbol = :grouped,
     ) -> Nothing
 
-Render a gallery of PhyloPic thumbnail silhouettes, one per taxon, into the
-existing Makie `Axis` `ax`.
+Render a gallery of PhyloPic thumbnail silhouettes into the existing Makie
+`Axis` `ax`.
 
-Each taxon is displayed in its own cell with the silhouette centred in the
-upper portion of the cell and the taxon name centred beneath it.  The layout
-is row-major.  If neither `ncols` nor `nrows` is specified, a bounded-width
-layout is inferred automatically so larger galleries tend to extend downward
-rather than becoming excessively wide.
+Each taxon in `taxon` contributes one or more cells to the grid depending on
+`image_filter` and `image_selector`.  With the defaults (`image_filter =
+:primary`, `image_selector = nothing`) each taxon produces exactly one cell —
+the same behaviour as before this feature was added.
 
 ## Arguments
 
 - `ax`: Target Makie axis.
-- `taxon`: Taxon names to resolve via
-  [`PaleobiologyDB.Taxonomy.acquire_phylopic`](@ref).
+- `taxon`: Taxon names to resolve via the PBDB → PhyloPic pipeline.
 
 ## Layout keywords
 
 - `ncols`, `nrows`: Explicit grid dimensions.  Supply either, both, or neither.
 - `cell_width`, `cell_height`: Cell size in axis data units.
-- `glyph_fraction`: Fraction of `cell_height` allocated to the image height.
+- `glyph_fraction`: Fraction of `cell_height` allocated to the image.
 - `label_gap`: Vertical gap between thumbnail and text label.
-- `label_fontsize`: Font size for taxon labels.
+- `label_fontsize`: Font size for cell labels.
 - `title`: Optional axis title drawn above the grid.
 - `title_gap`: Additional vertical padding reserved for the title.
 
+## Image selection
+
+- `image_filter`: Which pool of images to fetch per taxon.
+  - `:primary` (default) — designated primary image; 1 per taxon.
+  - `:clade` — all images for the node and its descendants.
+  - `:node` — images tagged directly to this node.
+- `image_selector`: How to narrow the fetched pool.  Every selector produces a
+  `Vector{PhyloPicImage}`; single-image selectors produce a 1-element vector.
+  - `nothing` (default) — keep all images in the pool.
+  - `:first` — first image only → `[pool[1]]`.
+  - `Int n` — *n*-th image → `[pool[n]]`, or `[]` if out of bounds.
+  - Callable `f` — `f(pool)` must return an `AbstractVector{PhyloPicImage}`.
+- `image_max_pages`: Pagination limit for `:clade`/`:node` queries (~30 images
+  per page).  `nothing` fetches all pages.  Ignored for `:primary`.
+- `image_layout`: How to arrange cells when a taxon contributes more than one
+  image.
+  - `:grouped` (default) — each taxon's images start a new row; wraps at
+    `ncols` within the group.
+  - `:flat` — single row-major grid ignoring taxon boundaries.
+
 ## Missing-image policy
 
-- `on_missing = :skip`: leave the image area empty but still draw the taxon name.
-- `on_missing = :placeholder`: draw a placeholder rectangle.
-- `on_missing = :error`: throw if any thumbnail cannot be resolved.
+- `on_missing = :skip` (default): skip cells whose thumbnail download failed.
+- `on_missing = :placeholder`: draw a placeholder rectangle for failed cells.
+- `on_missing = :error`: throw when any selected image has no downloadable thumbnail.
+
+Taxon names that cannot be resolved (blank names, PBDB lookup failure, no
+images in the requested pool) contribute no cells.  The `on_missing` policy
+applies only to images that were selected but whose thumbnail could not be
+downloaded.
 
 ## Returns
 
-`Nothing`. The plot is added to `ax` by side effect.
+`Nothing`.  The plot is added to `ax` by side effect.
 """
 function phylopic_thumbnail_grid!(
     ax::Makie.Axis,
@@ -262,6 +508,10 @@ function phylopic_thumbnail_grid!(
     title_gap::Real = DEFAULT_THUMBNAIL_GRID_TITLE_GAP,
     on_missing::Symbol = :skip,
     image_interpolate::Bool = true,
+    image_filter::Symbol = :primary,
+    image_selector = nothing,
+    image_max_pages::Union{Int, Nothing} = nothing,
+    image_layout::Symbol = :grouped,
 )::Nothing
     cell_width > 0 || throw(ArgumentError(
         "phylopic_thumbnail_grid!: `cell_width` must be positive. Got $cell_width."
@@ -286,28 +536,45 @@ function phylopic_thumbnail_grid!(
         "phylopic_thumbnail_grid!: unknown `on_missing` value `$on_missing`. " *
         "Valid values: $(join(VALID_ON_MISSING, ", "))."
     ))
+    image_filter ∈ VALID_IMAGE_FILTERS || throw(ArgumentError(
+        "phylopic_thumbnail_grid!: unknown `image_filter` value `$image_filter`. " *
+        "Valid values: $(join(VALID_IMAGE_FILTERS, ", "))."
+    ))
+    image_layout ∈ VALID_IMAGE_LAYOUTS || throw(ArgumentError(
+        "phylopic_thumbnail_grid!: unknown `image_layout` value `$image_layout`. " *
+        "Valid values: $(join(VALID_IMAGE_LAYOUTS, ", "))."
+    ))
 
-    n = length(taxon)
-    cols, rows = _infer_thumbnail_grid_shape(n; ncols = ncols, nrows = nrows)
-    positions = _thumbnail_grid_positions(
-        n,
-        cols,
-        rows;
-        cell_width = cell_width,
-        cell_height = cell_height,
-    )
-    images = _resolve_images(taxon, nothing, n)
+    # Build the flat cell list across all taxa.
+    cell_labels, cell_images, group_sizes =
+        _build_grid_cells(taxon, image_filter, image_selector, image_max_pages)
+    total_cells = length(cell_labels)
+
+    # Determine grid geometry.
+    cols, rows = _infer_thumbnail_grid_shape(total_cells; ncols = ncols, nrows = nrows)
+
+    # Compute cell positions according to layout.
+    positions = if image_layout === :grouped
+        grouped_rows = _grouped_grid_total_rows(group_sizes, cols)
+        rows = max(grouped_rows, 1)
+        _grouped_grid_positions(group_sizes, cols;
+            cell_width = cell_width, cell_height = cell_height)
+    else  # :flat
+        _thumbnail_grid_positions(total_cells, cols, rows;
+            cell_width = cell_width, cell_height = cell_height)
+    end
 
     glyph_size = Float64(cell_height) * Float64(glyph_fraction) / 2
 
-    for i in 1:n
-        x, y = positions[i]
-        img = images[i]
+    for i in 1:total_cells
+        x, y  = positions[i]
+        img   = cell_images[i]
+        label = cell_labels[i]
 
         if isnothing(img)
             if on_missing === :error
                 throw(ErrorException(
-                    "phylopic_thumbnail_grid!: missing image for taxon \"$(taxon[i])\"."
+                    "phylopic_thumbnail_grid!: missing thumbnail for \"$label\"."
                 ))
             elseif on_missing === :placeholder
                 _draw_thumbnail_placeholder!(ax, x, y; glyph_size = glyph_size)
@@ -343,7 +610,7 @@ function phylopic_thumbnail_grid!(
         )
         Makie.text!(
             ax,
-            string(taxon[i]);
+            label;
             position = (label_x, label_y),
             align = (:center, :top),
             fontsize = label_fontsize,
@@ -372,6 +639,12 @@ end
         taxon::AbstractVector{<:AbstractString};
         figure_size::Union{Tuple{<:Integer, <:Integer}, Nothing} = nothing,
         axis = NamedTuple(),
+        ncols::Union{Integer, Nothing} = nothing,
+        nrows::Union{Integer, Nothing} = nothing,
+        image_filter::Symbol = :primary,
+        image_selector = nothing,
+        image_max_pages::Union{Int, Nothing} = nothing,
+        image_layout::Symbol = :grouped,
         kwargs...,
     ) -> Makie.Figure
 
@@ -382,6 +655,9 @@ bounded width, so larger galleries generally grow downward instead of becoming
 arbitrarily wide.  Pass `figure_size` to override the inferred size.  Any
 entries of the `axis` named tuple are forwarded to the `Axis` constructor.
 
+See [`phylopic_thumbnail_grid!`](@ref) for full documentation of
+`image_filter`, `image_selector`, `image_max_pages`, and `image_layout`.
+
 Returns the created `Makie.Figure`.
 """
 function phylopic_thumbnail_grid(
@@ -390,6 +666,10 @@ function phylopic_thumbnail_grid(
     axis = NamedTuple(),
     ncols::Union{Integer, Nothing} = nothing,
     nrows::Union{Integer, Nothing} = nothing,
+    image_filter::Symbol = :primary,
+    image_selector = nothing,
+    image_max_pages::Union{Int, Nothing} = nothing,
+    image_layout::Symbol = :grouped,
     kwargs...,
 )::Makie.Figure
     cols, rows = _infer_thumbnail_grid_shape(length(taxon); ncols = ncols, nrows = nrows)
@@ -410,6 +690,10 @@ function phylopic_thumbnail_grid(
         taxon;
         ncols = cols,
         nrows = rows,
+        image_filter = image_filter,
+        image_selector = image_selector,
+        image_max_pages = image_max_pages,
+        image_layout = image_layout,
         kwargs...,
     )
     return fig
