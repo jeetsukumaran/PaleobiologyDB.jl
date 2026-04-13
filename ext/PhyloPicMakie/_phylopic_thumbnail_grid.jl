@@ -636,7 +636,7 @@ end
         title_gap::Real = DEFAULT_THUMBNAIL_GRID_TITLE_GAP,
         on_missing::Symbol = :skip,
         image_interpolate::Bool = true,
-        image_filter::Symbol = :primary,
+        image_filter::Symbol = :clade,
         image_selector = nothing,
         image_max_pages::Union{Int, Nothing} = nothing,
         image_layout::Symbol = :blocks,
@@ -678,8 +678,8 @@ the same behaviour as before this feature was added.
 ## Image selection
 
 - `image_filter`: Which pool of images to fetch per taxon.
-  - `:primary` (default) — designated primary image; 1 per taxon.
-  - `:clade` — all images for the node and its descendants.
+  - `:clade` (default) — all images for the node and its descendants.
+  - `:primary` — designated primary image; 1 per taxon.
   - `:node` — images tagged directly to this node.
 - `image_selector`: How to narrow the fetched pool.  Every selector produces a
   `Vector{PhyloPicImage}`; single-image selectors produce a 1-element vector.
@@ -736,7 +736,7 @@ function phylopic_thumbnail_grid!(
     title_gap::Real = DEFAULT_THUMBNAIL_GRID_TITLE_GAP,
     on_missing::Symbol = :skip,
     image_interpolate::Bool = true,
-    image_filter::Symbol = :primary,
+    image_filter::Symbol = :clade,
     image_selector = nothing,
     image_max_pages::Union{Int, Nothing} = nothing,
     image_layout::Symbol = :blocks,
@@ -894,7 +894,7 @@ end
         axis = NamedTuple(),
         ncols::Union{Integer, Nothing} = nothing,
         nrows::Union{Integer, Nothing} = nothing,
-        image_filter::Symbol = :primary,
+        image_filter::Symbol = :clade,
         image_selector = nothing,
         image_max_pages::Union{Int, Nothing} = nothing,
         image_layout::Symbol = :blocks,
@@ -925,7 +925,7 @@ function phylopic_thumbnail_grid(
     axis = NamedTuple(),
     ncols::Union{Integer, Nothing} = nothing,
     nrows::Union{Integer, Nothing} = nothing,
-    image_filter::Symbol = :primary,
+    image_filter::Symbol = :clade,
     image_selector = nothing,
     image_max_pages::Union{Int, Nothing} = nothing,
     image_layout::Symbol = :blocks,
