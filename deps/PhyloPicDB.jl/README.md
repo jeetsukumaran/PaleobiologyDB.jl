@@ -108,6 +108,24 @@ Returned by all image-fetching functions.
 | `specific_node_uuid` | `Union{String,Nothing}` | Most-precise associated node UUID |
 | `general_node_uuid` | `Union{String,Nothing}` | Most-inclusive associated node UUID |
 
+### Image renderings
+
+Each `PhyloPicImage` carries five URL fields for different image formats.
+The `image_rendering` keyword accepted by the visualization layers
+(PhyloPicMakie, TaxonTreeMakie) selects which URL to fetch and render:
+
+| `image_rendering` | `PhyloPicImage` field | Format |
+|---|---|---|
+| `:thumbnail` *(default)* | `thumbnail_url`   | PNG; square thumbnail, largest available |
+| `:raster`                | `raster_url`      | PNG; full-resolution, largest available |
+| `:og_image`              | `og_image_url`    | PNG; Open Graph social-media preview |
+| `:vector`                | `vector_url`      | SVG; auto-generated black silhouette on transparent background |
+| `:source_file`           | `source_file_url` | SVG or raster — format matches the original upload |
+
+**SVG note**: `:vector` and `:source_file` may point to SVG files.
+`FileIO.load` requires an SVG-capable plugin (e.g. a Cairo/Rsvg-based loader)
+to decode them; without one the download step will fail with a `FileIO` error.
+
 ## API reference
 
 ### Build management

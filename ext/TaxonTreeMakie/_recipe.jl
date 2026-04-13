@@ -180,6 +180,7 @@ dendrogram.  Produced by [`taxontreeplot`](@ref) (standalone figure) or
 | `phylopic_xoffset` | `0.3` | Additional rightward gap in data units beyond the tip-label start position |
 | `phylopic_on_missing` | `:skip` | Policy when no PhyloPic image is found: `:skip` (omit), `:placeholder` (grey box), `:error` (throw) |
 | `phylopic_aspect` | `:preserve` | `:preserve` maintains the original image aspect ratio; `:stretch` renders as a square |
+| `phylopic_image_rendering` | `:thumbnail` | Image URL to fetch: `:thumbnail` (PNG thumbnail), `:raster` (PNG full-res), `:og_image` (PNG Open Graph), `:vector` (SVG — requires FileIO SVG plugin), `:source_file` (SVG or raster); see [`PhyloPicDB.PHYLOPIC_IMAGE_RENDERINGS`](@ref) |
 
 ## Examples
 
@@ -232,6 +233,7 @@ See also [`taxontreeplot`](@ref), [`taxontreeplot!`](@ref),
         phylopic_xoffset        = 0.3,
         phylopic_on_missing     = :skip,
         phylopic_aspect         = :preserve,
+        phylopic_image_rendering = :thumbnail,
     )
 end
 
@@ -371,6 +373,7 @@ function Makie.plot!(p::TaxonTreePlot{<:Tuple{TaxonTree}})
             tip_xoffset      = p[:tip_xoffset][],
             on_missing       = p[:phylopic_on_missing][],
             aspect           = p[:phylopic_aspect][],
+            image_rendering  = p[:phylopic_image_rendering][],
         )
     end
 

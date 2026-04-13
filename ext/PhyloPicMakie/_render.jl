@@ -20,7 +20,41 @@
 # ---------------------------------------------------------------------------
 
 import Makie
+import PhyloPicDB
 using PaleobiologyDB.Taxonomy: acquire_phylopic
+
+# ---------------------------------------------------------------------------
+# Internal: image rendering field resolution
+# ---------------------------------------------------------------------------
+
+"""
+    _phylopic_field_for_rendering(image_rendering::Symbol) -> Symbol
+
+Map an `image_rendering` symbol to the corresponding field key in the
+NamedTuple returned by `acquire_phylopic` (with the default `"phylopic_"` prefix).
+
+| `image_rendering` | `acquire_phylopic` field | Format |
+|---|---|---|
+| `:thumbnail`   | `:phylopic_thumbnail`   | PNG; square thumbnail, largest available (default) |
+| `:raster`      | `:phylopic_raster`      | PNG; full-resolution, largest available |
+| `:og_image`    | `:phylopic_og_image`    | PNG; Open Graph social-media preview |
+| `:vector`      | `:phylopic_vector`      | SVG; black silhouette on transparent — requires SVG-capable `FileIO` plugin |
+| `:source_file` | `:phylopic_source_file` | SVG or raster — format matches the original upload |
+
+Throws `ArgumentError` for unrecognised symbols.
+"""
+function _phylopic_field_for_rendering(image_rendering::Symbol)::Symbol
+    image_rendering === :thumbnail   && return :phylopic_thumbnail
+    image_rendering === :raster      && return :phylopic_raster
+    image_rendering === :og_image    && return :phylopic_og_image
+    image_rendering === :vector      && return :phylopic_vector
+    image_rendering === :source_file && return :phylopic_source_file
+    throw(ArgumentError(
+        "_phylopic_field_for_rendering: unknown `image_rendering` value " *
+        "`:$image_rendering`. " *
+        "Valid values: $(join(string.(':', PhyloPicDB.PHYLOPIC_IMAGE_RENDERINGS), ", "))."
+    ))
+end
 
 # ---------------------------------------------------------------------------
 # Internal: resolve images for a vector of taxa / glyphs
@@ -30,7 +64,8 @@ using PaleobiologyDB.Taxonomy: acquire_phylopic
     _resolve_images(
         taxon::Union{AbstractVector, Nothing},
         glyph::Union{AbstractMatrix{<:Colorant}, Nothing},
-        n::Integer,
+        n::Integer;
+        image_rendering::Symbol = :thumbnail,
     ) -> Vector{Union{Matrix{RGBA{N0f8}}, Nothing}}
 
 For each of the `n` data points, return either a decoded image matrix or
@@ -39,12 +74,16 @@ For each of the `n` data points, return either a decoded image matrix or
 Exactly one of `taxon` or `glyph` must be non-`nothing`:
 - If `glyph` is provided, it is broadcast to all `n` points.
 - If `taxon` is provided, `acquire_phylopic` is called for each unique name
-  and the thumbnail is downloaded via `_load_phylopic_image`.
+  and the selected URL is downloaded via `_load_phylopic_image`.
+
+`image_rendering` controls which URL is fetched; see
+[`_phylopic_field_for_rendering`](@ref) for the full symbol table.
 """
 function _resolve_images(
     taxon::Union{AbstractVector, Nothing},
     glyph::Union{AbstractMatrix, Nothing},
-    n::Integer,
+    n::Integer;
+    image_rendering::Symbol = :thumbnail,
 )::Vector{Union{Matrix{RGBA{N0f8}}, Nothing}}
     if !isnothing(glyph)
         # Broadcast the single pre-loaded image to every data point.
@@ -60,6 +99,8 @@ function _resolve_images(
         "coordinate length ($n)."
     ))
 
+    field = _phylopic_field_for_rendering(image_rendering)
+
     # Deduplicate: call acquire_phylopic once per unique non-missing name.
     unique_names = unique(skipmissing(taxon))
     url_cache = Dict{String, Union{String, Missing}}()
@@ -67,8 +108,7 @@ function _resolve_images(
         s = string(name)
         isempty(strip(s)) && continue
         rec = acquire_phylopic(s)
-        # The field is prefixed with "phylopic_" by default
-        url_cache[s] = get(rec, :phylopic_thumbnail, missing)
+        url_cache[s] = get(rec, field, missing)
     end
 
     results = Vector{Union{Matrix{RGBA{N0f8}}, Nothing}}(undef, n)
@@ -220,6 +260,7 @@ end
         rotation::Real = 0.0,
         mirror::Bool = false,
         clip::Bool = true,
+        image_rendering::Symbol = :thumbnail,
         on_missing::Symbol = :skip,
     ) -> Nothing
 
@@ -258,6 +299,17 @@ reduce to this.
 
 ### Rendering
 
+- `image_rendering`: which PhyloPic image URL to fetch.  Default `:thumbnail`.
+  Ignored when `glyph` is supplied directly.
+
+  | `image_rendering` | Format |
+  |---|---|
+  | `:thumbnail` *(default)* | PNG; square thumbnail, largest available |
+  | `:raster`      | PNG; full-resolution, largest available |
+  | `:og_image`    | PNG; Open Graph social-media preview |
+  | `:vector`      | SVG; black silhouette on transparent — requires SVG-capable `FileIO` plugin |
+  | `:source_file` | SVG or raster — format matches the original upload |
+
 - `rotation`: clockwise rotation in degrees.  Supported values: `0`, `90`,
   `180`, `270` (and their negatives / modulo equivalents).  Default `0.0`.
 - `mirror`: if `true`, flip the glyph horizontally before rendering.
@@ -289,9 +341,10 @@ augment_phylopic!(
     ax,
     [68.0],
     [1.0];
-    taxon     = ["Tyrannosaurus"],
-    glyph_size = 0.4,
-    placement = :left,
+    taxon          = ["Tyrannosaurus"],
+    glyph_size     = 0.4,
+    placement      = :left,
+    image_rendering = :raster,
 )
 ```
 """
@@ -309,13 +362,14 @@ function augment_phylopic!(
     rotation::Real = 0.0,
     mirror::Bool = false,
     clip::Bool = true,
+    image_rendering::Symbol = :thumbnail,
     on_missing::Symbol = :skip,
 )::Nothing
     n = length(x)
     length(y) == n || throw(ArgumentError(
         "augment_phylopic!: `x` and `y` must have the same length."
     ))
-    images = _resolve_images(taxon, glyph, n)
+    images = _resolve_images(taxon, glyph, n; image_rendering)
     _augment_phylopic_core!(
         ax, x, y, images;
         glyph_size = glyph_size,

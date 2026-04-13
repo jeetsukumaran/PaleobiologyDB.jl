@@ -98,6 +98,7 @@ export with_node_names
 export batch_primary_images
 export batch_images
 
+export PHYLOPIC_IMAGE_RENDERINGS
 export PHYLOPIC_IMAGE_ALL_LABEL_FIELDS
 export PHYLOPIC_IMAGE_BASIC_LABEL_FIELDS
 

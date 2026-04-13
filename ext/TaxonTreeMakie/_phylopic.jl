@@ -21,6 +21,7 @@
 # coupling.  Both implementations must be kept in sync.
 # ---------------------------------------------------------------------------
 
+import PhyloPicDB
 using PaleobiologyDB.Taxonomy: acquire_phylopic
 
 # ---------------------------------------------------------------------------
@@ -124,10 +125,21 @@ const _PHYLOPIC_MISSING_WARNED = Ref(false)
 
 """
     _load_tip_phylopic_image(
-        taxon_name::AbstractString,
+        taxon_name::AbstractString;
+        image_rendering::Symbol = :thumbnail,
     ) -> Union{Matrix{Makie.RGBA{Makie.N0f8}}, Nothing}
 
-Look up and download the PhyloPic thumbnail for `taxon_name`.
+Look up and download the PhyloPic image for `taxon_name`.
+
+`image_rendering` controls which URL is fetched:
+
+| `image_rendering` | `acquire_phylopic` field | Format |
+|---|---|---|
+| `:thumbnail` *(default)* | `:phylopic_thumbnail` | PNG; square thumbnail, largest available |
+| `:raster` | `:phylopic_raster` | PNG; full-resolution, largest available |
+| `:og_image` | `:phylopic_og_image` | PNG; Open Graph social-media preview |
+| `:vector` | `:phylopic_vector` | SVG; black silhouette on transparent — requires FileIO SVG plugin |
+| `:source_file` | `:phylopic_source_file` | SVG or raster — format matches the original upload |
 
 Delegates to `PaleobiologyDB.PhyloPicMakie` for URL resolution and image
 decoding (which requires `FileIO` to be loaded in the session).  When
@@ -145,8 +157,14 @@ image could not be resolved or loaded.  Callers should apply `rotr90` before
 passing to `Makie.image!`.
 """
 function _load_tip_phylopic_image(
-    taxon_name::AbstractString,
+    taxon_name::AbstractString;
+    image_rendering::Symbol = :thumbnail,
 )::Union{Matrix{Makie.RGBA{Makie.N0f8}}, Nothing}
+    image_rendering ∈ PhyloPicDB.PHYLOPIC_IMAGE_RENDERINGS || throw(ArgumentError(
+        "_load_tip_phylopic_image: unknown `image_rendering` value `:$image_rendering`. " *
+        "Valid values: $(join(string.(':', PhyloPicDB.PHYLOPIC_IMAGE_RENDERINGS), ", "))."
+    ))
+
     if !isdefined(PaleobiologyDB, :PhyloPicMakie)
         if !_PHYLOPIC_MISSING_WARNED[]
             _PHYLOPIC_MISSING_WARNED[] = true
@@ -163,7 +181,19 @@ function _load_tip_phylopic_image(
         return nothing
     end
 
-    url = get(rec, :phylopic_thumbnail, missing)
+    field = if image_rendering === :thumbnail
+        :phylopic_thumbnail
+    elseif image_rendering === :raster
+        :phylopic_raster
+    elseif image_rendering === :og_image
+        :phylopic_og_image
+    elseif image_rendering === :vector
+        :phylopic_vector
+    else  # :source_file, already validated above
+        :phylopic_source_file
+    end
+
+    url = get(rec, field, missing)
     if ismissing(url) || isempty(string(url))
         return nothing
     end
@@ -192,6 +222,7 @@ end
         tip_xoffset::Real,
         on_missing::Symbol,
         aspect::Symbol,
+        image_rendering::Symbol = :thumbnail,
     ) -> Nothing
 
 Add one `Makie.image!` (or `Makie.poly!` placeholder) per leaf tip to the
@@ -220,6 +251,9 @@ changes their visibility without re-fetching.
   - `:placeholder` — draw a translucent grey rectangle.
   - `:error` — throw an `ErrorException`.
 - `aspect`: `:preserve` maintains aspect ratio; `:stretch` renders square.
+- `image_rendering`: which image URL to fetch.  Valid values:
+  `:thumbnail` (default), `:raster`, `:og_image`, `:vector`, `:source_file`.
+  See [`PhyloPicDB.PHYLOPIC_IMAGE_RENDERINGS`](@ref) for the full table.
 
 ## Returns
 
@@ -236,10 +270,15 @@ function _render_tip_phylopic!(
     tip_xoffset::Real,
     on_missing::Symbol,
     aspect::Symbol,
+    image_rendering::Symbol = :thumbnail,
 )::Nothing
     on_missing ∈ (:skip, :placeholder, :error) || throw(ArgumentError(
         "_render_tip_phylopic!: unknown `on_missing` value `$on_missing`. " *
         "Valid values: :skip, :placeholder, :error."
+    ))
+    image_rendering ∈ PhyloPicDB.PHYLOPIC_IMAGE_RENDERINGS || throw(ArgumentError(
+        "_render_tip_phylopic!: unknown `image_rendering` value `:$image_rendering`. " *
+        "Valid values: $(join(string.(':', PhyloPicDB.PHYLOPIC_IMAGE_RENDERINGS), ", "))."
     ))
 
     g = tree.graph
@@ -252,7 +291,7 @@ function _render_tip_phylopic!(
 
     for v in leaf_vertices
         taxon_name = tree.taxa[v].name
-        img = _load_tip_phylopic_image(taxon_name)
+        img = _load_tip_phylopic_image(taxon_name; image_rendering)
 
         # x anchor: either per-leaf or uniform column
         x_anchor = do_align ? x_align : Float64(xs[v]) + Float64(tip_xoffset) +
