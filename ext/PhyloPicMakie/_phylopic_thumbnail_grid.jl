@@ -476,9 +476,9 @@ Generate the display label for a single grid cell.
 | `image_label` | Label |
 |---|---|
 | `nothing` | `"taxon"` (single) or `"taxon [k]"` (multi-image group) |
-| `:DEFAULT` | `"[k] taxon"` regardless of group size |
+| `:DEFAULT` | `"[k] node_name (taxon)"` when `node_name` is set; `"[k] taxon"` otherwise |
 | `:ALLFIELDS` | All fields in [`ALLFIELDS_IMAGE_LABEL`](@ref), joined with `labeljoin`; `missing`/`nothing`/empty omitted |
-| `:BASICFIELDS` | `:index`, `:node_name`, `:uuid` joined with `labeljoin` |
+| `:BASICFIELDS` | `:index`, `:node_name`, `:taxon_name` joined with `labeljoin` |
 | Any other `Symbol` | Corresponding image field from [`_extract_image_field`](@ref); falls back to default if `missing`/`nothing` |
 | `AbstractVector{Symbol}` | Listed fields joined with `labeljoin`; `missing`/`nothing`/empty omitted |
 | Callable `f` | `f(taxon_name, k, img)` — must return a `String` |
@@ -497,7 +497,11 @@ function _build_label(
 )::String
     isnothing(image_label) && return is_multi ? "$(taxon_name) [$k]" : String(taxon_name)
     if image_label isa Symbol
-        image_label === :DEFAULT     && return "[$k] $(taxon_name)"
+        if image_label === :DEFAULT
+            nn = img.node_name
+            return isnothing(nn) ? "[$k] $(taxon_name)" :
+                                   "[$k] $nn ($(taxon_name))"
+        end
         image_label === :ALLFIELDS   && return _join_fields(ALLFIELDS_IMAGE_LABEL,  taxon_name, k, img, labeljoin)
         image_label === :BASICFIELDS && return _join_fields(BASICFIELDS_IMAGE_LABEL, taxon_name, k, img, labeljoin)
         # Single structural field — fall back to default if absent.
@@ -702,7 +706,7 @@ the same behaviour as before this feature was added.
   - `:DEFAULT` (default) — `"[k] taxon"` regardless of group size.
   - `nothing` — `"taxon"` for single-image groups, `"taxon [k]"` for multi.
   - `:ALLFIELDS` — all fields in [`ALLFIELDS_IMAGE_LABEL`](@ref) joined with `labeljoin`; `missing`/empty omitted.
-  - `:BASICFIELDS` — `:index`, `:node_name`, `:uuid` joined with `labeljoin`.
+  - `:BASICFIELDS` — `:index`, `:node_name`, `:taxon_name` joined with `labeljoin`.
   - Any single field symbol from [`ALLFIELDS_IMAGE_LABEL`](@ref) — that field, falling back to the default label if `missing`/`nothing`.
   - `AbstractVector{Symbol}` — listed fields joined with `labeljoin`; `missing`/empty omitted.
   - Callable `f(taxon_name, k, img) -> String` — fully custom label.

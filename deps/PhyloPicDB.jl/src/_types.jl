@@ -481,9 +481,9 @@ const PHYLOPIC_IMAGE_ALL_LABEL_FIELDS = Symbol[
 """
     PHYLOPIC_IMAGE_BASIC_LABEL_FIELDS
 
-Basic image label field symbols for compact display: image index, node name,
-and UUID.
+Basic image label field symbols for compact display: image index, node name
+(preferred name of the specific node), and taxon name (caller-supplied string).
 
 See also [`PHYLOPIC_IMAGE_ALL_LABEL_FIELDS`](@ref).
 """
-const PHYLOPIC_IMAGE_BASIC_LABEL_FIELDS = Symbol[:index, :node_name, :uuid]
+const PHYLOPIC_IMAGE_BASIC_LABEL_FIELDS = Symbol[:index, :node_name, :taxon_name]

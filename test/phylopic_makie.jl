@@ -249,15 +249,16 @@ if _EXT_AVAILABLE
             @test bl("Felidae", 3, true, null_img, nothing, "\n") == "Felidae [3]"
         end
 
-        @testset ":DEFAULT always uses [k] name format" begin
+        @testset ":DEFAULT falls back to [k] taxon when node_name is nothing" begin
+            # null_img.node_name == nothing → "[k] taxon_name" fallback
             @test bl("Felidae", 1, false, null_img, :DEFAULT, "\n") == "[1] Felidae"
             @test bl("Felidae", 4, true,  null_img, :DEFAULT, "\n") == "[4] Felidae"
         end
 
-        @testset ":BASICFIELDS is [:index, :node_name, :uuid]; node_name/uuid absent on null" begin
-            # null_img: node_name=nothing, uuid="" → both skipped; only index survives
+        @testset ":BASICFIELDS is [:index, :node_name, :taxon_name]; node_name absent on null" begin
+            # null_img: node_name=nothing → skipped; index and taxon_name survive
             result = bl("Felidae", 2, true, null_img, :BASICFIELDS, " | ")
-            @test result == "2"
+            @test result == "2 | Felidae"
         end
 
         @testset "Vector{Symbol}: missing/nothing fields dropped, labeljoin used" begin
