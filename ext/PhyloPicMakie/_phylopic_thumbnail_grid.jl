@@ -715,7 +715,7 @@ function phylopic_thumbnail_grid(
         actual_h_px =
             round(Int, yhi * px_per_data_h) + DEFAULT_THUMBNAIL_GRID_FIGURE_MARGIN_PX
         if actual_h_px != init_fig_size[2]
-            Makie.resize!(fig, (init_fig_size[1], actual_h_px))
+            Makie.resize!(fig, init_fig_size[1], actual_h_px)
         end
     end
 
