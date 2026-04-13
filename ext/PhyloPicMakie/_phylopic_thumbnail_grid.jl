@@ -32,31 +32,28 @@ Valid `image_layout` symbols for the thumbnail grid.
 const VALID_IMAGE_LAYOUTS = (:flat, :blocks, :rows)
 
 """
-All field symbols recognized by [`_extract_image_field`](@ref) and accepted in
-the `AbstractVector{Symbol}` form of `image_label`.  Includes virtual fields
-(`:name`, `:index`) computed from the cell context, and every field of
-[`PhyloPicDB.PhyloPicImage`](@ref).
+All field symbols recognised by [`_extract_image_field`](@ref) and accepted in
+the `AbstractVector{Symbol}` form of `image_label`.
+
+Includes virtual fields computed from the cell context:
+- `:taxon_name` — the taxon name string supplied by the caller.
+- `:index`      — position of the image within a taxon's group.
+
+And every labelable field of [`PhyloPicDB.PhyloPicImage`](@ref), including
+`:node_name` (preferred name of the node at `specific_node_uuid`).
+
+This constant is an alias for [`PhyloPicDB.PHYLOPIC_IMAGE_ALL_LABEL_FIELDS`](@ref).
 """
-const ALLFIELDS_IMAGE_LABEL = Symbol[
-    :name,
-    :index,
-    :uuid,
-    :thumbnail_url,
-    :vector_url,
-    :raster_url,
-    :source_file_url,
-    :license,
-    :license_url,
-    :attribution,
-    :contributor,
-    :specific_node_uuid,
-    :general_node_uuid,
-]
+const ALLFIELDS_IMAGE_LABEL = PhyloPicDB.PHYLOPIC_IMAGE_ALL_LABEL_FIELDS
 
 """
-Field symbols used by the `:BASICFIELDS` image label preset.
+Field symbols used by the `:BASICFIELDS` image label preset: image index,
+node name, and UUID.
+
+This constant is an alias for
+[`PhyloPicDB.PHYLOPIC_IMAGE_BASIC_LABEL_FIELDS`](@ref).
 """
-const BASICFIELDS_IMAGE_LABEL = Symbol[:name, :index, :uuid]
+const BASICFIELDS_IMAGE_LABEL = PhyloPicDB.PHYLOPIC_IMAGE_BASIC_LABEL_FIELDS
 
 """
     _infer_thumbnail_grid_shape(
@@ -295,14 +292,18 @@ end
         image_max_pages::Union{Int, Nothing},
     ) -> Vector{PhyloPicDB.PhyloPicImage}
 
-Fetch the raw image pool for a single taxon name from the PhyloPic API.
+Fetch the image pool for a single taxon name from the PhyloPic API, with
+`node_name` enriched on every image via [`PhyloPicDB.with_node_names`](@ref).
 
 Returns an empty vector for blank names, unresolvable taxa, or any error.
 
 - `:primary` — resolves `name` to a PhyloPic node via the PBDB pipeline and
-  returns `[primary_image]` (1-element vector).
+  returns a 1-element vector containing the primary image.
 - `:clade` / `:node` — returns all images from
   [`PaleobiologyDB.Taxonomy.phylopic_images`](@ref).
+
+All returned images have `node_name` populated (or `nothing` if the
+corresponding node is unreachable).
 """
 function _fetch_taxon_image_pool(
     name::AbstractString,
@@ -310,13 +311,15 @@ function _fetch_taxon_image_pool(
     image_max_pages::Union{Int, Nothing},
 )::Vector{PhyloPicDB.PhyloPicImage}
     isempty(strip(name)) && return PhyloPicDB.PhyloPicImage[]
-    if image_filter === :primary
+    pool = if image_filter === :primary
         node = phylopic_node(name)
         isnothing(node) && return PhyloPicDB.PhyloPicImage[]
         img = PhyloPicDB.primary_image(node.uuid)
-        return isnothing(img) ? PhyloPicDB.PhyloPicImage[] : [img]
+        isnothing(img) ? PhyloPicDB.PhyloPicImage[] : [img]
+    else
+        phylopic_images(name; filter = image_filter, max_pages = image_max_pages)
     end
-    return phylopic_images(name; filter = image_filter, max_pages = image_max_pages)
+    return PhyloPicDB.with_node_names(pool)
 end
 
 """
@@ -391,11 +394,15 @@ end
 Extract a single label field from the grid-cell context.
 
 Virtual fields are computed from the taxon name and image index:
-- `:name`  — `taxon_name`
-- `:index` — `string(k)`
+- `:taxon_name` — `taxon_name` (the caller-supplied taxon string)
+- `:index`      — `string(k)`
 
-All other recognized symbols map directly to the corresponding field of `img`
-(see [`ALLFIELDS_IMAGE_LABEL`](@ref) for the full list).  Unrecognized symbols
+Struct fields mapped directly from `img`:
+- `:node_name` — `img.node_name` (preferred name of the node at
+  `specific_node_uuid`; `nothing` when not enriched)
+
+All other recognised symbols map directly to the corresponding field of `img`
+(see [`ALLFIELDS_IMAGE_LABEL`](@ref) for the full list).  Unrecognised symbols
 throw an `ArgumentError`.
 """
 function _extract_image_field(
@@ -404,8 +411,9 @@ function _extract_image_field(
     k::Int,
     img::PhyloPicDB.PhyloPicImage,
 )::Union{String, Missing, Nothing}
-    field === :name               && return String(taxon_name)
+    field === :taxon_name         && return String(taxon_name)
     field === :index              && return string(k)
+    field === :node_name          && return img.node_name
     field === :uuid               && return img.uuid
     field === :thumbnail_url      && return img.thumbnail_url
     field === :vector_url         && return img.vector_url
@@ -469,10 +477,10 @@ Generate the display label for a single grid cell.
 |---|---|
 | `nothing` | `"taxon"` (single) or `"taxon [k]"` (multi-image group) |
 | `:DEFAULT` | `"[k] taxon"` regardless of group size |
-| `:ALLFIELDS` | All fields in [`ALLFIELDS_IMAGE_LABEL`](@ref), joined with `labeljoin`; `missing`/empty omitted |
-| `:BASICFIELDS` | `:name`, `:index`, `:uuid` joined with `labeljoin` |
+| `:ALLFIELDS` | All fields in [`ALLFIELDS_IMAGE_LABEL`](@ref), joined with `labeljoin`; `missing`/`nothing`/empty omitted |
+| `:BASICFIELDS` | `:index`, `:node_name`, `:uuid` joined with `labeljoin` |
 | Any other `Symbol` | Corresponding image field from [`_extract_image_field`](@ref); falls back to default if `missing`/`nothing` |
-| `AbstractVector{Symbol}` | Listed fields joined with `labeljoin`; `missing`/empty omitted |
+| `AbstractVector{Symbol}` | Listed fields joined with `labeljoin`; `missing`/`nothing`/empty omitted |
 | Callable `f` | `f(taxon_name, k, img)` — must return a `String` |
 
 `labeljoin` is only applied for vector and preset-expansion cases (`:ALLFIELDS`,
@@ -694,7 +702,7 @@ the same behaviour as before this feature was added.
   - `:DEFAULT` (default) — `"[k] taxon"` regardless of group size.
   - `nothing` — `"taxon"` for single-image groups, `"taxon [k]"` for multi.
   - `:ALLFIELDS` — all fields in [`ALLFIELDS_IMAGE_LABEL`](@ref) joined with `labeljoin`; `missing`/empty omitted.
-  - `:BASICFIELDS` — `:name`, `:index`, `:uuid` joined with `labeljoin`.
+  - `:BASICFIELDS` — `:index`, `:node_name`, `:uuid` joined with `labeljoin`.
   - Any single field symbol from [`ALLFIELDS_IMAGE_LABEL`](@ref) — that field, falling back to the default label if `missing`/`nothing`.
   - `AbstractVector{Symbol}` — listed fields joined with `labeljoin`; `missing`/empty omitted.
   - Callable `f(taxon_name, k, img) -> String` — fully custom label.

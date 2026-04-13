@@ -10,7 +10,11 @@
 const _IMAGES_PER_PAGE = 30
 
 """
-    fetch_image(uuid; build = nothing) -> Union{PhyloPicImage, Nothing}
+    fetch_image(
+        uuid;
+        build = nothing,
+        add_node_name::Bool = false,
+    ) -> Union{PhyloPicImage, Nothing}
 
 Fetch a single [`PhyloPicImage`](@ref) by its UUID from the PhyloPic API.
 
@@ -18,6 +22,9 @@ Fetch a single [`PhyloPicImage`](@ref) by its UUID from the PhyloPic API.
 
 - `uuid`: The PhyloPic image UUID string.
 - `build`: PhyloPic build index.  `nothing` fetches the current build.
+- `add_node_name`: if `true` and the image has a `specific_node_uuid`, fetch
+  the corresponding node and populate `img.node_name` with its
+  `preferred_name`.  Requires one additional HTTP round trip.  Default `false`.
 
 # Returns
 
@@ -29,11 +36,15 @@ error occurs.
 ```julia
 img = fetch_image("045279d5-24e5-4838-bec9-0bea86812e35")
 isnothing(img) || println(img.thumbnail_url)
+
+img2 = fetch_image("045279d5-24e5-4838-bec9-0bea86812e35"; add_node_name = true)
+isnothing(img2) || println(img2.node_name)
 ```
 """
 function fetch_image(
     uuid::AbstractString;
     build::Union{Int, Nothing} = nothing,
+    add_node_name::Bool        = false,
 )::Union{PhyloPicImage, Nothing}
     b   = ensure_build(build)
     url = "$PHYLOPIC_BASE_URL/images/$uuid?build=$b"
@@ -41,6 +52,10 @@ function fetch_image(
         resp = phylopic_get(url)
         img  = _parse_image_json(JSON3.read(resp.body), b)
         isempty(img.uuid) && return nothing
+        if add_node_name && !isnothing(img.specific_node_uuid)
+            node = fetch_node(img.specific_node_uuid; build = b)
+            isnothing(node) || (img = _with_node_name(img, node.preferred_name))
+        end
         return img
     catch
         return nothing
@@ -78,8 +93,13 @@ function _fetch_images_page(
 end
 
 """
-    fetch_images(node_uuid; build = nothing, filter = :clade, max_pages = nothing)
-        -> Vector{PhyloPicImage}
+    fetch_images(
+        node_uuid;
+        build = nothing,
+        filter = :clade,
+        max_pages = nothing,
+        add_node_name::Bool = false,
+    ) -> Vector{PhyloPicImage}
 
 Return all [`PhyloPicImage`](@ref)s associated with a PhyloPic node,
 paging through the `/images` list endpoint.
@@ -95,6 +115,9 @@ paging through the `/images` list endpoint.
 - `max_pages`: if provided, fetch at most this many pages (each page contains
   up to $(repr(_IMAGES_PER_PAGE)) images).  `nothing` (default) fetches all
   pages.
+- `add_node_name`: if `true`, populate `node_name` on each returned image via
+  deduplicated [`fetch_node`](@ref) calls (one call per unique
+  `specific_node_uuid`).  Default `false`.
 
 # Returns
 
@@ -114,6 +137,10 @@ length(imgs)  # up to 60
 
 # Only images directly tagging this node
 imgs_node = fetch_images("36c04f2f-b7d2-4891-a4a9-138d79592bf2"; filter = :node)
+
+# With node names enriched
+imgs2 = fetch_images("36c04f2f-b7d2-4891-a4a9-138d79592bf2"; add_node_name = true)
+imgs2[1].node_name   # → e.g. "Carnivora"
 ```
 """
 function fetch_images(
@@ -121,6 +148,7 @@ function fetch_images(
     build::Union{Int, Nothing}     = nothing,
     filter::Symbol                 = :clade,
     max_pages::Union{Int, Nothing} = nothing,
+    add_node_name::Bool            = false,
 )::Vector{PhyloPicImage}
     filter in (:clade, :node) ||
         throw(ArgumentError(
@@ -143,6 +171,10 @@ function fetch_images(
         page_imgs, _ = _fetch_images_page(node_uuid, b, page, filter_param)
         append!(results, page_imgs)
     end
+
+    # Enrich with node names after all pages are collected so that node
+    # fetches are deduplicated across the full result set.
+    add_node_name && (results = with_node_names(results; build = b))
 
     return results
 end

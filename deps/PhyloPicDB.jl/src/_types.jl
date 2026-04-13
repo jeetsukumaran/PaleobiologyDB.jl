@@ -59,6 +59,11 @@ File URL fields are `missing` when absent in the API response.  The
 `license` field is the human-readable form (e.g. `"CC BY 4.0"`); use
 `license_url` for the authoritative URI.
 
+`node_name` holds the `preferred_name` of the [`PhyloPicNode`](@ref) at
+`specific_node_uuid`.  It is `nothing` until the record is enriched by
+[`with_node_names`](@ref) or by passing `add_node_name = true` to a fetch
+function.
+
 See also [`PhyloPicNode`](@ref).
 """
 struct PhyloPicImage
@@ -84,6 +89,12 @@ struct PhyloPicImage
     contributor_href::Union{String, Missing}
     "Attribution text, or `missing`."
     attribution::Union{String, Missing}
+    """
+    Preferred name of the node at `specific_node_uuid`, or `nothing` when not
+    yet enriched.  Populated by [`with_node_names`](@ref) or by passing
+    `add_node_name = true` to a fetch function.
+    """
+    node_name::Union{String, Nothing}
     "UUID of the specific (most precise) taxonomic node, or `nothing`."
     specific_node_uuid::Union{String, Nothing}
     "UUID of the general (most inclusive applicable) node, or `nothing`."
@@ -340,6 +351,7 @@ function _parse_image_json(obj, build::Int)::PhyloPicImage
         license,
         contributor_href,
         attribution,
+        nothing,            # node_name: populated later by with_node_names
         specific_node_uuid,
         general_node_uuid,
     )
@@ -372,7 +384,106 @@ function _null_image(build::Int)::PhyloPicImage
         missing,     # license
         missing,     # contributor_href
         missing,     # attribution
+        nothing,     # node_name
         nothing,     # specific_node_uuid
         nothing,     # general_node_uuid
     )
 end
+
+# ---------------------------------------------------------------------------
+# Struct copy helper (pure)
+# ---------------------------------------------------------------------------
+
+"""
+    _with_node_name(img::PhyloPicImage, name::Union{String, Nothing}) -> PhyloPicImage
+
+Return a copy of `img` with `node_name` replaced by `name`.
+All other fields are preserved unchanged.
+
+This is a pure function; it performs no I/O.
+
+# Examples
+
+```julia
+img2 = _with_node_name(img, "Tyrannosaurus rex")
+img2.node_name   # → "Tyrannosaurus rex"
+img2.uuid == img.uuid   # → true
+```
+"""
+function _with_node_name(
+    img::PhyloPicImage,
+    name::Union{String, Nothing},
+)::PhyloPicImage
+    return PhyloPicImage(
+        img.uuid,
+        img.build,
+        img.thumbnail_url,
+        img.vector_url,
+        img.raster_url,
+        img.source_file_url,
+        img.og_image_url,
+        img.license_url,
+        img.license,
+        img.contributor_href,
+        img.attribution,
+        name,
+        img.specific_node_uuid,
+        img.general_node_uuid,
+    )
+end
+
+# ---------------------------------------------------------------------------
+# Image label field constants
+# ---------------------------------------------------------------------------
+
+"""
+    PHYLOPIC_IMAGE_ALL_LABEL_FIELDS
+
+All image label field symbols recognised by the PhyloPicMakie display layer.
+
+Includes virtual fields computed from the call context:
+- `:taxon_name` — the taxon name string supplied by the caller.
+- `:index`      — the position of the image within a taxon's group.
+
+And every labelable field of [`PhyloPicImage`](@ref):
+- `:node_name`          — preferred name of the node at `specific_node_uuid`.
+- `:uuid`               — image UUID.
+- `:thumbnail_url`      — largest thumbnail PNG URL.
+- `:vector_url`         — vector SVG URL.
+- `:raster_url`         — largest raster PNG URL.
+- `:source_file_url`    — original uploaded source URL.
+- `:license`            — human-readable license label (e.g. `"CC BY 4.0"`).
+- `:license_url`        — full license URI.
+- `:attribution`        — attribution text.
+- `:contributor`        — contributor href (maps to `contributor_href`).
+- `:specific_node_uuid` — UUID of the most-precise taxonomic node.
+- `:general_node_uuid`  — UUID of the most-inclusive applicable node.
+
+See also [`PHYLOPIC_IMAGE_BASIC_LABEL_FIELDS`](@ref).
+"""
+const PHYLOPIC_IMAGE_ALL_LABEL_FIELDS = Symbol[
+    :taxon_name,
+    :node_name,
+    :index,
+    :uuid,
+    :thumbnail_url,
+    :vector_url,
+    :raster_url,
+    :source_file_url,
+    :license,
+    :license_url,
+    :attribution,
+    :contributor,
+    :specific_node_uuid,
+    :general_node_uuid,
+]
+
+"""
+    PHYLOPIC_IMAGE_BASIC_LABEL_FIELDS
+
+Basic image label field symbols for compact display: image index, node name,
+and UUID.
+
+See also [`PHYLOPIC_IMAGE_ALL_LABEL_FIELDS`](@ref).
+"""
+const PHYLOPIC_IMAGE_BASIC_LABEL_FIELDS = Symbol[:index, :node_name, :uuid]

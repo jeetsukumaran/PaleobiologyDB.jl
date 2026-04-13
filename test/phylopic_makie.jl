@@ -166,12 +166,16 @@ if _EXT_AVAILABLE
         extract  = PaleobiologyDB.PhyloPicMakie._extract_image_field
         null_img = PhyloPicDB._null_image(1)   # all optional fields missing/nothing, uuid = ""
 
-        @testset "virtual field :name" begin
-            @test extract(:name, "Felidae", 3, null_img) == "Felidae"
+        @testset "virtual field :taxon_name" begin
+            @test extract(:taxon_name, "Felidae", 3, null_img) == "Felidae"
         end
 
         @testset "virtual field :index" begin
             @test extract(:index, "Felidae", 3, null_img) == "3"
+        end
+
+        @testset ":node_name nothing on null image" begin
+            @test isnothing(extract(:node_name, "Felidae", 1, null_img))
         end
 
         @testset ":uuid always returns a String (empty for null image)" begin
@@ -201,19 +205,25 @@ if _EXT_AVAILABLE
         null_img = PhyloPicDB._null_image(1)
 
         @testset "virtual-only fields always present" begin
-            result = join_f([:name, :index], "Felidae", 2, null_img, " | ")
+            result = join_f([:taxon_name, :index], "Felidae", 2, null_img, " | ")
             @test result == "Felidae | 2"
         end
 
         @testset "missing structural field skipped" begin
-            # :attribution is missing → only :name survives
-            result = join_f([:name, :attribution], "Felidae", 1, null_img, "\n")
+            # :attribution is missing → only :taxon_name survives
+            result = join_f([:taxon_name, :attribution], "Felidae", 1, null_img, "\n")
+            @test result == "Felidae"
+        end
+
+        @testset "nothing structural field skipped" begin
+            # :node_name is nothing on null_img → only :taxon_name survives
+            result = join_f([:taxon_name, :node_name], "Felidae", 1, null_img, "\n")
             @test result == "Felidae"
         end
 
         @testset "empty uuid skipped" begin
             # null_img.uuid == "" → skipped
-            result = join_f([:name, :uuid], "Felidae", 1, null_img, "\n")
+            result = join_f([:taxon_name, :uuid], "Felidae", 1, null_img, "\n")
             @test result == "Felidae"
         end
 
@@ -222,7 +232,7 @@ if _EXT_AVAILABLE
         end
 
         @testset "custom separator respected" begin
-            result = join_f([:name, :index], "Carnivora", 5, null_img, " :: ")
+            result = join_f([:taxon_name, :index], "Carnivora", 5, null_img, " :: ")
             @test result == "Carnivora :: 5"
         end
     end
@@ -244,22 +254,25 @@ if _EXT_AVAILABLE
             @test bl("Felidae", 4, true,  null_img, :DEFAULT, "\n") == "[4] Felidae"
         end
 
-        @testset ":BASICFIELDS includes name and index; skips empty uuid" begin
+        @testset ":BASICFIELDS is [:index, :node_name, :uuid]; node_name/uuid absent on null" begin
+            # null_img: node_name=nothing, uuid="" → both skipped; only index survives
             result = bl("Felidae", 2, true, null_img, :BASICFIELDS, " | ")
-            @test startswith(result, "Felidae")
-            @test occursin("2", result)
+            @test result == "2"
         end
 
-        @testset "Vector{Symbol}: missing fields dropped, labeljoin used" begin
-            # :attribution missing → only :name
-            @test bl("Felidae", 1, false, null_img, [:name, :attribution], "\n") == "Felidae"
-            # :name + :index with custom sep
-            @test bl("Carnivora", 3, true, null_img, [:name, :index], " — ") == "Carnivora — 3"
+        @testset "Vector{Symbol}: missing/nothing fields dropped, labeljoin used" begin
+            # :attribution missing → only :taxon_name
+            @test bl("Felidae", 1, false, null_img, [:taxon_name, :attribution], "\n") == "Felidae"
+            # :taxon_name + :index with custom sep
+            @test bl("Carnivora", 3, true, null_img, [:taxon_name, :index], " — ") == "Carnivora — 3"
         end
 
-        @testset "single known symbol missing → falls back to default" begin
+        @testset "single known symbol missing/nothing → falls back to default" begin
             @test bl("Felidae", 1, false, null_img, :attribution, "\n") == "Felidae"
             @test bl("Felidae", 2, true,  null_img, :attribution, "\n") == "Felidae [2]"
+            # :node_name is nothing on null_img → falls back to default
+            @test bl("Felidae", 1, false, null_img, :node_name, "\n") == "Felidae"
+            @test bl("Felidae", 3, true,  null_img, :node_name, "\n") == "Felidae [3]"
         end
 
         @testset "callable receives name, k, img" begin
@@ -595,7 +608,7 @@ end  # range table API
     @testset "image_label = Vector{Symbol}, empty names → no crash" begin
         fig = Figure(); ax = Axis(fig[1, 1])
         @test_nowarn phylopic_thumbnail_grid!(ax, ["", " "];
-            image_filter = :primary, image_label = [:name, :index, :uuid])
+            image_filter = :primary, image_label = [:taxon_name, :index, :uuid])
     end
 
     @testset "labeljoin forwarded through non-bang, empty names → no crash" begin

@@ -13,8 +13,11 @@
 import DataCaches: autocache
 
 """
-    batch_primary_images(node_uuids; build = nothing)
-        -> Dict{String, Union{PhyloPicImage, Nothing}}
+    batch_primary_images(
+        node_uuids;
+        build = nothing,
+        add_node_name::Bool = false,
+    ) -> Dict{String, Union{PhyloPicImage, Nothing}}
 
 Fetch the primary image for each node UUID in `node_uuids`, deduplicating
 so that each unique UUID triggers at most one API call.  Results are cached
@@ -28,6 +31,9 @@ previously fetched images without additional network requests.
 - `build`: PhyloPic build index.  `nothing` fetches the current build.
   The build number is included in the cache key, so results are automatically
   invalidated if the build changes.
+- `add_node_name`: if `true`, populate `node_name` on each returned image.
+  Included in the cache key so enriched and plain results are cached
+  separately.  Default `false`.
 
 # Returns
 
@@ -49,17 +55,18 @@ result = batch_primary_images(uuids)
 function batch_primary_images(
     node_uuids::AbstractVector{<:AbstractString};
     build::Union{Int, Nothing} = nothing,
+    add_node_name::Bool        = false,
 )::Dict{String, Union{PhyloPicImage, Nothing}}
-    b       = ensure_build(build)
+    b            = ensure_build(build)
     unique_uuids = unique(node_uuids)
 
     out = Dict{String, Union{PhyloPicImage, Nothing}}()
     for uuid in unique_uuids
         img = autocache(
-            () -> primary_image(uuid; build = b),
+            () -> primary_image(uuid; build = b, add_node_name = add_node_name),
             batch_primary_images,
             "phylopic/primary_image",
-            (; uuid = uuid, build = b),
+            (; uuid = uuid, build = b, add_node_name = add_node_name),
         )
         out[uuid] = img
     end
@@ -68,12 +75,17 @@ function batch_primary_images(
 end
 
 """
-    batch_images(node_uuids; build = nothing, filter = :clade, max_pages = nothing)
-        -> Dict{String, Vector{PhyloPicImage}}
+    batch_images(
+        node_uuids;
+        build = nothing,
+        filter = :clade,
+        max_pages = nothing,
+        add_node_name::Bool = false,
+    ) -> Dict{String, Vector{PhyloPicImage}}
 
 Fetch all images for each node UUID in `node_uuids`, deduplicating so that
 each unique UUID triggers at most one paginated fetch.  Results are cached
-per `(uuid, build, filter, max_pages)` key.
+per `(uuid, build, filter, max_pages, add_node_name)` key.
 
 # Arguments
 
@@ -82,6 +94,9 @@ per `(uuid, build, filter, max_pages)` key.
 - `filter`: `:clade` (default) or `:node` — passed through to
   [`fetch_images`](@ref).
 - `max_pages`: maximum pages to fetch per node.  `nothing` fetches all pages.
+- `add_node_name`: if `true`, populate `node_name` on each returned image.
+  Included in the cache key so enriched and plain results are cached
+  separately.  Default `false`.
 
 # Returns
 
@@ -103,6 +118,7 @@ function batch_images(
     build::Union{Int, Nothing}     = nothing,
     filter::Symbol                 = :clade,
     max_pages::Union{Int, Nothing} = nothing,
+    add_node_name::Bool            = false,
 )::Dict{String, Vector{PhyloPicImage}}
     b            = ensure_build(build)
     unique_uuids = unique(node_uuids)
@@ -110,10 +126,16 @@ function batch_images(
     out = Dict{String, Vector{PhyloPicImage}}()
     for uuid in unique_uuids
         imgs = autocache(
-            () -> fetch_images(uuid; build = b, filter = filter, max_pages = max_pages),
+            () -> fetch_images(uuid;
+                build         = b,
+                filter        = filter,
+                max_pages     = max_pages,
+                add_node_name = add_node_name,
+            ),
             batch_images,
             "phylopic/images",
-            (; uuid = uuid, build = b, filter = filter, max_pages = max_pages),
+            (; uuid = uuid, build = b, filter = filter, max_pages = max_pages,
+               add_node_name = add_node_name),
         )
         out[uuid] = imgs
     end

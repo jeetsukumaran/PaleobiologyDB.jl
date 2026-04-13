@@ -93,8 +93,12 @@ export primary_image
 export clade_images
 export node_images
 export select_image
+export with_node_names
 
 export batch_primary_images
 export batch_images
+
+export PHYLOPIC_IMAGE_ALL_LABEL_FIELDS
+export PHYLOPIC_IMAGE_BASIC_LABEL_FIELDS
 
 end # module PhyloPicDB

@@ -86,6 +86,7 @@
         @test ismissing(img.license)
         @test ismissing(img.contributor_href)
         @test ismissing(img.attribution)
+        @test isnothing(img.node_name)
         @test isnothing(img.specific_node_uuid)
         @test isnothing(img.general_node_uuid)
     end
@@ -195,6 +196,7 @@
         @test img.license          == "CC BY 4.0"
         @test img.contributor_href == "/contributors/jdoe"
         @test img.attribution      == "J. Doe"
+        @test isnothing(img.node_name)           # not enriched by _parse_image_json
         @test img.specific_node_uuid == "specific-uuid"
         @test img.general_node_uuid  == "general-uuid"
     end
@@ -219,6 +221,7 @@
         @test ismissing(img.thumbnail_url)
         @test ismissing(img.vector_url)
         @test ismissing(img.license)
+        @test isnothing(img.node_name)
         @test isnothing(img.specific_node_uuid)
         @test isnothing(img.general_node_uuid)
     end
