@@ -689,7 +689,7 @@ function phylopic_thumbnail_grid(
         ax,
         taxon;
         ncols = cols,
-        nrows = rows,
+        nrows = nrows,
         image_filter = image_filter,
         image_selector = image_selector,
         image_max_pages = image_max_pages,

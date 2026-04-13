@@ -408,6 +408,16 @@ end  # range table API
         @test length(ax.scene.plots) == n0
     end
 
+    @testset "non-bang: nrows not over-constrained by taxon count (regression)" begin
+        # Regression guard: non-bang must not forward its inferred nrows to the
+        # bang variant, because when image_filter != :primary the cell count can
+        # exceed the taxon count, causing _infer_thumbnail_grid_shape to throw.
+        # Empty names produce 0 cells, so this is fully offline.
+        fig = Figure(); ax = Axis(fig[1, 1])
+        @test_nowarn phylopic_thumbnail_grid!(ax, ["", "", ""];
+            image_filter = :primary, ncols = 1, nrows = 1)
+    end
+
     if !LIVE
         @info "Live thumbnail grid tests skipped. Set ENV[\"PBDB_LIVE\"]=\"1\" to enable."
     else
