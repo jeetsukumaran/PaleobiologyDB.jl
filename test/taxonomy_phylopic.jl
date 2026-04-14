@@ -17,12 +17,12 @@ using PaleobiologyDB
 const _phylopic_acquire              = PaleobiologyDB.Taxonomy.acquire_phylopic
 const _phylopic_augment              = PaleobiologyDB.Taxonomy.augment_phylopic
 const _phylopic_list_images          = PaleobiologyDB.Taxonomy.phylopic_images_dataframe
-const _PHYLOPIC_BASE_COLUMNS         = PaleobiologyDB.Taxonomy._PHYLOPIC_BASE_COLUMNS
-const _PHYLOPIC_IMAGE_LIST_COLUMNS   = PaleobiologyDB.Taxonomy._PHYLOPIC_IMAGE_LIST_COLUMNS
-const _phylopic_null_record_fn       = PaleobiologyDB.Taxonomy._phylopic_null_record
-const _apply_prefix_fn               = PaleobiologyDB.Taxonomy._apply_fieldname_prefix
-const _cc_label_fn                   = PaleobiologyDB.Taxonomy._cc_license_label
-const _PHYLOPIC_BUILD_REF            = PaleobiologyDB.Taxonomy._PHYLOPIC_BUILD
+const _PHYLOPIC_BASE_COLUMNS         = PaleobiologyDB.Taxonomy.PhyloPicPBDB._PHYLOPIC_BASE_COLUMNS
+const _PHYLOPIC_IMAGE_LIST_COLUMNS   = PaleobiologyDB.Taxonomy.PhyloPicPBDB._PHYLOPIC_IMAGE_LIST_COLUMNS
+const _phylopic_null_record_fn       = PaleobiologyDB.Taxonomy.PhyloPicPBDB._phylopic_null_record
+const _apply_prefix_fn               = PaleobiologyDB.Taxonomy.PhyloPicPBDB._apply_fieldname_prefix
+const _cc_label_fn                   = PaleobiologyDB.Taxonomy.PhyloPicPBDB._cc_license_label
+const _PHYLOPIC_BUILD_REF            = PaleobiologyDB.Taxonomy.PhyloPicPBDB._PHYLOPIC_BUILD
 
 # ---------------------------------------------------------------------------
 # Offline unit tests

@@ -32,23 +32,36 @@ wrappers.
 module PhyloPicPBDB
 
 import PhyloPicMakie
-# Access PhyloPicDB through the nested module hierarchy.
+# Access PhyloPicDB and Makie through PhyloPicMakie.
+# Makie is in PaleobiologyDB's [weakdeps] (for TaxonTreeMakie), not [deps],
+# so it cannot be imported directly here.  PhyloPicMakie carries Makie as a
+# hard dep, so we alias it the same way we alias PhyloPicDB.
 const PhyloPicDB = PhyloPicMakie.PhyloPicDB
-
-import Makie
-using Makie: RGBA, N0f8, Colorant
+const Makie      = PhyloPicMakie.Makie
+const RGBA       = Makie.RGBA
+const N0f8       = Makie.N0f8
+const Colorant   = Makie.Colorant
 import DataCaches: autocache
 import DataFrames: DataFrame, AbstractDataFrame, nrow, hcat
 
+# Data API exports (re-exported from Taxonomy for backward compatibility)
+export acquire_phylopic
+export augment_phylopic
+export phylopic_images_dataframe
+export phylopic_node
+export phylopic_images
+
+# Makie API exports
+export augment_phylopic!
+export augment_phylopic_ranges!
+export augment_phylopic_ranges
+export phylopic_thumbnail_grid!
+export phylopic_thumbnail_grid
+
 # Core PBDB-PhyloPic data bridge (no Makie dependency).
-# Exports: acquire_phylopic, augment_phylopic (DataFrame variant),
-#          phylopic_images_dataframe, phylopic_node, phylopic_images
 include("_phylopic_core.jl")
 
 # Makie visualization bridge.
-# Exports: augment_phylopic! (Axis variants), augment_phylopic (Axis variants),
-#          augment_phylopic_ranges!, augment_phylopic_ranges,
-#          phylopic_thumbnail_grid!, phylopic_thumbnail_grid
 include("_resolve.jl")
 include("_render.jl")
 include("_phylopic_thumbnail_grid.jl")

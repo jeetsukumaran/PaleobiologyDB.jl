@@ -7,7 +7,7 @@
 const _phylopic_node         = PaleobiologyDB.Taxonomy.phylopic_node
 const _phylopic_images       = PaleobiologyDB.Taxonomy.phylopic_images
 const _phylopic_list_images  = PaleobiologyDB.Taxonomy.phylopic_images_dataframe
-const _PHYLOPIC_IMG_COLS     = PaleobiologyDB.Taxonomy._PHYLOPIC_IMAGE_LIST_COLUMNS
+const _PHYLOPIC_IMG_COLS     = PaleobiologyDB.Taxonomy.PhyloPicPBDB._PHYLOPIC_IMAGE_LIST_COLUMNS
 
 # ---------------------------------------------------------------------------
 # Offline unit tests

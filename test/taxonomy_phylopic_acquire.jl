@@ -7,9 +7,9 @@
 
 const _phylopic_acquire   = PaleobiologyDB.Taxonomy.acquire_phylopic
 const _phylopic_augment   = PaleobiologyDB.Taxonomy.augment_phylopic
-const _PHYLOPIC_BASE_COLS = PaleobiologyDB.Taxonomy._PHYLOPIC_BASE_COLUMNS
-const _phylopic_null_rec  = PaleobiologyDB.Taxonomy._phylopic_null_record
-const _apply_prefix       = PaleobiologyDB.Taxonomy._apply_fieldname_prefix
+const _PHYLOPIC_BASE_COLS = PaleobiologyDB.Taxonomy.PhyloPicPBDB._PHYLOPIC_BASE_COLUMNS
+const _phylopic_null_rec  = PaleobiologyDB.Taxonomy.PhyloPicPBDB._phylopic_null_record
+const _apply_prefix       = PaleobiologyDB.Taxonomy.PhyloPicPBDB._apply_fieldname_prefix
 
 # ---------------------------------------------------------------------------
 # Offline unit tests
