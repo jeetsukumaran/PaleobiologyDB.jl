@@ -7,11 +7,16 @@ functions for [`PaleobiologyDB`](@ref).
 Activates automatically when both `Makie` (or any backend such as `CairoMakie`)
 and `FileIO` are loaded in the same Julia session as `PaleobiologyDB`.
 
-This module handles the **PBDB taxon-name resolution layer**: looking up taxon
-names via [`PaleobiologyDB.Taxonomy.acquire_phylopic`](@ref), downloading and
-caching images, and rendering them onto Makie axes.  Pure image utilities
-(download, decode, coordinate geometry, core rendering loop) live in
-`PhyloPicDB.PhyloPicMakie`, which this module delegates to.
+This module is a **thin PBDB name-resolution bridge**: it resolves taxon names
+via [`PaleobiologyDB.Taxonomy.acquire_phylopic`](@ref) (and
+`PaleobiologyDB.Taxonomy.phylopic_node` / `phylopic_images`) to image data,
+then delegates all generic image download, coordinate geometry, rendering, grid
+layout, and label building to `PhyloPicDB.PhyloPicMakie`.
+
+The split is at the PBDB boundary: any function that requires PaleobiologyDB
+taxonomy knowledge lives here; everything that works with pre-resolved
+`PhyloPicDB.PhyloPicImage` objects or raw image matrices lives in
+`PhyloPicDB.PhyloPicMakie`.
 
 ## Activation
 

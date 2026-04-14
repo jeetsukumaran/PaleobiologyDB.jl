@@ -2,8 +2,8 @@
 # ---------------------------------------------------------------------------
 # PhyloPicDB.PhyloPicMakie — core rendering loop
 #
-# Provides _augment_phylopic_core!, the inner loop that maps a vector of
-# pre-resolved image matrices onto Makie.image! calls on an axis.
+# Provides the generic augment_phylopic! and augment_phylopic_ranges! entry
+# points that render pre-resolved image matrices onto a Makie axis.
 #
 # Name resolution (taxon → URL → image matrix) lives in
 # PaleobiologyDB.PhyloPicPBDB, which calls this function after resolving
@@ -18,13 +18,14 @@
 # change or the figure is resized.
 #
 # Public (within extension):
-#   _augment_phylopic_core!(ax, xs, ys, images; ...) → Nothing
+#   augment_phylopic!(ax, xs, ys, images; ...)  → Nothing
+#   augment_phylopic_ranges!(ax, xstarts, xstops, ys, images; ...) → Nothing
 # ---------------------------------------------------------------------------
 
 import Makie
 
 """
-    _augment_phylopic_core!(
+    augment_phylopic!(
         ax::Makie.Axis,
         xs::AbstractVector{<:Real},
         ys::AbstractVector{<:Real},
@@ -39,17 +40,21 @@ import Makie
         on_missing::Symbol,
     ) -> Nothing
 
-Add one `image!` call per data point to `ax`.
+Add one `image!` call per data point to `ax` using pre-resolved image matrices.
 
 `images` is a `Vector{Union{Matrix{RGBA{N0f8}}, Nothing}}` — `nothing`
 entries are handled according to `on_missing`.
+
+This is the generic rendering entry point.  Callers are responsible for
+supplying pre-resolved images.  For PBDB taxon-name resolution, use
+`PaleobiologyDB.PhyloPicPBDB.augment_phylopic!` instead.
 
 For `aspect = :preserve`, the x-range of each image is a reactive
 `Makie.Observable` that recomputes whenever the axis scale changes, so
 rendered images maintain their correct pixel-space aspect ratio on
 anisotropic axes.
 """
-function _augment_phylopic_core!(
+function augment_phylopic!(
     ax::Makie.Axis,
     xs::AbstractVector{<:Real},
     ys::AbstractVector{<:Real},
@@ -175,5 +180,59 @@ function _augment_phylopic_core!(
             interpolate = true,
         )
     end
+    return nothing
+end
+
+"""
+    augment_phylopic_ranges!(
+        ax::Makie.Axis,
+        xstart::AbstractVector{<:Real},
+        xstop::AbstractVector{<:Real},
+        y::AbstractVector{<:Real},
+        images::AbstractVector;
+        at::Symbol = :midpoint,
+        kwargs...,
+    ) -> Nothing
+
+Add one PhyloPic glyph per datum to `ax` using pre-resolved image matrices,
+where each glyph is anchored relative to a range `(xstart[i], xstop[i])`.
+
+Computes anchor x coordinates from the range endpoints via `_range_anchor` and
+then calls [`augment_phylopic!`](@ref).
+
+## Arguments
+
+- `xstart`, `xstop`: range endpoints in axis data units.
+- `y`: vertical coordinate for each datum.
+- `images`: pre-resolved image matrices (`nothing` entries handled by
+  `on_missing`).
+- `at`: where along the range to anchor the glyph.  One of:
+  - `:start` — anchor at `xstart[i]`.
+  - `:stop` — anchor at `xstop[i]`.
+  - `:midpoint` (default) — anchor at the midpoint.
+- All remaining keyword arguments are forwarded to [`augment_phylopic!`](@ref).
+
+## Returns
+
+`Nothing`.
+"""
+function augment_phylopic_ranges!(
+    ax::Makie.Axis,
+    xstart::AbstractVector{<:Real},
+    xstop::AbstractVector{<:Real},
+    y::AbstractVector{<:Real},
+    images::AbstractVector;
+    at::Symbol = :midpoint,
+    kwargs...,
+)::Nothing
+    n = length(y)
+    length(xstart) == n || throw(ArgumentError(
+        "augment_phylopic_ranges!: `xstart` and `y` must have the same length."
+    ))
+    length(xstop) == n || throw(ArgumentError(
+        "augment_phylopic_ranges!: `xstop` and `y` must have the same length."
+    ))
+    xs = [_range_anchor(Float64(xstart[i]), Float64(xstop[i]), at) for i in 1:n]
+    augment_phylopic!(ax, xs, y, images; kwargs...)
     return nothing
 end

@@ -198,8 +198,8 @@ if _EXT_AVAILABLE
         @test_throws ArgumentError _ra_fn(10.0, 20.0, :unknown)
     end
 
-    @testset "PhyloPicPBDB — _infer_thumbnail_grid_shape" begin
-        infer_shape = PaleobiologyDB.PhyloPicPBDB._infer_thumbnail_grid_shape
+    @testset "PhyloPicMakie — _infer_thumbnail_grid_shape" begin
+        infer_shape = PhyloPicDB.PhyloPicMakie._infer_thumbnail_grid_shape
         @test infer_shape(0) == (1, 1)
         @test infer_shape(1) == (1, 1)
         @test infer_shape(6) == (3, 2)
@@ -212,8 +212,8 @@ if _EXT_AVAILABLE
 
     # Unit tests for _extract_image_field, _join_fields, _build_label.
     # Uses PhyloPicDB._null_image to construct a minimal PhyloPicImage offline.
-    @testset "PhyloPicPBDB — _extract_image_field" begin
-        extract  = PaleobiologyDB.PhyloPicPBDB._extract_image_field
+    @testset "PhyloPicMakie — _extract_image_field" begin
+        extract  = PhyloPicDB.PhyloPicMakie._extract_image_field
         null_img = PhyloPicDB._null_image(1)   # all optional fields missing/nothing, uuid = ""
 
         @testset "virtual field :taxon_name" begin
@@ -250,8 +250,8 @@ if _EXT_AVAILABLE
         end
     end
 
-    @testset "PhyloPicPBDB — _join_fields" begin
-        join_f   = PaleobiologyDB.PhyloPicPBDB._join_fields
+    @testset "PhyloPicMakie — _join_fields" begin
+        join_f   = PhyloPicDB.PhyloPicMakie._join_fields
         null_img = PhyloPicDB._null_image(1)
 
         @testset "virtual-only fields always present" begin
@@ -287,8 +287,8 @@ if _EXT_AVAILABLE
         end
     end
 
-    @testset "PhyloPicPBDB — _build_label" begin
-        bl       = PaleobiologyDB.PhyloPicPBDB._build_label
+    @testset "PhyloPicMakie — _build_label" begin
+        bl       = PhyloPicDB.PhyloPicMakie._build_label
         null_img = PhyloPicDB._null_image(1)
 
         @testset "nothing, single-image group → name only" begin
@@ -469,6 +469,101 @@ end  # augment_phylopic! vector API
 
 end  # augment_phylopic_ranges! vector API
 
+# ---------------------------------------------------------------------------
+# Smoke tests: generic PhyloPicMakie entry points (pre-resolved images)
+# ---------------------------------------------------------------------------
+
+# Shared keyword args for the generic augment_phylopic! (no default keywords).
+const _AUGMENT_KW = (
+    glyph_size = 1.0,
+    aspect     = :preserve,
+    placement  = :center,
+    xoffset    = 0.0,
+    yoffset    = 0.0,
+    rotation   = 0.0,
+    mirror     = false,
+    on_missing = :skip,
+)
+
+@testset "PhyloPicMakie — augment_phylopic! (pre-resolved images)" begin
+
+    @testset "nothing image, on_missing=:skip → no images added" begin
+        fig = Figure(); ax = Axis(fig[1, 1])
+        PhyloPicDB.PhyloPicMakie.augment_phylopic!(ax, [0.0], [0.0], [nothing];
+            _AUGMENT_KW..., on_missing = :skip)
+        @test _count_images(ax) == 0
+    end
+
+    @testset "nothing image, on_missing=:placeholder → placeholder poly added" begin
+        fig = Figure(); ax = Axis(fig[1, 1])
+        n0 = length(ax.scene.plots)
+        PhyloPicDB.PhyloPicMakie.augment_phylopic!(ax, [0.0], [0.0], [nothing];
+            _AUGMENT_KW..., on_missing = :placeholder)
+        @test length(ax.scene.plots) > n0
+    end
+
+    @testset "pre-resolved image matrix rendered without taxon resolution" begin
+        fig = Figure(); ax = Axis(fig[1, 1])
+        PhyloPicDB.PhyloPicMakie.augment_phylopic!(ax, [0.0], [0.0], [_TEST_IMG];
+            _AUGMENT_KW...)
+        @test _count_images(ax) == 1
+    end
+
+end  # PhyloPicMakie augment_phylopic! pre-resolved
+
+@testset "PhyloPicMakie — augment_phylopic_ranges! (pre-resolved images)" begin
+
+    @testset "at=:midpoint, pre-resolved image → one image" begin
+        fig = Figure(); ax = Axis(fig[1, 1])
+        PhyloPicDB.PhyloPicMakie.augment_phylopic_ranges!(
+            ax, [10.0], [20.0], [1.0], [_TEST_IMG];
+            glyph_size = 1.0, aspect = :preserve, placement = :center,
+            xoffset = 0.0, yoffset = 0.0, rotation = 0.0, mirror = false,
+            on_missing = :skip, at = :midpoint)
+        @test _count_images(ax) == 1
+    end
+
+    @testset "mismatched xstart/xstop throws ArgumentError" begin
+        fig = Figure(); ax = Axis(fig[1, 1])
+        @test_throws ArgumentError PhyloPicDB.PhyloPicMakie.augment_phylopic_ranges!(
+            ax, [10.0, 11.0], [20.0], [1.0], [_TEST_IMG, _TEST_IMG];
+            glyph_size = 1.0, aspect = :preserve, placement = :center,
+            xoffset = 0.0, yoffset = 0.0, rotation = 0.0, mirror = false,
+            on_missing = :skip)
+    end
+
+end  # PhyloPicMakie augment_phylopic_ranges! pre-resolved
+
+@testset "PhyloPicMakie — phylopic_thumbnail_grid! (pre-built cells)" begin
+
+    @testset "empty cell list renders without error" begin
+        fig = Figure(); ax = Axis(fig[1, 1])
+        @test_nowarn PhyloPicDB.PhyloPicMakie.phylopic_thumbnail_grid!(
+            ax, [], String[], Int[])
+    end
+
+    @testset "single nothing cell with on_missing=:placeholder → no crash" begin
+        fig = Figure(); ax = Axis(fig[1, 1])
+        @test_nowarn PhyloPicDB.PhyloPicMakie.phylopic_thumbnail_grid!(
+            ax, [nothing], ["label"], [1]; on_missing = :placeholder)
+    end
+
+    @testset "single pre-resolved image cell renders" begin
+        fig = Figure(); ax = Axis(fig[1, 1])
+        n0 = length(ax.scene.plots)
+        PhyloPicDB.PhyloPicMakie.phylopic_thumbnail_grid!(
+            ax, [_TEST_IMG], ["test label"], [1])
+        @test length(ax.scene.plots) > n0
+    end
+
+    @testset "factory (non-bang) returns a Figure" begin
+        fig = PhyloPicDB.PhyloPicMakie.phylopic_thumbnail_grid(
+            [_TEST_IMG], ["test label"], [1])
+        @test fig isa Figure
+    end
+
+end  # PhyloPicMakie phylopic_thumbnail_grid! pre-built cells
+
 @testset "PhyloPicPBDB — table API (DataFrame)" begin
     df = DataFrame(x = [0.0, 1.0, 2.0], y = [0.0, 1.0, 2.0])
 
@@ -613,7 +708,7 @@ end  # range table API
     end
 
     @testset "_rows_grid_positions: empty groups → 1×1 grid, no positions" begin
-        pos, r, c = PaleobiologyDB.PhyloPicPBDB._rows_grid_positions(
+        pos, r, c = PhyloPicDB.PhyloPicMakie._rows_grid_positions(
             Int[]; cell_width = 1.0, cell_height = 1.6)
         @test isempty(pos)
         @test r == 1
@@ -621,7 +716,7 @@ end  # range table API
     end
 
     @testset "_rows_grid_positions: two groups of sizes [2, 3]" begin
-        pos, r, c = PaleobiologyDB.PhyloPicPBDB._rows_grid_positions(
+        pos, r, c = PhyloPicDB.PhyloPicMakie._rows_grid_positions(
             [2, 3]; cell_width = 1.0, cell_height = 1.6)
         @test length(pos) == 5   # 2 + 3
         @test r == 2             # two non-empty groups
@@ -681,7 +776,7 @@ end  # range table API
         fig = Figure(); ax = Axis(fig[1, 1])
         phylopic_thumbnail_grid!(ax, ["", " "]; image_filter = :primary, label_lines = 3)
         ymax         = ax.limits[][2][2]
-        default_cell = PaleobiologyDB.PhyloPicPBDB.DEFAULT_THUMBNAIL_GRID_CELL_HEIGHT
+        default_cell = PhyloPicDB.PhyloPicMakie.DEFAULT_THUMBNAIL_GRID_CELL_HEIGHT
         @test ymax > default_cell
     end
 

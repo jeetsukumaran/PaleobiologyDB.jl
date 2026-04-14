@@ -3,18 +3,17 @@
 # PhyloPicPBDB — rendering: augment_phylopic! and all public variants
 #
 # All public functions resolve images via _resolve_images (from _resolve.jl)
-# and then delegate to PhyloPicDB.PhyloPicMakie._augment_phylopic_core!.
+# and then delegate to PhyloPicDB.PhyloPicMakie.augment_phylopic!.
 #
 # Call graph:
 #
 #   augment_phylopic  / augment_phylopic!  (vector API)
 #   augment_phylopic  / augment_phylopic!  (table API)
-#       └─► _augment_phylopic_core!(ax, xs, ys, images; kwargs...)
-#               (PhyloPicDB.PhyloPicMakie._augment_phylopic_core!)
+#       └─► PhyloPicDB.PhyloPicMakie.augment_phylopic!(ax, xs, ys, images; kwargs...)
 #
 #   augment_phylopic_ranges  / augment_phylopic_ranges!  (vector API)
 #   augment_phylopic_ranges  / augment_phylopic_ranges!  (table API)
-#       └─► augment_phylopic!(ax, xs_anchor, ys; ...)
+#       └─► PhyloPicDB.PhyloPicMakie.augment_phylopic!(ax, xs_anchor, ys, images; ...)
 #               (after PhyloPicDB.PhyloPicMakie._range_anchor)
 #
 # ---------------------------------------------------------------------------
@@ -151,7 +150,7 @@ function augment_phylopic!(
         "augment_phylopic!: `x` and `y` must have the same length."
     ))
     images = _resolve_images(taxon, glyph, n; image_rendering)
-    PhyloPicDB.PhyloPicMakie._augment_phylopic_core!(
+    PhyloPicDB.PhyloPicMakie.augment_phylopic!(
         ax, x, y, images;
         glyph_size = glyph_size,
         aspect = aspect,
