@@ -1,5 +1,5 @@
 # test/phylopic_makie.jl
-# Tests for PaleobiologyDB.Taxonomy.PhyloPicPBDB and PhyloPicMakie.
+# Tests for PaleobiologyDB.PhyloPicPBDB and PhyloPicMakie.
 #
 # Structure:
 #   1. Offline / pure-function tests — no Makie backend needed (coordinates, rotation, range)
@@ -24,7 +24,7 @@ const _EXT_AVAILABLE = _CAIRO_AVAILABLE
 
 if _EXT_AVAILABLE
     @eval using CairoMakie
-    @eval using PaleobiologyDB.Taxonomy.PhyloPicPBDB
+    @eval using PaleobiologyDB.PhyloPicPBDB
     # PhyloPicMakie is a hard dep of PaleobiologyDB; import for unit-test helpers.
     @eval import PhyloPicMakie
 end
@@ -348,15 +348,15 @@ else
 using Makie: RGBA, N0f8, Image
 
 @testset "PhyloPicPBDB — submodule loaded" begin
-    # PhyloPicPBDB is now a proper submodule of Taxonomy (not an extension).
-    @test isdefined(PaleobiologyDB.Taxonomy, :PhyloPicPBDB)
-    @test PaleobiologyDB.Taxonomy.PhyloPicPBDB isa Module
-    @test :augment_phylopic!        ∈ names(PaleobiologyDB.Taxonomy.PhyloPicPBDB)
-    @test :augment_phylopic         ∈ names(PaleobiologyDB.Taxonomy.PhyloPicPBDB)
-    @test :augment_phylopic_ranges! ∈ names(PaleobiologyDB.Taxonomy.PhyloPicPBDB)
-    @test :augment_phylopic_ranges  ∈ names(PaleobiologyDB.Taxonomy.PhyloPicPBDB)
-    @test :phylopic_thumbnail_grid! ∈ names(PaleobiologyDB.Taxonomy.PhyloPicPBDB)
-    @test :phylopic_thumbnail_grid  ∈ names(PaleobiologyDB.Taxonomy.PhyloPicPBDB)
+    # PhyloPicPBDB is a top-level submodule of PaleobiologyDB.
+    @test isdefined(PaleobiologyDB, :PhyloPicPBDB)
+    @test PaleobiologyDB.PhyloPicPBDB isa Module
+    @test :augment_phylopic!        ∈ names(PaleobiologyDB.PhyloPicPBDB)
+    @test :augment_phylopic         ∈ names(PaleobiologyDB.PhyloPicPBDB)
+    @test :augment_phylopic_ranges! ∈ names(PaleobiologyDB.PhyloPicPBDB)
+    @test :augment_phylopic_ranges  ∈ names(PaleobiologyDB.PhyloPicPBDB)
+    @test :phylopic_thumbnail_grid! ∈ names(PaleobiologyDB.PhyloPicPBDB)
+    @test :phylopic_thumbnail_grid  ∈ names(PaleobiologyDB.PhyloPicPBDB)
 
     # PhyloPicMakie is a hard dep of PaleobiologyDB — always available.
     @test PhyloPicMakie isa Module

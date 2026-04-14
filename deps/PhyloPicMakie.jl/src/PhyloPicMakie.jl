@@ -48,7 +48,7 @@ Single-UUID and table-oriented variants are also available for all functions abo
 ## Internal helpers
 
 The following symbols are `_`-prefixed and intended for use by packages that
-integrate with PhyloPicMakie (e.g. `PaleobiologyDB.Taxonomy.PhyloPicPBDB`,
+integrate with PhyloPicMakie (e.g. `PaleobiologyDB.PhyloPicPBDB`,
 `TaxonTreeMakie`):
 
 | Symbol | Description |

@@ -21,7 +21,7 @@
 
 import PhyloPicMakie
 const PhyloPicDB = PhyloPicMakie.PhyloPicDB
-using PaleobiologyDB.Taxonomy: acquire_phylopic
+using PaleobiologyDB.PhyloPicPBDB: acquire_phylopic
 
 # ---------------------------------------------------------------------------
 # Image loading

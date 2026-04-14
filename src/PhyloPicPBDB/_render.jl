@@ -20,7 +20,7 @@
 #               (after PhyloPicMakie._range_anchor)
 #
 # Makie, PhyloPicMakie, RGBA, N0f8, Colorant are all in scope from the
-# enclosing PhyloPicPBDB module (phylopic.jl).
+# enclosing PhyloPicPBDB module (PhyloPicPBDB.jl).
 # ---------------------------------------------------------------------------
 
 # ---------------------------------------------------------------------------
@@ -109,7 +109,7 @@ reduce to this.
 
 ```julia
 using PaleobiologyDB
-using PaleobiologyDB.Taxonomy.PhyloPicPBDB
+using PaleobiologyDB.PhyloPicPBDB
 using CairoMakie
 
 fig = Figure()
@@ -235,7 +235,7 @@ then calls [`augment_phylopic!`](@ref).
 
 ```julia
 using PaleobiologyDB
-using PaleobiologyDB.Taxonomy.PhyloPicPBDB
+using PaleobiologyDB.PhyloPicPBDB
 using CairoMakie
 
 taxa      = ["Tyrannosaurus", "Triceratops"]
@@ -342,7 +342,7 @@ Extracts coordinate and taxon columns from any Tables.jl-compatible source
 
 ```julia
 using PaleobiologyDB
-using PaleobiologyDB.Taxonomy.PhyloPicPBDB
+using PaleobiologyDB.PhyloPicPBDB
 using CairoMakie, DataFrames
 
 df = DataFrame(
@@ -428,7 +428,7 @@ forwards to the vector range API.
 
 ```julia
 using PaleobiologyDB
-using PaleobiologyDB.Taxonomy.PhyloPicPBDB
+using PaleobiologyDB.PhyloPicPBDB
 using CairoMakie, DataFrames
 
 df = DataFrame(

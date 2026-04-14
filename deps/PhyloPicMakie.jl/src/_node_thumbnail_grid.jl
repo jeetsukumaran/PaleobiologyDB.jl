@@ -5,7 +5,7 @@
 # Provides the public PhyloPic-native thumbnail-gallery API keyed on
 # PhyloPic node UUIDs.  This is the counterpart of PhyloPicPBDB's
 # _phylopic_thumbnail_grid.jl, which is keyed on PBDB taxon names.  All
-# PBDB-specific name resolution lives in PaleobiologyDB.Taxonomy.PhyloPicPBDB;
+# PBDB-specific name resolution lives in PaleobiologyDB.PhyloPicPBDB;
 # everything here depends only on PhyloPicDB types and Makie.
 #
 # Call graph:
@@ -208,7 +208,7 @@ Render a gallery of PhyloPic silhouettes into the existing Makie `Axis` `ax`,
 resolved from PhyloPic node UUIDs.
 
 This is the **PhyloPic-native** thumbnail gallery entry point.  For PBDB
-taxon-name resolution use `PaleobiologyDB.Taxonomy.PhyloPicPBDB.phylopic_thumbnail_grid!`.
+taxon-name resolution use `PaleobiologyDB.PhyloPicPBDB.phylopic_thumbnail_grid!`.
 
 ## Arguments
 
@@ -224,7 +224,7 @@ taxon-name resolution use `PaleobiologyDB.Taxonomy.PhyloPicPBDB.phylopic_thumbna
   avoid this round-trip (e.g. PBDB taxon names from PhyloPicPBDB).
 
 For all other keywords (layout, image selection, label building, rendering)
-see `PaleobiologyDB.Taxonomy.PhyloPicPBDB.phylopic_thumbnail_grid!`.
+see `PaleobiologyDB.PhyloPicPBDB.phylopic_thumbnail_grid!`.
 
 ## Image filter defaults
 

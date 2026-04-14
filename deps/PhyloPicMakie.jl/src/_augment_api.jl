@@ -8,7 +8,7 @@
 # dependency on PaleobiologyDB or PBDB taxon names.
 #
 # Also contains _extract_column, a generic table-column extractor shared
-# with PaleobiologyDB.Taxonomy.PhyloPicPBDB (which references it as
+# with PaleobiologyDB.PhyloPicPBDB (which references it as
 # PhyloPicMakie._extract_column).
 #
 # Call graph:
@@ -93,7 +93,7 @@ anchored at positions `(x[i], y[i])` in axis data coordinates.
 
 This is the **PhyloPic-native** public API: image sources are specified as
 PhyloPic node UUIDs (strings).  For PBDB taxon-name resolution use
-`PaleobiologyDB.Taxonomy.PhyloPicPBDB.augment_phylopic!` instead.
+`PaleobiologyDB.PhyloPicPBDB.augment_phylopic!` instead.
 
 ## Arguments
 

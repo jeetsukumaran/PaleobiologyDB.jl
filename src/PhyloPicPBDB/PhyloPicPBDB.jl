@@ -1,12 +1,12 @@
 """
-    PaleobiologyDB.Taxonomy.PhyloPicPBDB
+    PaleobiologyDB.PhyloPicPBDB
 
 PBDB-specific PhyloPic integration submodule.
 
 Provides the PBDB → PhyloPic name resolution pipeline and Makie visualization
 wrappers.
 
-## Data API (re-exported from `Taxonomy`)
+## Data API
 
 | Function | Description |
 |---|---|
@@ -44,7 +44,7 @@ const Colorant   = Makie.Colorant
 import DataCaches: autocache
 import DataFrames: DataFrame, AbstractDataFrame, nrow, hcat
 
-# Data API exports (re-exported from Taxonomy for backward compatibility)
+# Data API exports
 export acquire_phylopic
 export augment_phylopic
 export phylopic_images_dataframe

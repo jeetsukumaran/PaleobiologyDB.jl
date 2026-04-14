@@ -1,7 +1,7 @@
 # PhyloPicMakie — Makie plot integration
 
-`PaleobiologyDB.Taxonomy.PhyloPicPBDB` provides PhyloPic silhouette overlays
-for existing Makie plots.  It is a built-in submodule of `Taxonomy` —
+`PaleobiologyDB.PhyloPicPBDB` provides PhyloPic silhouette overlays
+for existing Makie plots.  It is a top-level submodule of `PaleobiologyDB` —
 `PhyloPicMakie` (and `FileIO` for image decoding) are hard dependencies of
 `PaleobiologyDB`, so no extension activation is needed.
 
@@ -16,20 +16,17 @@ pkg> add PaleobiologyDB CairoMakie
 ```julia
 using PaleobiologyDB
 using CairoMakie   # or GLMakie, WGLMakie, …
-using PaleobiologyDB.Taxonomy.PhyloPicPBDB
+using PaleobiologyDB.PhyloPicPBDB
 # → augment_phylopic!, augment_phylopic_ranges!, phylopic_thumbnail_grid!, etc.
 # are now in scope
 ```
-
-Functions such as `acquire_phylopic`, `phylopic_node`, and `augment_phylopic`
-(DataFrame variant) are also re-exported from `PaleobiologyDB.Taxonomy`.
 
 ## Stratigraphic range chart — quick start
 
 ```julia
 using PaleobiologyDB
 using CairoMakie
-using PaleobiologyDB.Taxonomy.PhyloPicPBDB
+using PaleobiologyDB.PhyloPicPBDB
 
 taxa      = ["Tyrannosaurus", "Triceratops", "Ankylosaurus",
              "Pachycephalosaurus", "Edmontosaurus"]
@@ -71,9 +68,9 @@ When data is in a DataFrame (or any `propertynames`-compatible structure) the
 table overloads accept column selectors directly:
 
 ```julia
-using PaleobiologyDB, PaleobiologyDB.Taxonomy
+using PaleobiologyDB
 using CairoMakie
-using PaleobiologyDB.Taxonomy.PhyloPicPBDB
+using PaleobiologyDB.PhyloPicPBDB
 using DataFrames
 
 df = pbdb_occurrences(base_name = "Ursidae"; show = "full", vocab = "pbdb")
@@ -119,9 +116,9 @@ Pass `glyph` instead of `taxon` to bypass the taxon-lookup pipeline and use
 an image you have already loaded:
 
 ```julia
-using PaleobiologyDB, PaleobiologyDB.Taxonomy
+using PaleobiologyDB
 using CairoMakie
-using PaleobiologyDB.Taxonomy.PhyloPicPBDB
+using PaleobiologyDB.PhyloPicPBDB
 import PhyloPicMakie
 
 rec = acquire_phylopic("Canis lupus")
@@ -196,7 +193,7 @@ collections grow downward rather than becoming excessively wide.
 ```julia
 using PaleobiologyDB
 using CairoMakie
-using PaleobiologyDB.Taxonomy.PhyloPicPBDB
+using PaleobiologyDB.PhyloPicPBDB
 
 fig = phylopic_thumbnail_grid(
     [

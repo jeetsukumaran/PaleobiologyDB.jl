@@ -7,7 +7,7 @@
 #   pkg> add PaleobiologyDB CairoMakie
 
 using PaleobiologyDB
-using PaleobiologyDB.Taxonomy.PhyloPicPBDB
+using PaleobiologyDB.PhyloPicPBDB
 using CairoMakie
 
 # ── Data ──────────────────────────────────────────────────────────────────────

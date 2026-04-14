@@ -6,7 +6,7 @@
 # points that render pre-resolved image matrices onto a Makie axis.
 #
 # Name resolution (taxon → URL → image matrix) lives in
-# PaleobiologyDB.Taxonomy.PhyloPicPBDB, which calls this function after
+# PaleobiologyDB.PhyloPicPBDB, which calls this function after
 # resolving images so that no PaleobiologyDB dependency is required here.
 #
 # The scale correction applied here compensates for axis anisotropy: in a
@@ -47,7 +47,7 @@ entries are handled according to `on_missing`.
 
 This is the generic rendering entry point.  Callers are responsible for
 supplying pre-resolved images.  For PBDB taxon-name resolution, use
-`PaleobiologyDB.Taxonomy.PhyloPicPBDB.augment_phylopic!` instead.
+`PaleobiologyDB.PhyloPicPBDB.augment_phylopic!` instead.
 
 For `aspect = :preserve`, the x-range of each image is a reactive
 `Makie.Observable` that recomputes whenever the axis scale changes, so

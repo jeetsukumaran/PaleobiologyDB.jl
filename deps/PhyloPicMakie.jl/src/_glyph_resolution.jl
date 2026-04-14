@@ -7,7 +7,7 @@
 #       → Vector{Union{Matrix{RGBA{N0f8}}, Nothing}}
 #
 # This is the PhyloPic-native counterpart of
-# PaleobiologyDB.Taxonomy.PhyloPicPBDB's _resolve_images, which maps PBDB
+# PaleobiologyDB.PhyloPicPBDB's _resolve_images, which maps PBDB
 # taxon names → URLs → matrices.  Here the key is a PhyloPic node UUID;
 # image fetching is handled entirely within the PhyloPicDB ecosystem via
 # primary_image + _select_image_url + _load_phylopic_image.  No

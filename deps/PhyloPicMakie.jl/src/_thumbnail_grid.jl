@@ -8,7 +8,7 @@
 #
 # The low-level entry points take pre-built cell data (images, labels,
 # group_sizes) produced by the caller.  PBDB-specific data fetching (resolving
-# taxon names → images) lives in PaleobiologyDB.Taxonomy.PhyloPicPBDB, which
+# taxon names → images) lives in PaleobiologyDB.PhyloPicPBDB, which
 # calls phylopic_thumbnail_grid! after building the cell arrays.
 #
 # Public:
@@ -626,7 +626,7 @@ from pre-built cell data.
 This is the generic rendering entry point.  It accepts pre-resolved image
 matrices, labels, and group sizes; it does not perform any taxon-name
 resolution or image fetching.  For the PBDB-specific entry point that takes
-taxon names, use `PaleobiologyDB.Taxonomy.PhyloPicPBDB.phylopic_thumbnail_grid!`.
+taxon names, use `PaleobiologyDB.PhyloPicPBDB.phylopic_thumbnail_grid!`.
 
 ## Arguments
 
