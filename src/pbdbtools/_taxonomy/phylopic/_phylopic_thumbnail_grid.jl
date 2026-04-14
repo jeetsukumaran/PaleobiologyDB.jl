@@ -5,11 +5,10 @@
 # This file contains only the PBDB-specific parts of the thumbnail grid:
 # resolving taxon names → PhyloPic node UUIDs via phylopic_node, and
 # thin delegation wrappers that forward to the PhyloPic-native API in
-# PhyloPicDB.PhyloPicMakie.
+# PhyloPicMakie.
 #
 # All generic image fetching, grid geometry, label building, image selection,
-# and rendering live in PhyloPicDB.PhyloPicMakie and are accessed via
-# PhyloPicDB.PhyloPicMakie.*.
+# and rendering live in PhyloPicMakie and are accessed via PhyloPicMakie.*.
 #
 # Call graph:
 #
@@ -17,13 +16,12 @@
 #   phylopic_thumbnail_grid! / phylopic_thumbnail_grid (table API)
 #   phylopic_thumbnail_grid! / phylopic_thumbnail_grid (single-string API)
 #       └─► map taxon names → PhyloPic node UUIDs via phylopic_node
-#           └─► PhyloPicDB.PhyloPicMakie.phylopic_thumbnail_grid!(ax, node_uuids; ...)
+#           └─► PhyloPicMakie.phylopic_thumbnail_grid!(ax, node_uuids; ...)
 #                   node_labels = taxon names (passed through as display labels)
+#
+# Makie, PhyloPicMakie, and phylopic_node are all in scope from the
+# enclosing PhyloPicPBDB module (phylopic.jl).
 # ---------------------------------------------------------------------------
-
-import Makie
-import PhyloPicDB
-using PaleobiologyDB.Taxonomy: phylopic_node
 
 # ---------------------------------------------------------------------------
 # Internal: PBDB name → UUID mapping
@@ -73,13 +71,13 @@ end
         taxon::AbstractVector{<:AbstractString};
         ncols::Union{Integer, Nothing} = nothing,
         nrows::Union{Integer, Nothing} = nothing,
-        cell_width::Real = PhyloPicDB.PhyloPicMakie.DEFAULT_THUMBNAIL_GRID_CELL_WIDTH,
-        cell_height::Real = PhyloPicDB.PhyloPicMakie.DEFAULT_THUMBNAIL_GRID_CELL_HEIGHT,
-        glyph_fraction::Real = PhyloPicDB.PhyloPicMakie.DEFAULT_THUMBNAIL_GRID_GLYPH_FRACTION,
-        label_gap::Real = PhyloPicDB.PhyloPicMakie.DEFAULT_THUMBNAIL_GRID_LABEL_GAP,
-        label_fontsize::Real = PhyloPicDB.PhyloPicMakie.DEFAULT_THUMBNAIL_GRID_FONT_SIZE,
+        cell_width::Real = PhyloPicMakie.DEFAULT_THUMBNAIL_GRID_CELL_WIDTH,
+        cell_height::Real = PhyloPicMakie.DEFAULT_THUMBNAIL_GRID_CELL_HEIGHT,
+        glyph_fraction::Real = PhyloPicMakie.DEFAULT_THUMBNAIL_GRID_GLYPH_FRACTION,
+        label_gap::Real = PhyloPicMakie.DEFAULT_THUMBNAIL_GRID_LABEL_GAP,
+        label_fontsize::Real = PhyloPicMakie.DEFAULT_THUMBNAIL_GRID_FONT_SIZE,
         title::Union{AbstractString, Nothing} = nothing,
-        title_gap::Real = PhyloPicDB.PhyloPicMakie.DEFAULT_THUMBNAIL_GRID_TITLE_GAP,
+        title_gap::Real = PhyloPicMakie.DEFAULT_THUMBNAIL_GRID_TITLE_GAP,
         on_missing::Symbol = :skip,
         image_interpolate::Bool = true,
         image_filter::Symbol = :clade,
@@ -122,7 +120,7 @@ taxon may produce multiple cells (one per image in its clade).
   - `:primary` — designated primary image; 1 per taxon.
   - `:node` — images tagged directly to this node.
 - `image_selector`: How to narrow the fetched pool; see
-  `PhyloPicDB.PhyloPicMakie.phylopic_thumbnail_grid!` for details.
+  `PhyloPicMakie.phylopic_thumbnail_grid!` for details.
 - `image_max_pages`: Pagination limit for `:clade`/`:node` queries.
 - `image_rendering`: Which URL to fetch for each selected image.  Default
   `:thumbnail`.
@@ -145,13 +143,13 @@ function phylopic_thumbnail_grid!(
     taxon::AbstractVector{<:AbstractString};
     ncols::Union{Integer, Nothing} = nothing,
     nrows::Union{Integer, Nothing} = nothing,
-    cell_width::Real = PhyloPicDB.PhyloPicMakie.DEFAULT_THUMBNAIL_GRID_CELL_WIDTH,
-    cell_height::Real = PhyloPicDB.PhyloPicMakie.DEFAULT_THUMBNAIL_GRID_CELL_HEIGHT,
-    glyph_fraction::Real = PhyloPicDB.PhyloPicMakie.DEFAULT_THUMBNAIL_GRID_GLYPH_FRACTION,
-    label_gap::Real = PhyloPicDB.PhyloPicMakie.DEFAULT_THUMBNAIL_GRID_LABEL_GAP,
-    label_fontsize::Real = PhyloPicDB.PhyloPicMakie.DEFAULT_THUMBNAIL_GRID_FONT_SIZE,
+    cell_width::Real = PhyloPicMakie.DEFAULT_THUMBNAIL_GRID_CELL_WIDTH,
+    cell_height::Real = PhyloPicMakie.DEFAULT_THUMBNAIL_GRID_CELL_HEIGHT,
+    glyph_fraction::Real = PhyloPicMakie.DEFAULT_THUMBNAIL_GRID_GLYPH_FRACTION,
+    label_gap::Real = PhyloPicMakie.DEFAULT_THUMBNAIL_GRID_LABEL_GAP,
+    label_fontsize::Real = PhyloPicMakie.DEFAULT_THUMBNAIL_GRID_FONT_SIZE,
     title::Union{AbstractString, Nothing} = nothing,
-    title_gap::Real = PhyloPicDB.PhyloPicMakie.DEFAULT_THUMBNAIL_GRID_TITLE_GAP,
+    title_gap::Real = PhyloPicMakie.DEFAULT_THUMBNAIL_GRID_TITLE_GAP,
     on_missing::Symbol = :skip,
     image_interpolate::Bool = true,
     image_filter::Symbol = :clade,
@@ -164,7 +162,7 @@ function phylopic_thumbnail_grid!(
     label_lines::Union{Int, Nothing} = nothing,
 )::Nothing
     node_uuids, taxon_labels = _pbdb_names_to_uuids(taxon)
-    PhyloPicDB.PhyloPicMakie.phylopic_thumbnail_grid!(
+    PhyloPicMakie.phylopic_thumbnail_grid!(
         ax,
         node_uuids;
         node_labels       = taxon_labels,
@@ -236,7 +234,7 @@ function phylopic_thumbnail_grid!(
     taxon,
     kwargs...,
 )::Nothing
-    taxa = PhyloPicDB.PhyloPicMakie._extract_column(table, taxon)
+    taxa = PhyloPicMakie._extract_column(table, taxon)
     phylopic_thumbnail_grid!(ax, collect(String, string.(taxa)); kwargs...)
 end
 
@@ -291,7 +289,7 @@ function phylopic_thumbnail_grid(
     kwargs...,
 )::Makie.Figure
     node_uuids, taxon_labels = _pbdb_names_to_uuids(taxon)
-    PhyloPicDB.PhyloPicMakie.phylopic_thumbnail_grid(
+    PhyloPicMakie.phylopic_thumbnail_grid(
         node_uuids;
         figure_size     = figure_size,
         axis            = axis,
@@ -343,6 +341,6 @@ function phylopic_thumbnail_grid(
     taxon,
     kwargs...,
 )::Makie.Figure
-    taxa = PhyloPicDB.PhyloPicMakie._extract_column(table, taxon)
+    taxa = PhyloPicMakie._extract_column(table, taxon)
     phylopic_thumbnail_grid(collect(String, string.(taxa)); kwargs...)
 end

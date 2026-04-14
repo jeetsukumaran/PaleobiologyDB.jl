@@ -3,26 +3,25 @@
 # PhyloPicPBDB — rendering: augment_phylopic! and all public variants
 #
 # All public functions resolve images via _resolve_images (from _resolve.jl)
-# and then delegate to PhyloPicDB.PhyloPicMakie.augment_phylopic!.
+# and then delegate to PhyloPicMakie.augment_phylopic!.
 #
-# _extract_column lives in PhyloPicDB.PhyloPicMakie._augment_api and is
-# accessed as PhyloPicDB.PhyloPicMakie._extract_column here.
+# _extract_column lives in PhyloPicMakie._augment_api and is accessed as
+# PhyloPicMakie._extract_column here.
 #
 # Call graph:
 #
 #   augment_phylopic  / augment_phylopic!  (vector API)
 #   augment_phylopic  / augment_phylopic!  (table API)
-#       └─► PhyloPicDB.PhyloPicMakie.augment_phylopic!(ax, xs, ys, images; kwargs...)
+#       └─► PhyloPicMakie.augment_phylopic!(ax, xs, ys, images; kwargs...)
 #
 #   augment_phylopic_ranges  / augment_phylopic_ranges!  (vector API)
 #   augment_phylopic_ranges  / augment_phylopic_ranges!  (table API)
-#       └─► PhyloPicDB.PhyloPicMakie.augment_phylopic!(ax, xs_anchor, ys, images; ...)
-#               (after PhyloPicDB.PhyloPicMakie._range_anchor)
+#       └─► PhyloPicMakie.augment_phylopic!(ax, xs_anchor, ys, images; ...)
+#               (after PhyloPicMakie._range_anchor)
 #
+# Makie, PhyloPicMakie, RGBA, N0f8, Colorant are all in scope from the
+# enclosing PhyloPicPBDB module (phylopic.jl).
 # ---------------------------------------------------------------------------
-
-import Makie
-import PhyloPicDB
 
 # ---------------------------------------------------------------------------
 # Public: core vector API
@@ -109,8 +108,9 @@ reduce to this.
 ## Examples
 
 ```julia
-using PaleobiologyDB, PaleobiologyDB.PhyloPicPBDB
-using CairoMakie, FileIO
+using PaleobiologyDB
+using PaleobiologyDB.Taxonomy.PhyloPicPBDB
+using CairoMakie
 
 fig = Figure()
 ax  = Axis(fig[1, 1])
@@ -148,7 +148,7 @@ function augment_phylopic!(
         "augment_phylopic!: `x` and `y` must have the same length."
     ))
     images = _resolve_images(taxon, glyph, n; image_rendering)
-    PhyloPicDB.PhyloPicMakie.augment_phylopic!(
+    PhyloPicMakie.augment_phylopic!(
         ax, x, y, images;
         glyph_size = glyph_size,
         aspect = aspect,
@@ -234,8 +234,9 @@ then calls [`augment_phylopic!`](@ref).
 ## Examples
 
 ```julia
-using PaleobiologyDB, PaleobiologyDB.PhyloPicPBDB
-using CairoMakie, FileIO
+using PaleobiologyDB
+using PaleobiologyDB.Taxonomy.PhyloPicPBDB
+using CairoMakie
 
 taxa      = ["Tyrannosaurus", "Triceratops"]
 first_app = [68.0, 68.0]
@@ -276,7 +277,7 @@ function augment_phylopic_ranges!(
     length(y) == n || throw(ArgumentError(
         "augment_phylopic_ranges!: `y` must have the same length as `xstart`."
     ))
-    xs = [PhyloPicDB.PhyloPicMakie._range_anchor(xstart[i], xstop[i], at) for i in 1:n]
+    xs = [PhyloPicMakie._range_anchor(xstart[i], xstop[i], at) for i in 1:n]
     augment_phylopic!(ax, xs, y; kwargs...)
 end
 
@@ -340,8 +341,9 @@ Extracts coordinate and taxon columns from any Tables.jl-compatible source
 ## Examples
 
 ```julia
-using PaleobiologyDB, PaleobiologyDB.PhyloPicPBDB
-using CairoMakie, FileIO, DataFrames
+using PaleobiologyDB
+using PaleobiologyDB.Taxonomy.PhyloPicPBDB
+using CairoMakie, DataFrames
 
 df = DataFrame(
     x     = [68.0, 68.0],
@@ -363,9 +365,9 @@ function augment_phylopic!(
     glyph::Union{AbstractMatrix, Nothing} = nothing,
     kwargs...,
 )::Nothing
-    xs   = PhyloPicDB.PhyloPicMakie._extract_column(table, x)
-    ys   = PhyloPicDB.PhyloPicMakie._extract_column(table, y)
-    taxa = isnothing(taxon) ? nothing : PhyloPicDB.PhyloPicMakie._extract_column(table, taxon)
+    xs   = PhyloPicMakie._extract_column(table, x)
+    ys   = PhyloPicMakie._extract_column(table, y)
+    taxa = isnothing(taxon) ? nothing : PhyloPicMakie._extract_column(table, taxon)
     augment_phylopic!(ax, xs, ys; taxon = taxa, glyph = glyph, kwargs...)
 end
 
@@ -425,8 +427,9 @@ forwards to the vector range API.
 ## Examples
 
 ```julia
-using PaleobiologyDB, PaleobiologyDB.PhyloPicPBDB
-using CairoMakie, FileIO, DataFrames
+using PaleobiologyDB
+using PaleobiologyDB.Taxonomy.PhyloPicPBDB
+using CairoMakie, DataFrames
 
 df = DataFrame(
     taxon      = ["Tyrannosaurus", "Triceratops"],
@@ -464,10 +467,10 @@ function augment_phylopic_ranges!(
     at::Symbol = :start,
     kwargs...,
 )::Nothing
-    xs   = PhyloPicDB.PhyloPicMakie._extract_column(table, xstart)
-    xe   = PhyloPicDB.PhyloPicMakie._extract_column(table, xstop)
-    ys   = PhyloPicDB.PhyloPicMakie._extract_column(table, y)
-    taxa = isnothing(taxon) ? nothing : PhyloPicDB.PhyloPicMakie._extract_column(table, taxon)
+    xs   = PhyloPicMakie._extract_column(table, xstart)
+    xe   = PhyloPicMakie._extract_column(table, xstop)
+    ys   = PhyloPicMakie._extract_column(table, y)
+    taxa = isnothing(taxon) ? nothing : PhyloPicMakie._extract_column(table, taxon)
     augment_phylopic_ranges!(ax, xs, xe, ys; taxon = taxa, glyph = glyph, at = at, kwargs...)
 end
 

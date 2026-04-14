@@ -3,19 +3,16 @@ using PaleobiologyDB
 using PaleobiologyDB.ApiHelp
 using PaleobiologyDB.Taxonomy
 using PaleobiologyDB.Depot
+import PhyloPicMakie
 
-# Trigger PhyloPicMakie extension (CairoMakie and FileIO are in docs/Project.toml)
+# Trigger TaxonTreeMakie extension (requires CairoMakie)
 using CairoMakie
-using FileIO
-using PaleobiologyDB.PhyloPicMakie
-
-# Trigger TaxonTreeMakie extension (CairoMakie already loaded above)
 using PaleobiologyDB.TaxonTreeMakie
 
 makedocs(
     sitename = "PaleobiologyDB.jl",
     authors = "Jeet Sukumaran",
-    modules = [PaleobiologyDB, PaleobiologyDB.ApiHelp, PaleobiologyDB.Taxonomy, PaleobiologyDB.Depot, PaleobiologyDB.PhyloPicMakie, PaleobiologyDB.TaxonTreeMakie],
+    modules = [PaleobiologyDB, PaleobiologyDB.ApiHelp, PaleobiologyDB.Taxonomy, PaleobiologyDB.Taxonomy.PhyloPicPBDB, PaleobiologyDB.Depot, PhyloPicMakie, PaleobiologyDB.TaxonTreeMakie],
     format = Documenter.HTML(
         prettyurls = get(ENV, "CI", nothing) == "true",
         canonical = "https://jeetsukumaran.github.io/PaleobiologyDB.jl",

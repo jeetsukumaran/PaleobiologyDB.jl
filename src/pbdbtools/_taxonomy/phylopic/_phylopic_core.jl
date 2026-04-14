@@ -1,5 +1,5 @@
 # ---------------------------------------------------------------------------
-# PhyloPic integration
+# PhyloPicPBDB — PBDB-PhyloPic data bridge (no Makie dependency)
 #
 # Maps PBDB taxon names to PhyloPic silhouette images via a two-stage pipeline:
 #
@@ -21,8 +21,11 @@
 #   phylopic_images_dataframe(taxon_name, prefix; filter, max_pages)     → DataFrame
 # ---------------------------------------------------------------------------
 
-import PhyloPicDB
-import DataCaches: autocache
+# pbdb_taxon and pbdb_taxa are defined in the parent Taxonomy module and
+# imported into this module via the module-level `import ..pbdb_taxon` in
+# the enclosing taxonomy.jl.  Access them here via the module parent chain.
+import ..pbdb_taxon
+import ..pbdb_taxa
 
 export acquire_phylopic, augment_phylopic, phylopic_images_dataframe
 export phylopic_node, phylopic_images
@@ -471,7 +474,7 @@ function acquire_phylopic(
     null_rec   = _phylopic_null_record()
     col_names  = [Symbol(fieldname_prefix * string(col)) for col in _PHYLOPIC_BASE_COLUMNS]
 
-    n       = nrow(df)
+    n        = nrow(df)
     col_vecs = Vector{Vector{Any}}(undef, length(_PHYLOPIC_BASE_COLUMNS))
     for (i, base_col) in enumerate(_PHYLOPIC_BASE_COLUMNS)
         col_vecs[i] = Vector{Any}(undef, n)

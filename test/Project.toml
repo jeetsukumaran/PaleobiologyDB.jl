@@ -4,14 +4,14 @@ CairoMakie = "13f3f980-e62b-5c42-98c6-ff1f3baf88f0"
 DataCaches = "c1455f2b-6d6f-4f37-b463-919f923708a5"
 DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
 Downloads = "f43a241f-c20a-4ad4-852c-f6b1247861c6"
-FileIO = "5789e2e9-d7fb-5bc7-8068-2c6fae9b9549"
 Graphs = "86223c79-3864-5bf0-83f7-82e725a168b6"
 HTTP = "cd3eb016-35fb-5094-929b-558a96fad6f3"
 Makie = "ee78f7c6-11fb-53f2-987a-cfe4a2b5a57a"
 PaleobiologyDB = "c9cb2f45-518b-476d-9b58-4dd79871b05b"
-PhyloPicDB = "c9272f45-9a18-4009-bf68-1964ca18c300"
+PhyloPicMakie = "29f7fcc2-58b8-448e-949b-ed9dd2d8a249"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [sources]
 DataCaches = {url = "https://github.com/JuliaData/DataCaches.jl.git"}
 PaleobiologyDB = {path = ".."}
+PhyloPicMakie = {path = "../deps/PhyloPicMakie.jl"}

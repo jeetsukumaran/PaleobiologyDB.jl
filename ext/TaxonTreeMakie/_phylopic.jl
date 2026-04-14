@@ -9,28 +9,23 @@
 #   _load_tip_phylopic_image(taxon_name) → Union{Matrix{Makie.RGBA{Makie.N0f8}}, Nothing}
 #   _render_tip_phylopic!(p, tree, xs, ys; ...) → Nothing
 #
-# Image loading delegates to PhyloPicDB.PhyloPicMakie when that extension is
-# loaded (i.e. when both Makie and FileIO are in the session).  If
-# PhyloPicMakie is not yet loaded, _load_tip_phylopic_image returns nothing
-# and a one-time warning is emitted; the on_missing policy at the call site
-# then applies.
+# Image loading delegates to PhyloPicMakie._load_phylopic_image (which
+# handles both URL resolution and image decoding via FileIO).  PhyloPicMakie
+# is a hard dependency of PaleobiologyDB so it is always available.
 #
 # Coordinate geometry and reactive axis-scale correction are delegated to
-# PhyloPicDB.PhyloPicMakie._compute_image_bbox and
-# PhyloPicDB.PhyloPicMakie._axis_scale_correction_obs so that the bug-fix
-# (anisotropic-axis aspect correction) is applied consistently.
+# PhyloPicMakie._compute_image_bbox and PhyloPicMakie._axis_scale_correction_obs
+# so that the bug-fix (anisotropic-axis aspect correction) is applied
+# consistently.
 # ---------------------------------------------------------------------------
 
-import PhyloPicDB
+import PhyloPicMakie
+const PhyloPicDB = PhyloPicMakie.PhyloPicDB
 using PaleobiologyDB.Taxonomy: acquire_phylopic
 
 # ---------------------------------------------------------------------------
 # Image loading
 # ---------------------------------------------------------------------------
-
-# Guard flag: emit the "PhyloPicMakie not loaded" warning at most once per
-# session so repeated calls don't flood the console.
-const _PHYLOPIC_MISSING_WARNED = Ref(false)
 
 """
     _load_tip_phylopic_image(
@@ -50,14 +45,10 @@ Look up and download the PhyloPic image for `taxon_name`.
 | `:vector` | `:phylopic_vector` | SVG; black silhouette on transparent — requires FileIO SVG plugin |
 | `:source_file` | `:phylopic_source_file` | SVG or raster — format matches the original upload |
 
-Delegates to `PhyloPicDB.PhyloPicMakie` for URL resolution and image
-decoding (which requires `FileIO` to be loaded in the session).  When
-`PhyloPicMakie` is not yet available, emits a one-time warning and returns
-`nothing`.
-
-Both the PhyloPic metadata lookup (taxon → URL) and the image download are
-cached via `DataCaches.jl`; repeated calls for the same taxon name within a
-session are instant.
+Delegates to `PhyloPicMakie._load_phylopic_image` for URL resolution and image
+decoding.  Both the PhyloPic metadata lookup (taxon → URL) and the image
+download are cached via `DataCaches.jl`; repeated calls for the same taxon
+name within a session are instant.
 
 ## Returns
 
@@ -73,15 +64,6 @@ function _load_tip_phylopic_image(
         "_load_tip_phylopic_image: unknown `image_rendering` value `:$image_rendering`. " *
         "Valid values: $(join(string.(':', PhyloPicDB.PHYLOPIC_IMAGE_RENDERINGS), ", "))."
     ))
-
-    if !isdefined(PhyloPicDB, :PhyloPicMakie)
-        if !_PHYLOPIC_MISSING_WARNED[]
-            _PHYLOPIC_MISSING_WARNED[] = true
-            @warn "TaxonTreeMakie: PhyloPic silhouettes require FileIO.jl. " *
-                  "Load it with `using FileIO` to enable image rendering."
-        end
-        return nothing
-    end
 
     rec = try
         acquire_phylopic(string(taxon_name))
@@ -108,7 +90,7 @@ function _load_tip_phylopic_image(
     end
 
     try
-        return PhyloPicDB.PhyloPicMakie._load_phylopic_image(string(url))
+        return PhyloPicMakie._load_phylopic_image(string(url))
     catch err
         @warn "TaxonTreeMakie: image load failed for \"$taxon_name\"" exception = err
         return nothing
@@ -142,7 +124,7 @@ is true.  Images are static after creation; toggling `p[:show_phylopic][]`
 changes their visibility without re-fetching.
 
 For `aspect = :preserve`, the x-range of each image is a reactive
-`Makie.Observable` derived from `PhyloPicDB.PhyloPicMakie._axis_scale_correction_obs`.
+`Makie.Observable` derived from `PhyloPicMakie._axis_scale_correction_obs`.
 This corrects for anisotropic axes (where one data unit occupies a different
 number of pixels in x vs y) so rendered glyphs maintain correct pixel-space
 proportions after auto-limits or window resize events.
@@ -202,7 +184,7 @@ function _render_tip_phylopic!(
 
     # Reactive scale correction: recomputes whenever the axis limits or
     # viewport change so :preserve images stay correctly proportioned.
-    scale_corr_obs = PhyloPicDB.PhyloPicMakie._axis_scale_correction_obs(
+    scale_corr_obs = PhyloPicMakie._axis_scale_correction_obs(
         Makie.parent_scene(p)
     )
 
@@ -249,7 +231,7 @@ function _render_tip_phylopic!(
         h_px, w_px = size(img)
 
         # Static y-range: glyph_size governs y extent; independent of scale.
-        _, _, y_lo, y_hi = PhyloPicDB.PhyloPicMakie._compute_image_bbox(
+        _, _, y_lo, y_hi = PhyloPicMakie._compute_image_bbox(
             x_anchor, y_anchor, w_px, h_px;
             glyph_size            = glyph_size,
             aspect                = aspect,
@@ -263,7 +245,7 @@ function _render_tip_phylopic!(
         # axis scale changes so the glyph stays proportioned on anisotropic axes.
         x_range = if aspect === :preserve
             Makie.lift(scale_corr_obs) do sc
-                x_lo, x_hi, _, _ = PhyloPicDB.PhyloPicMakie._compute_image_bbox(
+                x_lo, x_hi, _, _ = PhyloPicMakie._compute_image_bbox(
                     x_anchor, y_anchor, w_px, h_px;
                     glyph_size            = glyph_size,
                     aspect                = :preserve,
@@ -276,7 +258,7 @@ function _render_tip_phylopic!(
             end
         else
             # :stretch — equal data-unit width and height; no anisotropy correction.
-            x_lo, x_hi, _, _ = PhyloPicDB.PhyloPicMakie._compute_image_bbox(
+            x_lo, x_hi, _, _ = PhyloPicMakie._compute_image_bbox(
                 x_anchor, y_anchor, w_px, h_px;
                 glyph_size = glyph_size,
                 aspect     = :stretch,

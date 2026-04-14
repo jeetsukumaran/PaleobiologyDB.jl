@@ -13,7 +13,7 @@
 # _resolve_images is the PBDB name-resolution bridge:
 #   1. Maps unique taxon names → PhyloPic node UUIDs via phylopic_node.
 #   2. Delegates image fetching to
-#      PhyloPicDB.PhyloPicMakie._resolve_images_by_uuid, which is the
+#      PhyloPicMakie._resolve_images_by_uuid, which is the
 #      PhyloPic-native implementation (node UUID → primary_image → URL →
 #      _load_phylopic_image).
 #
@@ -21,8 +21,8 @@
 # The PBDB-specific taxon → node mapping is the only work done here.
 # ---------------------------------------------------------------------------
 
-import PhyloPicDB
-using PaleobiologyDB.Taxonomy: phylopic_node
+# PhyloPicMakie, PhyloPicDB, and phylopic_node are all in scope from
+# the enclosing PhyloPicPBDB module (phylopic.jl).
 
 # ---------------------------------------------------------------------------
 # Internal: image rendering field resolution (PBDB-specific)
@@ -79,12 +79,10 @@ Exactly one of `taxon` or `glyph` must be non-`nothing`:
 - If `taxon` is provided, each unique non-empty name is resolved to a
   PhyloPic node UUID via [`PaleobiologyDB.Taxonomy.phylopic_node`](@ref)
   (which is cached via `autocache`).  The UUID vector is then forwarded to
-  [`PhyloPicDB.PhyloPicMakie._resolve_images_by_uuid`](@ref) for image
-  fetching.
+  [`PhyloPicMakie._resolve_images_by_uuid`](@ref) for image fetching.
 
 `image_rendering` controls which URL is fetched; see
-[`PhyloPicDB.PhyloPicMakie._select_image_url`](@ref) for the full symbol
-table.
+[`PhyloPicMakie._select_image_url`](@ref) for the full symbol table.
 """
 function _resolve_images(
     taxon::Union{AbstractVector, Nothing},
@@ -94,7 +92,7 @@ function _resolve_images(
 )::Vector{Union{Matrix{RGBA{N0f8}}, Nothing}}
     if !isnothing(glyph)
         # Delegate glyph broadcast to PhyloPicMakie.
-        return PhyloPicDB.PhyloPicMakie._resolve_images_by_uuid(
+        return PhyloPicMakie._resolve_images_by_uuid(
             nothing, glyph, n; image_rendering,
         )
     end
@@ -131,7 +129,7 @@ function _resolve_images(
     end
 
     # Delegate image fetching to the PhyloPic-native implementation.
-    return PhyloPicDB.PhyloPicMakie._resolve_images_by_uuid(
+    return PhyloPicMakie._resolve_images_by_uuid(
         node_uuids, nothing, n; image_rendering,
     )
 end

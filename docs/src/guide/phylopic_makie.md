@@ -1,17 +1,14 @@
 # PhyloPicMakie — Makie plot integration
 
-`PaleobiologyDB.PhyloPicMakie` is an optional extension that adds PhyloPic
-silhouette overlays to existing Makie plots.  The extension activates
-automatically when both a Makie backend (e.g. `CairoMakie`) and `FileIO`
-are loaded.
+`PaleobiologyDB.Taxonomy.PhyloPicPBDB` provides PhyloPic silhouette overlays
+for existing Makie plots.  It is a built-in submodule of `Taxonomy` —
+`PhyloPicMakie` (and `FileIO` for image decoding) are hard dependencies of
+`PaleobiologyDB`, so no extension activation is needed.
 
 ## Installation
 
-The extension requires `CairoMakie` (or another Makie backend), `FileIO`, and
-a PNG image-format backend such as `PNGFiles`:
-
 ```
-pkg> add CairoMakie FileIO PNGFiles
+pkg> add PaleobiologyDB CairoMakie
 ```
 
 ## Activation
@@ -19,21 +16,20 @@ pkg> add CairoMakie FileIO PNGFiles
 ```julia
 using PaleobiologyDB
 using CairoMakie   # or GLMakie, WGLMakie, …
-using FileIO       # required for PNG decoding
-# → PaleobiologyDB.PhyloPicMakie activates automatically
+using PaleobiologyDB.Taxonomy.PhyloPicPBDB
+# → augment_phylopic!, augment_phylopic_ranges!, phylopic_thumbnail_grid!, etc.
+# are now in scope
 ```
 
-After loading the trigger packages the extension module is accessible as
-`PaleobiologyDB.PhyloPicMakie`, and its exported functions (`augment_phylopic!`,
-`augment_phylopic_ranges!`, and their non-bang aliases) are brought into scope
-via `using PaleobiologyDB.PhyloPicMakie`.
+Functions such as `acquire_phylopic`, `phylopic_node`, and `augment_phylopic`
+(DataFrame variant) are also re-exported from `PaleobiologyDB.Taxonomy`.
 
 ## Stratigraphic range chart — quick start
 
 ```julia
 using PaleobiologyDB
-using CairoMakie, FileIO
-using PaleobiologyDB.PhyloPicMakie
+using CairoMakie
+using PaleobiologyDB.Taxonomy.PhyloPicPBDB
 
 taxa      = ["Tyrannosaurus", "Triceratops", "Ankylosaurus",
              "Pachycephalosaurus", "Edmontosaurus"]
@@ -76,8 +72,8 @@ table overloads accept column selectors directly:
 
 ```julia
 using PaleobiologyDB, PaleobiologyDB.Taxonomy
-using CairoMakie, FileIO
-using PaleobiologyDB.PhyloPicMakie
+using CairoMakie
+using PaleobiologyDB.Taxonomy.PhyloPicPBDB
 using DataFrames
 
 df = pbdb_occurrences(base_name = "Ursidae"; show = "full", vocab = "pbdb")
@@ -123,12 +119,13 @@ Pass `glyph` instead of `taxon` to bypass the taxon-lookup pipeline and use
 an image you have already loaded:
 
 ```julia
-using FileIO, Downloads, PaleobiologyDB, PaleobiologyDB.Taxonomy
+using PaleobiologyDB, PaleobiologyDB.Taxonomy
 using CairoMakie
-using PaleobiologyDB.PhyloPicMakie
+using PaleobiologyDB.Taxonomy.PhyloPicPBDB
+import PhyloPicMakie
 
 rec = acquire_phylopic("Canis lupus")
-img = load(Downloads.download(rec.phylopic_thumbnail))
+img = PhyloPicMakie._load_phylopic_image(rec.phylopic_thumbnail)
 
 fig = Figure()
 ax  = Axis(fig[1, 1])
@@ -150,11 +147,13 @@ calls for the same URL return the stored matrix without any network activity.
 The cache is controlled via `PaleobiologyDB.set_autocaching!`:
 
 ```julia
+import PhyloPicMakie
+
 # Enable caching for image downloads (default)
-PaleobiologyDB.set_autocaching!(true, PaleobiologyDB.PhyloPicMakie._load_phylopic_image)
+PaleobiologyDB.set_autocaching!(true, PhyloPicMakie._load_phylopic_image)
 
 # Disable caching
-PaleobiologyDB.set_autocaching!(false, PaleobiologyDB.PhyloPicMakie._load_phylopic_image)
+PaleobiologyDB.set_autocaching!(false, PhyloPicMakie._load_phylopic_image)
 ```
 
 This is independent of the taxon-metadata cache (controlled via
@@ -196,8 +195,8 @@ collections grow downward rather than becoming excessively wide.
 
 ```julia
 using PaleobiologyDB
-using CairoMakie, FileIO
-using PaleobiologyDB.PhyloPicMakie
+using CairoMakie
+using PaleobiologyDB.Taxonomy.PhyloPicPBDB
 
 fig = phylopic_thumbnail_grid(
     [

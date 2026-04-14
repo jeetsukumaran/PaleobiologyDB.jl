@@ -7,8 +7,8 @@ import HTTP
 # Helper to access internals without export
 const _build_url = PaleobiologyDB._build_url
 const _joinvals  = PaleobiologyDB._joinvals
-# PhyloPicDB is a source dep accessed through PaleobiologyDB's Taxonomy module
-const PhyloPicDB = PaleobiologyDB.Taxonomy.PhyloPicDB
+# PhyloPicDB is accessed through PhyloPicMakie (a hard dep of PaleobiologyDB).
+const PhyloPicDB = PaleobiologyDB.PhyloPicMakie.PhyloPicDB
 
 # Live tests hit the real API and are disabled by default.
 # Enable by running with:  ENV["PBDB_LIVE"]="1"  (e.g., `PBDB_LIVE=1 julia --project -e 'using Pkg; Pkg.test()'`)

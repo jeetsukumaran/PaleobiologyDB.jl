@@ -4,11 +4,11 @@
 # PaleobiologyDB.PhyloPicMakie extension.
 #
 # Requirements:
-#   pkg> add PaleobiologyDB CairoMakie FileIO PNGFiles
+#   pkg> add PaleobiologyDB CairoMakie
 
 using PaleobiologyDB
-using PaleobiologyDB.PhyloPicMakie
-using CairoMakie, FileIO
+using PaleobiologyDB.Taxonomy.PhyloPicPBDB
+using CairoMakie
 
 # ── Data ──────────────────────────────────────────────────────────────────────
 
