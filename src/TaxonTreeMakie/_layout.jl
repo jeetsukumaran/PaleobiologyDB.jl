@@ -317,3 +317,53 @@ function _dendrogram_segment_pairs(
 
     return segs
 end
+
+# ---------------------------------------------------------------------------
+# Public: tip coordinate extraction
+# ---------------------------------------------------------------------------
+
+"""
+    tip_positions(tree::TaxonTree, xs, ys) -> NamedTuple
+
+Extract leaf-tip coordinates from a pre-computed dendrogram layout.
+
+Returns a `NamedTuple` with fields:
+- `vertices::Vector{Int}` — leaf vertex indices into `tree.graph`
+- `names::Vector{String}` — accepted taxon name for each leaf
+- `x::Vector{Float64}` — x coordinate in data units for each leaf
+- `y::Vector{Float64}` — y coordinate in data units for each leaf
+
+All four vectors are the same length and are aligned by index.
+
+`xs` and `ys` are the layout vectors returned by
+[`_compute_dendrogram_layout`](@ref).
+
+## Examples
+
+```julia
+using PaleobiologyDB, PaleobiologyDB.Taxonomy
+using CairoMakie
+using PaleobiologyDB.TaxonTreeMakie
+
+tree = taxon_subtree("Panthera")
+fig, ax, p = taxontreeplot(tree)
+tips = tip_positions(p)   # convenience overload
+# tips.names, tips.x, tips.y  — one entry per leaf
+```
+
+See also [`augment_tip_phylopic!`](@ref).
+"""
+function tip_positions(
+    tree::TaxonTree,
+    xs::AbstractVector{<:Real},
+    ys::AbstractVector{<:Real},
+)::NamedTuple
+    g   = tree.graph
+    lvs = [v for v in Graphs.vertices(g) if isempty(Graphs.outneighbors(g, v))]
+    return (
+        vertices = lvs,
+        names    = [tree.taxa[v].name for v in lvs],
+        x        = [Float64(xs[v]) for v in lvs],
+        y        = [Float64(ys[v]) for v in lvs],
+    )
+end

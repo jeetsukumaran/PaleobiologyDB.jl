@@ -21,6 +21,10 @@ tree2 = taxon_subtree("Canidae"; leaf_rank = "genus")
 taxontreeplot!(ax2, tree2; showtips = true, ladderize = true)
 set_rank_axis_ticks!(ax2, tree2)
 display(fig2)
+
+# Overlay PhyloPic silhouettes after the fact (recommended for fine control)
+fig3, ax3, p3 = taxontreeplot(taxon_subtree("Panthera"))
+augment_tip_phylopic!(ax3, p3; xoffset = 1.0)
 ```
 
 ## Public API
@@ -31,6 +35,8 @@ display(fig2)
 | [`taxontreeplot`](@ref) | Create a standalone figure; returns `(Figure, Axis, TaxonTreePlot)` |
 | [`taxontreeplot!`](@ref) | Add a dendrogram to an existing axis |
 | [`set_rank_axis_ticks!`](@ref) | Label the x-axis with rank names at their depth positions |
+| [`tip_positions`](@ref) | Extract leaf-tip coordinates `(vertices, names, x, y)` from a tree or plot |
+| [`augment_tip_phylopic!`](@ref) | Add PhyloPic silhouettes at each leaf tip of an existing plot |
 """
 module TaxonTreeMakie
 
@@ -41,9 +47,11 @@ using PaleobiologyDB
 using PaleobiologyDB.Taxonomy: TaxonTree, TaxonNode
 
 export TaxonTreePlot, taxontreeplot, taxontreeplot!, set_rank_axis_ticks!
+export tip_positions, augment_tip_phylopic!
 
 include("_layout.jl")
 include("_recipe.jl")
 include("_phylopic.jl")
+include("_augment.jl")
 
 end # module TaxonTreeMakie
