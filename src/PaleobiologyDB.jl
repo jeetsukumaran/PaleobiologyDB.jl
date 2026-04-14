@@ -60,5 +60,6 @@ include("dbapi.jl")
 include("pbdbdocs.jl")
 
 include("pbdbtools/pbdbtools.jl")
+include("TaxonTreeMakie/TaxonTreeMakie.jl")
 
 end # module
