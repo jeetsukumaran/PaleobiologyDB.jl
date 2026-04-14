@@ -1,29 +1,39 @@
 
 # ---------------------------------------------------------------------------
-# PhyloPicPBDB — image resolution: taxon name → PhyloPic URL → image matrix
+# PhyloPicPBDB — PBDB taxon name → PhyloPic node UUID bridge
 #
 # Provides:
 #   _phylopic_field_for_rendering(image_rendering) → Symbol
 #   _resolve_images(taxon, glyph, n; image_rendering) → Vector{…}
 #
-# Image download and caching is delegated to
-# PhyloPicDB.PhyloPicMakie._load_phylopic_image.  Taxon-name → PhyloPic URL
-# resolution is handled by PaleobiologyDB.Taxonomy.acquire_phylopic, which
-# requires a live PBDB connection and cannot live in PhyloPicDB.
+# _phylopic_field_for_rendering is PBDB-specific: it maps image_rendering
+# symbols to the prefixed field names in the NamedTuple returned by
+# acquire_phylopic (e.g. :thumbnail → :phylopic_thumbnail).
+#
+# _resolve_images is the PBDB name-resolution bridge:
+#   1. Maps unique taxon names → PhyloPic node UUIDs via phylopic_node.
+#   2. Delegates image fetching to
+#      PhyloPicDB.PhyloPicMakie._resolve_images_by_uuid, which is the
+#      PhyloPic-native implementation (node UUID → primary_image → URL →
+#      _load_phylopic_image).
+#
+# Image download and caching is handled entirely within PhyloPicMakie.
+# The PBDB-specific taxon → node mapping is the only work done here.
 # ---------------------------------------------------------------------------
 
 import PhyloPicDB
-using PaleobiologyDB.Taxonomy: acquire_phylopic
+using PaleobiologyDB.Taxonomy: phylopic_node
 
 # ---------------------------------------------------------------------------
-# Internal: image rendering field resolution
+# Internal: image rendering field resolution (PBDB-specific)
 # ---------------------------------------------------------------------------
 
 """
     _phylopic_field_for_rendering(image_rendering::Symbol) -> Symbol
 
 Map an `image_rendering` symbol to the corresponding field key in the
-NamedTuple returned by `acquire_phylopic` (with the default `"phylopic_"` prefix).
+NamedTuple returned by `acquire_phylopic` (with the default `"phylopic_"`
+prefix).
 
 | `image_rendering` | `acquire_phylopic` field | Format |
 |---|---|---|
@@ -49,13 +59,13 @@ function _phylopic_field_for_rendering(image_rendering::Symbol)::Symbol
 end
 
 # ---------------------------------------------------------------------------
-# Internal: resolve images for a vector of taxa / glyphs
+# Internal: PBDB name → UUID bridge + image resolution
 # ---------------------------------------------------------------------------
 
 """
     _resolve_images(
         taxon::Union{AbstractVector, Nothing},
-        glyph::Union{AbstractMatrix{<:Colorant}, Nothing},
+        glyph::Union{AbstractMatrix, Nothing},
         n::Integer;
         image_rendering::Symbol = :thumbnail,
     ) -> Vector{Union{Matrix{RGBA{N0f8}}, Nothing}}
@@ -64,13 +74,17 @@ For each of the `n` data points, return either a decoded image matrix or
 `nothing` (when the image could not be resolved).
 
 Exactly one of `taxon` or `glyph` must be non-`nothing`:
+
 - If `glyph` is provided, it is broadcast to all `n` points.
-- If `taxon` is provided, `acquire_phylopic` is called for each unique name
-  and the selected URL is downloaded via
-  `PhyloPicDB.PhyloPicMakie._load_phylopic_image`.
+- If `taxon` is provided, each unique non-empty name is resolved to a
+  PhyloPic node UUID via [`PaleobiologyDB.Taxonomy.phylopic_node`](@ref)
+  (which is cached via `autocache`).  The UUID vector is then forwarded to
+  [`PhyloPicDB.PhyloPicMakie._resolve_images_by_uuid`](@ref) for image
+  fetching.
 
 `image_rendering` controls which URL is fetched; see
-[`_phylopic_field_for_rendering`](@ref) for the full symbol table.
+[`PhyloPicDB.PhyloPicMakie._select_image_url`](@ref) for the full symbol
+table.
 """
 function _resolve_images(
     taxon::Union{AbstractVector, Nothing},
@@ -79,9 +93,10 @@ function _resolve_images(
     image_rendering::Symbol = :thumbnail,
 )::Vector{Union{Matrix{RGBA{N0f8}}, Nothing}}
     if !isnothing(glyph)
-        # Broadcast the single pre-loaded image to every data point.
-        img_rgba = Matrix{RGBA{N0f8}}(RGBA{N0f8}.(glyph))
-        return fill(img_rgba, n)
+        # Delegate glyph broadcast to PhyloPicMakie.
+        return PhyloPicDB.PhyloPicMakie._resolve_images_by_uuid(
+            nothing, glyph, n; image_rendering,
+        )
     end
 
     isnothing(taxon) && throw(ArgumentError(
@@ -92,41 +107,31 @@ function _resolve_images(
         "coordinate length ($n)."
     ))
 
-    field = _phylopic_field_for_rendering(image_rendering)
-
-    # Deduplicate: call acquire_phylopic once per unique non-missing name.
-    unique_names = unique(skipmissing(taxon))
-    url_cache = Dict{String, Union{String, Missing}}()
+    # Resolve each unique non-missing, non-empty taxon name to a PhyloPic
+    # node UUID.  phylopic_node is cached via autocache so repeated calls
+    # for the same name within a session incur no extra PBDB API traffic.
+    unique_names = unique(v for v in taxon if !ismissing(v) && !isempty(strip(string(v))))
+    uuid_cache   = Dict{String, Union{String, Nothing}}()
     for name in unique_names
-        s = string(name)
-        isempty(strip(s)) && continue
-        rec = acquire_phylopic(s)
-        url_cache[s] = get(rec, field, missing)
+        s    = string(name)
+        node = phylopic_node(s)
+        uuid_cache[s] = isnothing(node) ? nothing : node.uuid
     end
 
-    results = Vector{Union{Matrix{RGBA{N0f8}}, Nothing}}(undef, n)
+    # Build a UUID vector aligned with the `n` taxon entries.
+    node_uuids = Vector{Union{String, Nothing}}(undef, n)
     for i in 1:n
         v = taxon[i]
-        if ismissing(v)
-            results[i] = nothing
-            continue
-        end
-        s = string(v)
-        if isempty(strip(s))
-            results[i] = nothing
-            continue
-        end
-        url = get(url_cache, s, missing)
-        if ismissing(url)
-            results[i] = nothing
+        node_uuids[i] = if ismissing(v)
+            nothing
         else
-            try
-                results[i] = PhyloPicDB.PhyloPicMakie._load_phylopic_image(url)
-            catch err
-                @warn "augment_phylopic: could not load image for \"$s\"" exception = err
-                results[i] = nothing
-            end
+            s = string(v)
+            isempty(strip(s)) ? nothing : get(uuid_cache, s, nothing)
         end
     end
-    return results
+
+    # Delegate image fetching to the PhyloPic-native implementation.
+    return PhyloPicDB.PhyloPicMakie._resolve_images_by_uuid(
+        node_uuids, nothing, n; image_rendering,
+    )
 end

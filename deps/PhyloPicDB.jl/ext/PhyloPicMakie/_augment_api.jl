@@ -1,31 +1,73 @@
 
 # ---------------------------------------------------------------------------
-# PhyloPicPBDB — rendering: augment_phylopic! and all public variants
+# PhyloPicDB.PhyloPicMakie — PhyloPic-native public augment_phylopic! API
 #
-# All public functions resolve images via _resolve_images (from _resolve.jl)
-# and then delegate to PhyloPicDB.PhyloPicMakie.augment_phylopic!.
+# Provides the public PhyloPic-native entry points for adding PhyloPic
+# silhouette glyphs to a Makie axis.  All functions are keyed on PhyloPic
+# node UUIDs (strings) or pre-loaded image matrices (glyph), with no
+# dependency on PaleobiologyDB or PBDB taxon names.
 #
-# _extract_column lives in PhyloPicDB.PhyloPicMakie._augment_api and is
-# accessed as PhyloPicDB.PhyloPicMakie._extract_column here.
+# Also contains _extract_column, a generic table-column extractor shared
+# with PaleobiologyDB.PhyloPicPBDB (which references it as
+# PhyloPicDB.PhyloPicMakie._extract_column).
 #
 # Call graph:
 #
-#   augment_phylopic  / augment_phylopic!  (vector API)
-#   augment_phylopic  / augment_phylopic!  (table API)
-#       └─► PhyloPicDB.PhyloPicMakie.augment_phylopic!(ax, xs, ys, images; kwargs...)
-#
-#   augment_phylopic_ranges  / augment_phylopic_ranges!  (vector API)
-#   augment_phylopic_ranges  / augment_phylopic_ranges!  (table API)
-#       └─► PhyloPicDB.PhyloPicMakie.augment_phylopic!(ax, xs_anchor, ys, images; ...)
-#               (after PhyloPicDB.PhyloPicMakie._range_anchor)
-#
+#   augment_phylopic! / augment_phylopic  (vector API, PhyloPic-native)
+#   augment_phylopic! / augment_phylopic  (table API)
+#   augment_phylopic_ranges! / augment_phylopic_ranges  (range vector API)
+#   augment_phylopic_ranges! / augment_phylopic_ranges  (range table API)
+#       └─► _resolve_images_by_uuid(node_uuids, glyph, n; image_rendering)
+#               └─► augment_phylopic!(ax, xs, ys, images; ...)  [_render_core.jl]
 # ---------------------------------------------------------------------------
 
 import Makie
 import PhyloPicDB
 
 # ---------------------------------------------------------------------------
-# Public: core vector API
+# Internal: generic table column extraction
+# ---------------------------------------------------------------------------
+
+"""
+    _extract_column(table, col_selector) -> AbstractVector
+
+Extract a column from a table-like object using `col_selector`, which may be
+a `Symbol` or `String` (column name) or `Integer` (one-based column index).
+
+Works with any object that supports `propertynames` / `getproperty`
+(e.g. `DataFrame`, `NamedTuple`), as well as integer-index access via
+`propertynames`.
+
+Throws `ArgumentError` if the column is not found or the index is out of
+range.
+"""
+function _extract_column(table, col_selector)::AbstractVector
+    if col_selector isa Symbol
+        available = propertynames(table)
+        col_selector ∈ available || throw(ArgumentError(
+            "column `:$col_selector` not found. " *
+            "Available columns: " * join(string.(Symbol.(":", available)), ", ") * "."
+        ))
+        return getproperty(table, col_selector)
+    elseif col_selector isa AbstractString
+        return _extract_column(table, Symbol(col_selector))
+    elseif col_selector isa Integer
+        available = propertynames(table)
+        1 ≤ col_selector ≤ length(available) || throw(ArgumentError(
+            "column index $col_selector is out of range " *
+            "(table has $(length(available)) columns)."
+        ))
+        return getproperty(table, available[col_selector])
+    else
+        throw(ArgumentError(
+            "column selector must be a Symbol, String, or Integer. " *
+            "Got $(typeof(col_selector))."
+        ))
+    end
+end
+
+# ---------------------------------------------------------------------------
+# Public: core vector API (PhyloPic-native)
 # ---------------------------------------------------------------------------
 
 """
@@ -33,8 +75,8 @@ import PhyloPicDB
         ax::Makie.Axis,
         x::AbstractVector{<:Real},
         y::AbstractVector{<:Real};
-        taxon::Union{AbstractVector, Nothing} = nothing,
-        glyph::Union{AbstractMatrix{<:Colorant}, Nothing} = nothing,
+        node_uuid::Union{AbstractVector, Nothing} = nothing,
+        glyph::Union{AbstractMatrix, Nothing} = nothing,
         placement::Symbol = :center,
         xoffset::Real = 0.0,
         yoffset::Real = 0.0,
@@ -49,8 +91,9 @@ import PhyloPicDB
 Add one PhyloPic silhouette glyph per datum to an existing Makie axis `ax`,
 anchored at positions `(x[i], y[i])` in axis data coordinates.
 
-This is the primitive operation.  All other `augment_phylopic` variants
-reduce to this.
+This is the **PhyloPic-native** public API: image sources are specified as
+PhyloPic node UUIDs (strings).  For PBDB taxon-name resolution use
+`PaleobiologyDB.PhyloPicPBDB.augment_phylopic!` instead.
 
 ## Arguments
 
@@ -58,11 +101,10 @@ reduce to this.
 
 ### Image source (exactly one required)
 
-- `taxon`: per-datum taxon names (used for glyph lookup via
-  [`PaleobiologyDB.Taxonomy.acquire_phylopic`](@ref)).  Missing or empty
-  strings are handled according to `on_missing`.
+- `node_uuid`: per-datum PhyloPic node UUID strings.  `nothing` entries are
+  handled according to `on_missing`.
 - `glyph`: a single pre-loaded image matrix (e.g. from `FileIO.load`),
-  broadcast to every data point.  When provided, `taxon` is ignored.
+  broadcast to every data point.  When provided, `node_uuid` is ignored.
 
 ### Placement
 
@@ -87,20 +129,20 @@ reduce to this.
   | `image_rendering` | Format |
   |---|---|
   | `:thumbnail` *(default)* | PNG; square thumbnail, largest available |
-  | `:raster`      | PNG; full-resolution, largest available |
-  | `:og_image`    | PNG; Open Graph social-media preview |
-  | `:vector`      | SVG; black silhouette on transparent — requires SVG-capable `FileIO` plugin |
+  | `:raster`    | PNG; full-resolution, largest available |
+  | `:og_image`  | PNG; Open Graph social-media preview |
+  | `:vector`    | SVG; black silhouette on transparent — requires SVG-capable `FileIO` plugin |
   | `:source_file` | SVG or raster — format matches the original upload |
 
 - `rotation`: clockwise rotation in degrees.  Supported values: `0`, `90`,
-  `180`, `270` (and their negatives / modulo equivalents).  Default `0.0`.
+  `180`, `270`.  Default `0.0`.
 - `mirror`: if `true`, flip the glyph horizontally before rendering.
 
 ### Missing-value policy
 
 - `on_missing`: how to handle data points for which no image is available.
-  `:skip` (default) silently omits the glyph; `:error` throws; `:placeholder`
-  draws a small grey rectangle at the glyph position.
+  `:skip` (default) silently omits the glyph; `:error` throws;
+  `:placeholder` draws a small grey rectangle at the glyph position.
 
 ## Returns
 
@@ -109,21 +151,19 @@ reduce to this.
 ## Examples
 
 ```julia
-using PaleobiologyDB, PaleobiologyDB.PhyloPicPBDB
-using CairoMakie, FileIO
+using PhyloPicDB, CairoMakie, FileIO
 
 fig = Figure()
 ax  = Axis(fig[1, 1])
-lines!(ax, [68.0, 66.0], [1, 1])
 
 augment_phylopic!(
     ax,
-    [68.0],
-    [1.0];
-    taxon          = ["Tyrannosaurus"],
-    glyph_size     = 0.4,
-    placement      = :left,
-    image_rendering = :raster,
+    [1.0, 2.0],
+    [1.0, 2.0];
+    node_uuid       = ["3c4b8687-2401-4e5b-afb5-19aa3e7e8b26", nothing],
+    glyph_size      = 0.4,
+    placement       = :center,
+    image_rendering = :thumbnail,
 )
 ```
 """
@@ -131,7 +171,7 @@ function augment_phylopic!(
     ax::Makie.Axis,
     x::AbstractVector{<:Real},
     y::AbstractVector{<:Real};
-    taxon::Union{AbstractVector, Nothing} = nothing,
+    node_uuid::Union{AbstractVector, Nothing} = nothing,
     glyph::Union{AbstractMatrix, Nothing} = nothing,
     placement::Symbol = :center,
     xoffset::Real = 0.0,
@@ -147,16 +187,19 @@ function augment_phylopic!(
     length(y) == n || throw(ArgumentError(
         "augment_phylopic!: `x` and `y` must have the same length."
     ))
-    images = _resolve_images(taxon, glyph, n; image_rendering)
-    PhyloPicDB.PhyloPicMakie.augment_phylopic!(
+    isnothing(node_uuid) && isnothing(glyph) && throw(ArgumentError(
+        "augment_phylopic!: one of `node_uuid` or `glyph` must be provided."
+    ))
+    images = _resolve_images_by_uuid(node_uuid, glyph, n; image_rendering)
+    augment_phylopic!(
         ax, x, y, images;
         glyph_size = glyph_size,
-        aspect = aspect,
-        placement = placement,
-        xoffset = xoffset,
-        yoffset = yoffset,
-        rotation = rotation,
-        mirror = mirror,
+        aspect     = aspect,
+        placement  = placement,
+        xoffset    = xoffset,
+        yoffset    = yoffset,
+        rotation   = rotation,
+        mirror     = mirror,
         on_missing = on_missing,
     )
 end
@@ -173,7 +216,7 @@ Non-mutating alias for [`augment_phylopic!`](@ref).
 
 Semantically identical: adds a glyph layer to an existing axis.  The `!`
 convention is preserved in [`augment_phylopic!`](@ref); this alias is
-provided for naming symmetry only.
+provided for naming symmetry.
 
 See [`augment_phylopic!`](@ref) for the full keyword-argument documentation.
 """
@@ -196,36 +239,31 @@ end
         xstart::AbstractVector{<:Real},
         xstop::AbstractVector{<:Real},
         y::AbstractVector{<:Real};
-        taxon::Union{AbstractVector, Nothing} = nothing,
-        glyph::Union{AbstractMatrix{<:Colorant}, Nothing} = nothing,
+        node_uuid::Union{AbstractVector, Nothing} = nothing,
+        glyph::Union{AbstractMatrix, Nothing} = nothing,
         at::Symbol = :start,
-        placement::Symbol = :center,
-        xoffset::Real = 0.0,
-        yoffset::Real = 0.0,
-        glyph_size::Real = 0.4,
-        aspect::Symbol = :preserve,
-        rotation::Real = 0.0,
-        mirror::Bool = false,
-        on_missing::Symbol = :skip,
+        kwargs...,
     ) -> Nothing
 
-Add one PhyloPic silhouette per datum to `ax`, where each glyph is anchored
-relative to a range `(xstart[i], xstop[i])` at vertical position `y[i]`.
+Add one PhyloPic silhouette per datum to `ax`, anchored relative to a range
+`(xstart[i], xstop[i])` at vertical position `y[i]`.
 
-This is a convenience wrapper for range-based data (e.g. stratigraphic
-intervals).  It computes anchor x coordinates from the range endpoints and
-then calls [`augment_phylopic!`](@ref).
+This is the **PhyloPic-native** range-based convenience wrapper for range
+data (e.g. stratigraphic intervals).  It computes anchor x coordinates from
+the range endpoints and then calls [`augment_phylopic!`](@ref).
 
 ## Arguments
 
 - `xstart`, `xstop`: range endpoints in axis data units.
 - `y`: vertical coordinate for each datum.
-- `at`: where along the range to anchor the glyph.  One of:
+- `node_uuid`: per-datum PhyloPic node UUID strings (see
+  [`augment_phylopic!`](@ref)).
+- `glyph`: a single pre-loaded image matrix broadcast to all data points.
+- `at`: where along the range to anchor the glyph.
   - `:start` (default) — anchor at `xstart[i]`.
   - `:stop` — anchor at `xstop[i]`.
-  - `:midpoint` — anchor at the midpoint `(xstart[i] + xstop[i]) / 2`.
-- All remaining keyword arguments are forwarded unchanged to
-  [`augment_phylopic!`](@ref).
+  - `:midpoint` — anchor at `(xstart[i] + xstop[i]) / 2`.
+- All remaining keyword arguments are forwarded to [`augment_phylopic!`](@ref).
 
 ## Returns
 
@@ -234,30 +272,20 @@ then calls [`augment_phylopic!`](@ref).
 ## Examples
 
 ```julia
-using PaleobiologyDB, PaleobiologyDB.PhyloPicPBDB
-using CairoMakie, FileIO
+using PhyloPicDB, CairoMakie, FileIO
 
-taxa      = ["Tyrannosaurus", "Triceratops"]
-first_app = [68.0, 68.0]
-last_app  = [66.0, 66.0]
+node_uuids = ["3c4b8687-2401-4e5b-afb5-19aa3e7e8b26",
+              "7fb20e1a-3a19-4e8c-beb9-3e7ffb59c0cf"]
+first_app  = [68.0, 68.0]
+last_app   = [66.0, 66.0]
 
 fig = Figure()
-ax  = Axis(fig[1, 1]; xreversed = true,
-           yticks = (1:length(taxa), taxa))
-
-for (i, (fa, la)) in enumerate(zip(first_app, last_app))
-    lines!(ax, [fa, la], [i, i]; linewidth = 4, color = :gray30)
-end
-
+ax  = Axis(fig[1, 1]; xreversed = true)
 augment_phylopic_ranges!(
-    ax,
-    first_app,
-    last_app,
-    collect(1:length(taxa));
-    taxon     = taxa,
-    at        = :start,
+    ax, first_app, last_app, collect(1.0:2.0);
+    node_uuid  = node_uuids,
+    at         = :start,
     glyph_size = 0.4,
-    placement = :center,
 )
 ```
 """
@@ -276,7 +304,7 @@ function augment_phylopic_ranges!(
     length(y) == n || throw(ArgumentError(
         "augment_phylopic_ranges!: `y` must have the same length as `xstart`."
     ))
-    xs = [PhyloPicDB.PhyloPicMakie._range_anchor(xstart[i], xstop[i], at) for i in 1:n]
+    xs = [_range_anchor(Float64(xstart[i]), Float64(xstop[i]), at) for i in 1:n]
     augment_phylopic!(ax, xs, y; kwargs...)
 end
 
@@ -313,25 +341,26 @@ end
         table;
         x,
         y,
-        taxon = nothing,
+        node_uuid = nothing,
         glyph = nothing,
         kwargs...,
     ) -> Nothing
 
 Table-oriented variant of [`augment_phylopic!`](@ref).
 
-Extracts coordinate and taxon columns from any Tables.jl-compatible source
-(e.g. a `DataFrame`) and forwards to the vector API.
+Extracts coordinate and node-UUID columns from any Tables.jl-compatible
+source (e.g. a `DataFrame`) and forwards to the vector API.
 
 ## Arguments
 
-- `table`: any Tables.jl-compatible object.
+- `table`: any object supporting `propertynames` / `getproperty`.
 - `x`: column selector for x coordinates (Symbol, String, or Integer).
 - `y`: column selector for y coordinates.
-- `taxon`: column selector for taxon names, or `nothing` if `glyph` is used.
-- `glyph`: a single pre-loaded image matrix broadcast to all rows (alternative
-  to `taxon`).
-- All remaining keyword arguments are forwarded to the vector [`augment_phylopic!`](@ref).
+- `node_uuid`: column selector for PhyloPic node UUID strings, or `nothing`
+  if `glyph` is used instead.
+- `glyph`: a single pre-loaded image matrix broadcast to all rows.
+- All remaining keyword arguments are forwarded to the vector
+  [`augment_phylopic!`](@ref).
 
 ## Returns
 
@@ -340,18 +369,18 @@ Extracts coordinate and taxon columns from any Tables.jl-compatible source
 ## Examples
 
 ```julia
-using PaleobiologyDB, PaleobiologyDB.PhyloPicPBDB
-using CairoMakie, FileIO, DataFrames
+using PhyloPicDB, CairoMakie, FileIO, DataFrames
 
 df = DataFrame(
-    x     = [68.0, 68.0],
-    y     = [1.0, 2.0],
-    taxon = ["Tyrannosaurus", "Triceratops"],
+    x    = [1.0, 2.0],
+    y    = [1.0, 2.0],
+    uuid = ["3c4b8687-2401-4e5b-afb5-19aa3e7e8b26",
+            "7fb20e1a-3a19-4e8c-beb9-3e7ffb59c0cf"],
 )
 
 fig = Figure()
 ax  = Axis(fig[1, 1])
-augment_phylopic!(ax, df; x = :x, y = :y, taxon = :taxon, glyph_size = 0.4)
+augment_phylopic!(ax, df; x = :x, y = :y, node_uuid = :uuid, glyph_size = 0.4)
 ```
 """
 function augment_phylopic!(
@@ -359,22 +388,18 @@ function augment_phylopic!(
     table;
     x,
     y,
-    taxon = nothing,
+    node_uuid = nothing,
     glyph::Union{AbstractMatrix, Nothing} = nothing,
     kwargs...,
 )::Nothing
-    xs   = PhyloPicDB.PhyloPicMakie._extract_column(table, x)
-    ys   = PhyloPicDB.PhyloPicMakie._extract_column(table, y)
-    taxa = isnothing(taxon) ? nothing : PhyloPicDB.PhyloPicMakie._extract_column(table, taxon)
-    augment_phylopic!(ax, xs, ys; taxon = taxa, glyph = glyph, kwargs...)
+    xs    = _extract_column(table, x)
+    ys    = _extract_column(table, y)
+    uuids = isnothing(node_uuid) ? nothing : _extract_column(table, node_uuid)
+    augment_phylopic!(ax, xs, ys; node_uuid = uuids, glyph = glyph, kwargs...)
 end
 
 """
-    augment_phylopic(
-        ax::Makie.Axis,
-        table;
-        kwargs...,
-    ) -> Nothing
+    augment_phylopic(ax::Makie.Axis, table; kwargs...) -> Nothing
 
 Non-mutating alias for the table-based [`augment_phylopic!`](@ref).
 
@@ -395,7 +420,7 @@ end
         xstart,
         xstop,
         y,
-        taxon = nothing,
+        node_uuid = nothing,
         glyph = nothing,
         at::Symbol = :start,
         kwargs...,
@@ -403,20 +428,19 @@ end
 
 Table-oriented variant of [`augment_phylopic_ranges!`](@ref).
 
-Extracts range and taxon columns from a Tables.jl-compatible source and
-forwards to the vector range API.
+Extracts range and node-UUID columns from a Tables.jl-compatible source
+and forwards to the vector range API.
 
 ## Arguments
 
-- `table`: any Tables.jl-compatible object.
+- `table`: any object supporting `propertynames` / `getproperty`.
 - `xstart`, `xstop`: column selectors for the range endpoints.
 - `y`: column selector for the vertical coordinate.
-- `taxon`: column selector for taxon names, or `nothing` if `glyph` is used.
+- `node_uuid`: column selector for PhyloPic node UUID strings, or `nothing`
+  if `glyph` is used.
 - `glyph`: a single pre-loaded image matrix broadcast to all rows.
-- `at`: `:start` (default), `:stop`, or `:midpoint` — which end of the range
-  to anchor the glyph.
-- All remaining keyword arguments are forwarded to the vector
-  [`augment_phylopic_ranges!`](@ref).
+- `at`: `:start` (default), `:stop`, or `:midpoint`.
+- All remaining keyword arguments are forwarded to the vector API.
 
 ## Returns
 
@@ -425,30 +449,25 @@ forwards to the vector range API.
 ## Examples
 
 ```julia
-using PaleobiologyDB, PaleobiologyDB.PhyloPicPBDB
-using CairoMakie, FileIO, DataFrames
+using PhyloPicDB, CairoMakie, FileIO, DataFrames
 
 df = DataFrame(
-    taxon      = ["Tyrannosaurus", "Triceratops"],
-    first_app  = [68.0, 68.0],
-    last_app   = [66.0, 66.0],
-    row        = [1.0, 2.0],
+    first_app = [68.0, 68.0],
+    last_app  = [66.0, 66.0],
+    row       = [1.0, 2.0],
+    uuid      = ["3c4b8687-2401-4e5b-afb5-19aa3e7e8b26",
+                 "7fb20e1a-3a19-4e8c-beb9-3e7ffb59c0cf"],
 )
 
 fig = Figure()
-ax  = Axis(fig[1, 1]; xreversed = true,
-           yticks = (1:nrow(df), df.taxon))
-for i in 1:nrow(df)
-    lines!(ax, [df.first_app[i], df.last_app[i]], [i, i])
-end
-
+ax  = Axis(fig[1, 1]; xreversed = true)
 augment_phylopic_ranges!(
     ax, df;
-    xstart = :first_app,
-    xstop  = :last_app,
-    y      = :row,
-    taxon  = :taxon,
-    at     = :start,
+    xstart    = :first_app,
+    xstop     = :last_app,
+    y         = :row,
+    node_uuid = :uuid,
+    at        = :start,
     glyph_size = 0.4,
 )
 ```
@@ -459,24 +478,20 @@ function augment_phylopic_ranges!(
     xstart,
     xstop,
     y,
-    taxon = nothing,
+    node_uuid = nothing,
     glyph::Union{AbstractMatrix, Nothing} = nothing,
     at::Symbol = :start,
     kwargs...,
 )::Nothing
-    xs   = PhyloPicDB.PhyloPicMakie._extract_column(table, xstart)
-    xe   = PhyloPicDB.PhyloPicMakie._extract_column(table, xstop)
-    ys   = PhyloPicDB.PhyloPicMakie._extract_column(table, y)
-    taxa = isnothing(taxon) ? nothing : PhyloPicDB.PhyloPicMakie._extract_column(table, taxon)
-    augment_phylopic_ranges!(ax, xs, xe, ys; taxon = taxa, glyph = glyph, at = at, kwargs...)
+    xs    = _extract_column(table, xstart)
+    xe    = _extract_column(table, xstop)
+    ys    = _extract_column(table, y)
+    uuids = isnothing(node_uuid) ? nothing : _extract_column(table, node_uuid)
+    augment_phylopic_ranges!(ax, xs, xe, ys; node_uuid = uuids, glyph = glyph, at = at, kwargs...)
 end
 
 """
-    augment_phylopic_ranges(
-        ax::Makie.Axis,
-        table;
-        kwargs...,
-    ) -> Nothing
+    augment_phylopic_ranges(ax::Makie.Axis, table; kwargs...) -> Nothing
 
 Non-mutating alias for the table-based [`augment_phylopic_ranges!`](@ref).
 

@@ -1,57 +1,78 @@
 """
     PhyloPicDB.PhyloPicMakie
 
-Makie + FileIO extension providing image-loading and rendering utilities for
+Makie + FileIO extension providing image-loading, rendering, and
+PhyloPic-native visualization utilities for
 [PhyloPic](https://www.phylopic.org/) silhouette images.
 
-Activates automatically when both `Makie` (or any backend such as `CairoMakie`)
-and `FileIO` are loaded in the same Julia session as `PhyloPicDB`.
+Activates automatically when both `Makie` (or any backend such as
+`CairoMakie`) and `FileIO` are loaded in the same Julia session as
+`PhyloPicDB`.
 
 ## What this module provides
 
-This module is the **image utilities layer**: downloading, decoding, caching,
-coordinate geometry, axis scale correction, the core `Makie.image!` rendering
-loop, and thumbnail grid rendering.  It has no dependency on `PaleobiologyDB`.
+This module is the complete **PhyloPic visualization layer**: downloading,
+decoding, caching, coordinate geometry, axis scale correction, the core
+`Makie.image!` rendering loop, thumbnail grid rendering, and the
+**PhyloPic-native public API** keyed on node UUIDs.  It has no dependency
+on `PaleobiologyDB`.
 
-Higher-level functionality that requires PBDB taxon-name resolution (e.g.
-`augment_phylopic!` with `taxon = [...]`) lives in
-`PaleobiologyDB.PhyloPicPBDB`, which loads on top of this module.
+PBDB taxon-name resolution (mapping PBDB names → PhyloPic node UUIDs)
+lives in `PaleobiologyDB.PhyloPicPBDB`, which delegates here after
+performing that mapping.
 
-## Internal API
+## Public API
 
-All symbols are `_`-prefixed or otherwise intended for use by other extensions,
-not directly by end users.
+These functions are exported and accept PhyloPic node UUIDs as the primary
+image-source identifier.
 
-### Image utilities
+### Glyph overlay
+
+| Function | Description |
+|---|---|
+| `augment_phylopic!(ax, xs, ys; node_uuid, ...)` | Add one glyph per datum at explicit `(x, y)` coordinates |
+| `augment_phylopic(ax, xs, ys; node_uuid, ...)` | Non-bang alias |
+| `augment_phylopic!(ax, xs, ys, images; ...)` | Low-level: render pre-resolved image matrices |
+| `augment_phylopic_ranges!(ax, xstart, xstop, y; node_uuid, ...)` | Glyphs anchored to range endpoints |
+| `augment_phylopic_ranges(ax, xstart, xstop, y; node_uuid, ...)` | Non-bang alias |
+| `augment_phylopic!(ax, table; x, y, node_uuid, ...)` | Table-oriented variant |
+| `augment_phylopic_ranges!(ax, table; xstart, xstop, y, node_uuid, ...)` | Table range variant |
+
+All vector-API variants also accept a pre-loaded `glyph::AbstractMatrix`
+instead of `node_uuid`.
+
+### Thumbnail gallery
+
+| Function | Description |
+|---|---|
+| `phylopic_thumbnail_grid!(ax, node_uuids; ...)` | Gallery in an existing axis |
+| `phylopic_thumbnail_grid(node_uuids; ...)` | Factory: creates `Figure` + `Axis` |
+| `phylopic_thumbnail_grid!(ax, images, labels, group_sizes; ...)` | Low-level: pre-built cell data |
+| `phylopic_thumbnail_grid(images, labels, group_sizes; ...)` | Low-level factory |
+
+Single-UUID and table-oriented variants are also available for all functions
+above.
+
+## Internal helpers
+
+The following symbols are `_`-prefixed and intended for use by sibling
+extensions (`PaleobiologyDB.PhyloPicPBDB`, `TaxonTreeMakie`):
 
 | Symbol | Description |
 |---|---|
 | `_load_phylopic_image(url)` | Download + decode + cache a PNG image |
-| `_compute_image_bbox(x, y, w, h; ...)` | Data-space bounding box with optional axis scale correction |
-| `_axis_scale_correction_obs(scene)` | Reactive `(ypx/unit) / (xpx/unit)` correction factor |
+| `_resolve_images_by_uuid(uuids, glyph, n; ...)` | UUID vector → image matrix vector |
+| `_compute_image_bbox(x, y, w, h; ...)` | Data-space bounding box with scale correction |
+| `_axis_scale_correction_obs(scene)` | Reactive `(ypx/unit) / (xpx/unit)` correction |
 | `_apply_rotation(img, deg)` | Rotate image matrix by multiples of 90° |
 | `_range_anchor(xstart, xstop, at)` | Resolve range endpoint to an x coordinate |
-
-### Rendering
-
-| Symbol | Description |
-|---|---|
-| `augment_phylopic!(ax, xs, ys, images; ...)` | Render pre-resolved images onto a Makie axis |
-| `augment_phylopic_ranges!(ax, xs, xe, ys, images; ...)` | Same, anchored to range endpoints |
-| `phylopic_thumbnail_grid!(ax, images, labels, group_sizes; ...)` | Generic thumbnail gallery (pre-built cells) |
-| `phylopic_thumbnail_grid(images, labels, group_sizes; ...)` | Factory: creates Figure + Axis |
-
-### Thumbnail grid helpers
-
-| Symbol | Description |
-|---|---|
-| `_infer_thumbnail_grid_shape(n; ncols, nrows)` | Infer grid dimensions for `n` cells |
+| `_extract_column(table, selector)` | Generic table-column extractor |
+| `_fetch_node_image_pool(uuid, filter, pages)` | Fetch image pool for one PhyloPic node |
+| `_build_node_grid_cells(uuids, labels, ...)` | Build flat cell data for grid rendering |
 | `_apply_image_selector(pool, selector)` | Select images from a `PhyloPicImage` pool |
 | `_select_image_url(img, rendering)` | Extract URL from `PhyloPicImage` by rendering symbol |
 | `_download_image(img, label; rendering)` | Download and decode one `PhyloPicImage` |
-| `_extract_image_field(field, name, k, img)` | Extract a label field from a grid cell |
-| `_join_fields(fields, name, k, img, sep)` | Join multiple label fields |
-| `_build_label(name, k, multi, img, label, sep)` | Build the display label for a cell |
+| `_build_label(name, k, multi, img, label, sep)` | Build the display label for a grid cell |
 """
 module PhyloPicMakie
 
@@ -63,13 +84,21 @@ using Makie: RGBA, N0f8, Colorant
 
 import PhyloPicDB
 
-# No exports — all symbols are internal helpers consumed by
-# PaleobiologyDB extensions and TaxonTreeMakie.
+# Public PhyloPic-native API
+export augment_phylopic!
+export augment_phylopic
+export augment_phylopic_ranges!
+export augment_phylopic_ranges
+export phylopic_thumbnail_grid!
+export phylopic_thumbnail_grid
 
 include("_image_cache.jl")
 include("_coordinates.jl")
 include("_render_core.jl")
 include("_thumbnail_grid.jl")
+include("_glyph_resolution.jl")
+include("_augment_api.jl")
+include("_node_thumbnail_grid.jl")
 
 function __init__()
     # Bind this extension module to PhyloPicDB.PhyloPicMakie so that callers

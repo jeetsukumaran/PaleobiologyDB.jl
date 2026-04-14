@@ -3,140 +3,64 @@
 # PhyloPicPBDB — thumbnail grid: PBDB name-resolution bridge
 #
 # This file contains only the PBDB-specific parts of the thumbnail grid:
-# resolving taxon names → PhyloPicImage pools via PaleobiologyDB.Taxonomy,
-# building the flat cell arrays, and thin delegation wrappers.
+# resolving taxon names → PhyloPic node UUIDs via phylopic_node, and
+# thin delegation wrappers that forward to the PhyloPic-native API in
+# PhyloPicDB.PhyloPicMakie.
 #
-# All generic rendering, grid geometry, label building, and image selection
-# helpers live in PhyloPicDB.PhyloPicMakie._thumbnail_grid.jl and are
-# accessed via PhyloPicDB.PhyloPicMakie.*.
+# All generic image fetching, grid geometry, label building, image selection,
+# and rendering live in PhyloPicDB.PhyloPicMakie and are accessed via
+# PhyloPicDB.PhyloPicMakie.*.
 #
 # Call graph:
 #
 #   phylopic_thumbnail_grid! / phylopic_thumbnail_grid (vector API)
 #   phylopic_thumbnail_grid! / phylopic_thumbnail_grid (table API)
 #   phylopic_thumbnail_grid! / phylopic_thumbnail_grid (single-string API)
-#       └─► _build_grid_cells(taxon; ...)
-#               └─► _fetch_taxon_image_pool(name, ...)  [PBDB-specific]
-#               └─► PhyloPicDB.PhyloPicMakie._apply_image_selector(...)
-#               └─► PhyloPicDB.PhyloPicMakie._download_image(...)
-#               └─► PhyloPicDB.PhyloPicMakie._build_label(...)
-#           └─► PhyloPicDB.PhyloPicMakie.phylopic_thumbnail_grid!(ax, images, labels, group_sizes; ...)
+#       └─► map taxon names → PhyloPic node UUIDs via phylopic_node
+#           └─► PhyloPicDB.PhyloPicMakie.phylopic_thumbnail_grid!(ax, node_uuids; ...)
+#                   node_labels = taxon names (passed through as display labels)
 # ---------------------------------------------------------------------------
 
 import Makie
 import PhyloPicDB
-using PaleobiologyDB.Taxonomy: phylopic_images, phylopic_node
+using PaleobiologyDB.Taxonomy: phylopic_node
 
 # ---------------------------------------------------------------------------
-# Constants (PBDB-specific)
-# ---------------------------------------------------------------------------
-
-"""
-Valid `image_filter` symbols for the thumbnail grid.
-"""
-const VALID_IMAGE_FILTERS = (:primary, :clade, :node)
-
-# ---------------------------------------------------------------------------
-# PBDB image fetching
+# Internal: PBDB name → UUID mapping
 # ---------------------------------------------------------------------------
 
 """
-    _fetch_taxon_image_pool(
-        name::AbstractString,
-        image_filter::Symbol,
-        image_max_pages::Union{Int, Nothing},
-    ) -> Vector{PhyloPicDB.PhyloPicImage}
+    _pbdb_names_to_uuids(taxon::AbstractVector{<:AbstractString})
+        -> Tuple{Vector{Union{String, Nothing}}, Vector{String}}
 
-Fetch the image pool for a single taxon name from the PhyloPic API, with
-`node_name` enriched on every image via [`PhyloPicDB.with_node_names`](@ref).
+Resolve a vector of PBDB taxon name strings to PhyloPic node UUIDs.
 
-Returns an empty vector for blank names, unresolvable taxa, or any error.
+Returns two parallel vectors of the same length as `taxon`:
+- `node_uuids`: PhyloPic node UUID string or `nothing` for names that could
+  not be resolved.
+- `taxon_labels`: the original taxon name strings, used as display labels.
 
-- `:primary` — resolves `name` to a PhyloPic node via the PBDB pipeline and
-  returns a 1-element vector containing the primary image.
-- `:clade` / `:node` — returns all images from
-  [`PaleobiologyDB.Taxonomy.phylopic_images`](@ref).
-
-All returned images have `node_name` populated (or `nothing` if the
-corresponding node is unreachable).
+Each unique non-empty name is resolved once via
+[`PaleobiologyDB.Taxonomy.phylopic_node`](@ref) (cached via `autocache`).
 """
-function _fetch_taxon_image_pool(
-    name::AbstractString,
-    image_filter::Symbol,
-    image_max_pages::Union{Int, Nothing},
-)::Vector{PhyloPicDB.PhyloPicImage}
-    isempty(strip(name)) && return PhyloPicDB.PhyloPicImage[]
-    pool = if image_filter === :primary
-        node = phylopic_node(name)
-        isnothing(node) && return PhyloPicDB.PhyloPicImage[]
-        img = PhyloPicDB.primary_image(node.uuid)
-        isnothing(img) ? PhyloPicDB.PhyloPicImage[] : [img]
-    else
-        phylopic_images(name; filter = image_filter, max_pages = image_max_pages)
-    end
-    return PhyloPicDB.with_node_names(pool)
-end
-
-"""
-    _build_grid_cells(
-        taxon::AbstractVector{<:AbstractString},
-        image_filter::Symbol,
-        image_selector,
-        image_max_pages::Union{Int, Nothing},
-        image_label,
-        labeljoin::AbstractString,
-        image_rendering::Symbol,
-    ) -> Tuple{Vector{String}, Vector{Union{Matrix{RGBA{N0f8}}, Nothing}}, Vector{Int}}
-
-Build the flat cell list for the thumbnail grid.
-
-Returns three parallel arrays:
-- `labels` — display label for each cell.
-- `cell_images` — decoded image matrix or `nothing` per cell.
-- `group_sizes` — number of cells contributed by each taxon (in input order).
-
-`image_rendering` selects which URL is downloaded per image; see
-[`PhyloPicDB.PhyloPicMakie._select_image_url`](@ref) for the full symbol table.
-
-Labels are generated by [`PhyloPicDB.PhyloPicMakie._build_label`](@ref) using
-`image_label` and `labeljoin`.  The default (`image_label = nothing`) uses the
-taxon name for single-image groups and `"name [k]"` for multi-image groups.
-
-Taxa that produce no images (empty name, unresolvable, or filtered to empty)
-contribute a `group_sizes` entry of `0` and no cells.
-"""
-function _build_grid_cells(
+function _pbdb_names_to_uuids(
     taxon::AbstractVector{<:AbstractString},
-    image_filter::Symbol,
-    image_selector,
-    image_max_pages::Union{Int, Nothing},
-    image_label,
-    labeljoin::AbstractString,
-    image_rendering::Symbol,
-)::Tuple{
-    Vector{String},
-    Vector{Union{Matrix{RGBA{N0f8}}, Nothing}},
-    Vector{Int},
-}
-    labels      = String[]
-    cell_images = Union{Matrix{RGBA{N0f8}}, Nothing}[]
-    group_sizes = Int[]
-
-    for name in taxon
-        s        = string(name)
-        pool     = _fetch_taxon_image_pool(s, image_filter, image_max_pages)
-        selected = PhyloPicDB.PhyloPicMakie._apply_image_selector(pool, image_selector)
-        count    = length(selected)
-        push!(group_sizes, count)
-        multi = count > 1
-        for (k, img) in enumerate(selected)
-            lbl = PhyloPicDB.PhyloPicMakie._build_label(s, k, multi, img, image_label, labeljoin)
-            push!(labels, lbl)
-            push!(cell_images, PhyloPicDB.PhyloPicMakie._download_image(img, lbl; image_rendering))
-        end
+)::Tuple{Vector{Union{String, Nothing}}, Vector{String}}
+    unique_names = unique(s for s in taxon if !isempty(strip(s)))
+    uuid_cache   = Dict{String, Union{String, Nothing}}()
+    for name in unique_names
+        node = phylopic_node(name)
+        uuid_cache[name] = isnothing(node) ? nothing : node.uuid
     end
 
-    return (labels, cell_images, group_sizes)
+    node_uuids    = Vector{Union{String, Nothing}}(undef, length(taxon))
+    taxon_labels  = Vector{String}(undef, length(taxon))
+    for (i, name) in enumerate(taxon)
+        s              = string(name)
+        node_uuids[i]  = isempty(strip(s)) ? nothing : get(uuid_cache, s, nothing)
+        taxon_labels[i] = s
+    end
+    return (node_uuids, taxon_labels)
 end
 
 # ---------------------------------------------------------------------------
@@ -171,31 +95,24 @@ end
 Render a gallery of PhyloPic silhouettes into the existing Makie `Axis` `ax`.
 
 Each taxon in `taxon` contributes one or more cells to the grid depending on
-`image_filter` and `image_selector`.  With `image_filter = :primary` and
-`image_selector = nothing` each taxon produces exactly one cell; with the
-default `image_filter = :clade` a taxon may produce multiple cells (one per
-image in its clade).
+`image_filter` and `image_selector`.  With `image_filter = :primary` each
+taxon produces exactly one cell; with the default `image_filter = :clade` a
+taxon may produce multiple cells (one per image in its clade).
 
 ## Arguments
 
 - `ax`: Target Makie axis.
-- `taxon`: Taxon names to resolve via the PBDB → PhyloPic pipeline.
+- `taxon`: PBDB taxon names to resolve via the PBDB → PhyloPic pipeline.
 
 ## Layout keywords
 
 - `ncols`, `nrows`: Explicit grid dimensions.  Supply either, both, or neither.
-- `cell_width`, `cell_height`: Nominal cell size in axis data units.  The
-  effective cell height is expanded automatically when labels span multiple lines
-  (see `label_lines`).
+- `cell_width`, `cell_height`: Nominal cell size in axis data units.
 - `glyph_fraction`: Fraction of `cell_height` allocated to the image.
 - `label_gap`: Vertical gap between image and text label.
 - `label_fontsize`: Font size for cell labels.
-- `label_lines`: Override the automatic line-count used to expand cell height for
-  multi-line labels.  `nothing` (default) detects the maximum number of
-  `'\\n'`-delimited lines across all built labels.  Pass an explicit `Int ≥ 1` to
-  fix the expansion regardless of actual label content (e.g. `label_lines = 1`
-  disables expansion).
-- `title`: Optional axis title drawn above the grid.
+- `label_lines`: Override the automatic line-count for multi-line labels.
+- `title`: Optional axis title.
 - `title_gap`: Additional vertical padding reserved for the title.
 
 ## Image selection and rendering
@@ -204,38 +121,24 @@ image in its clade).
   - `:clade` (default) — all images for the node and its descendants.
   - `:primary` — designated primary image; 1 per taxon.
   - `:node` — images tagged directly to this node.
-- `image_selector`: How to narrow the fetched pool.  Every selector produces a
-  `Vector{PhyloPicImage}`; single-image selectors produce a 1-element vector.
-  - `nothing` (default) — keep all images in the pool.
-  - `:first` — first image only → `[pool[1]]`.
-  - `Int n` — *n*-th image → `[pool[n]]`, or `[]` if out of bounds.
-  - Callable `f` — `f(pool)` must return an `AbstractVector{PhyloPicImage}`.
-- `image_max_pages`: Pagination limit for `:clade`/`:node` queries (~30 images
-  per page).  `nothing` fetches all pages.  Ignored for `:primary`.
+- `image_selector`: How to narrow the fetched pool; see
+  `PhyloPicDB.PhyloPicMakie.phylopic_thumbnail_grid!` for details.
+- `image_max_pages`: Pagination limit for `:clade`/`:node` queries.
 - `image_rendering`: Which URL to fetch for each selected image.  Default
   `:thumbnail`.
-- `image_layout`: How to arrange cells.
-  - `:blocks` (default) — each taxon's images start a new row and wrap at `ncols`.
-  - `:rows` — each non-empty taxon occupies exactly one row.
-  - `:flat` — single row-major grid ignoring taxon boundaries.
-- `image_label`: Controls the per-cell caption.  Accepts:
-  - `:BASICFIELDS` (default) — `:index`, `:node_name`, `:taxon_name` joined with `labeljoin`.
-  - `nothing` — `"taxon"` for single-image groups, `"taxon [k]"` for multi.
-  - `:ALLFIELDS` — all fields joined with `labeljoin`; `missing`/empty omitted.
-  - Any single field symbol — that field, falling back to the default label if `missing`/`nothing`.
-  - `AbstractVector{Symbol}` — listed fields joined with `labeljoin`; `missing`/empty omitted.
-  - Callable `f(taxon_name, k, img) -> String` — fully custom label.
-- `labeljoin`: Separator string for multi-field label presets.  Default `"\\n"`.
+- `image_layout`: `:blocks` (default), `:rows`, or `:flat`.
+- `image_label`: Cell caption format.  Default `:BASICFIELDS`.
+- `labeljoin`: Field separator for multi-field label presets.  Default `"\\n"`.
 
 ## Missing-image policy
 
-- `on_missing = :skip` (default): skip cells whose image download failed.
-- `on_missing = :placeholder`: draw a placeholder rectangle for failed cells.
-- `on_missing = :error`: throw when any selected image has no downloadable URL.
+- `on_missing = :skip` (default): skip cells with no downloadable image.
+- `on_missing = :placeholder`: draw a placeholder for failed cells.
+- `on_missing = :error`: throw when any selected image has no URL.
 
 ## Returns
 
-`Nothing`.  The plot is added to `ax` by side effect.
+`Nothing`.
 """
 function phylopic_thumbnail_grid!(
     ax::Makie.Axis,
@@ -260,33 +163,30 @@ function phylopic_thumbnail_grid!(
     labeljoin::AbstractString = "\n",
     label_lines::Union{Int, Nothing} = nothing,
 )::Nothing
-    image_filter ∈ VALID_IMAGE_FILTERS || throw(ArgumentError(
-        "phylopic_thumbnail_grid!: unknown `image_filter` value `$image_filter`. " *
-        "Valid values: $(join(VALID_IMAGE_FILTERS, ", "))."
-    ))
-    image_rendering ∈ PhyloPicDB.PHYLOPIC_IMAGE_RENDERINGS || throw(ArgumentError(
-        "phylopic_thumbnail_grid!: unknown `image_rendering` value `:$image_rendering`. " *
-        "Valid values: $(join(string.(':', PhyloPicDB.PHYLOPIC_IMAGE_RENDERINGS), ", "))."
-    ))
-
-    cell_labels, cell_images, group_sizes = _build_grid_cells(
-        taxon, image_filter, image_selector, image_max_pages, image_label, labeljoin, image_rendering
-    )
+    node_uuids, taxon_labels = _pbdb_names_to_uuids(taxon)
     PhyloPicDB.PhyloPicMakie.phylopic_thumbnail_grid!(
-        ax, cell_images, cell_labels, group_sizes;
-        ncols            = ncols,
-        nrows            = nrows,
-        cell_width       = cell_width,
-        cell_height      = cell_height,
-        glyph_fraction   = glyph_fraction,
-        label_gap        = label_gap,
-        label_fontsize   = label_fontsize,
-        title            = title,
-        title_gap        = title_gap,
-        on_missing       = on_missing,
+        ax,
+        node_uuids;
+        node_labels       = taxon_labels,
+        ncols             = ncols,
+        nrows             = nrows,
+        cell_width        = cell_width,
+        cell_height       = cell_height,
+        glyph_fraction    = glyph_fraction,
+        label_gap         = label_gap,
+        label_fontsize    = label_fontsize,
+        title             = title,
+        title_gap         = title_gap,
+        on_missing        = on_missing,
         image_interpolate = image_interpolate,
-        image_layout     = image_layout,
-        label_lines      = label_lines,
+        image_filter      = image_filter,
+        image_selector    = image_selector,
+        image_max_pages   = image_max_pages,
+        image_layout      = image_layout,
+        image_rendering   = image_rendering,
+        image_label       = image_label,
+        labeljoin         = labeljoin,
+        label_lines       = label_lines,
     )
 end
 
@@ -307,7 +207,7 @@ function phylopic_thumbnail_grid!(
     taxon_name::AbstractString;
     kwargs...,
 )::Nothing
-    return phylopic_thumbnail_grid!(ax, [taxon_name]; kwargs...)
+    phylopic_thumbnail_grid!(ax, [taxon_name]; kwargs...)
 end
 
 # ---------------------------------------------------------------------------
@@ -336,7 +236,7 @@ function phylopic_thumbnail_grid!(
     taxon,
     kwargs...,
 )::Nothing
-    taxa = _extract_column(table, taxon)
+    taxa = PhyloPicDB.PhyloPicMakie._extract_column(table, taxon)
     phylopic_thumbnail_grid!(ax, collect(String, string.(taxa)); kwargs...)
 end
 
@@ -358,21 +258,19 @@ end
         image_rendering::Symbol = :thumbnail,
         image_label = :BASICFIELDS,
         labeljoin::AbstractString = "\\n",
+        label_lines::Union{Int, Nothing} = nothing,
         kwargs...,
     ) -> Makie.Figure
 
 Create a new figure containing a silhouette-grid gallery for `taxon`.
 
 The initial figure size is estimated from `DEFAULT_THUMBNAIL_GRID_MAX_COLUMNS`
-(width) and `length(taxon)` (height).  After the bang variant fetches and
-places all images both dimensions are corrected from the actual axis limits so
-that cell proportions remain consistent regardless of how many images per taxon
-the chosen filter returns.  Pass `figure_size` to fix both dimensions and bypass
-the auto-resize.  Any entries of the `axis` named tuple are forwarded to the
-`Axis` constructor.
+(width) and `length(taxon)` (height).  After all images are placed both
+dimensions are corrected from the actual axis limits so that cell proportions
+remain consistent.  Pass `figure_size` to fix both dimensions and bypass
+the auto-resize.
 
-See [`phylopic_thumbnail_grid!`](@ref) for full documentation of all keyword
-arguments.
+See [`phylopic_thumbnail_grid!`](@ref) for full documentation.
 
 Returns the created `Makie.Figure`.
 """
@@ -392,47 +290,24 @@ function phylopic_thumbnail_grid(
     label_lines::Union{Int, Nothing} = nothing,
     kwargs...,
 )::Makie.Figure
-    init_cols = isnothing(ncols) ? PhyloPicDB.PhyloPicMakie.DEFAULT_THUMBNAIL_GRID_MAX_COLUMNS : Int(ncols)
-    init_rows = max(length(taxon), 1)
-
-    init_fig_size = if isnothing(figure_size)
-        (
-            init_cols * PhyloPicDB.PhyloPicMakie.DEFAULT_THUMBNAIL_GRID_CELL_WIDTH_PX  + PhyloPicDB.PhyloPicMakie.DEFAULT_THUMBNAIL_GRID_FIGURE_MARGIN_PX,
-            init_rows * PhyloPicDB.PhyloPicMakie.DEFAULT_THUMBNAIL_GRID_CELL_HEIGHT_PX + PhyloPicDB.PhyloPicMakie.DEFAULT_THUMBNAIL_GRID_FIGURE_MARGIN_PX,
-        )
-    else
-        figure_size
-    end
-
-    fig = Makie.Figure(size = init_fig_size)
-    ax  = Makie.Axis(fig[1, 1]; axis...)
-    phylopic_thumbnail_grid!(
-        ax,
-        taxon;
-        ncols            = ncols,
-        nrows            = nrows,
-        image_filter     = image_filter,
-        image_selector   = image_selector,
-        image_max_pages  = image_max_pages,
-        image_layout     = image_layout,
-        image_rendering  = image_rendering,
-        image_label      = image_label,
-        labeljoin        = labeljoin,
-        label_lines      = label_lines,
+    node_uuids, taxon_labels = _pbdb_names_to_uuids(taxon)
+    PhyloPicDB.PhyloPicMakie.phylopic_thumbnail_grid(
+        node_uuids;
+        figure_size     = figure_size,
+        axis            = axis,
+        ncols           = ncols,
+        nrows           = nrows,
+        node_labels     = taxon_labels,
+        image_filter    = image_filter,
+        image_selector  = image_selector,
+        image_max_pages = image_max_pages,
+        image_layout    = image_layout,
+        image_rendering = image_rendering,
+        image_label     = image_label,
+        labeljoin       = labeljoin,
+        label_lines     = label_lines,
         kwargs...,
     )
-
-    if isnothing(figure_size)
-        xhi = Float64(ax.limits[][1][2])
-        yhi = Float64(ax.limits[][2][2])
-        px_per_w = Float64(PhyloPicDB.PhyloPicMakie.DEFAULT_THUMBNAIL_GRID_CELL_WIDTH_PX)  / PhyloPicDB.PhyloPicMakie.DEFAULT_THUMBNAIL_GRID_CELL_WIDTH
-        px_per_h = Float64(PhyloPicDB.PhyloPicMakie.DEFAULT_THUMBNAIL_GRID_CELL_HEIGHT_PX) / PhyloPicDB.PhyloPicMakie.DEFAULT_THUMBNAIL_GRID_CELL_HEIGHT
-        new_w = round(Int, xhi * px_per_w) + PhyloPicDB.PhyloPicMakie.DEFAULT_THUMBNAIL_GRID_FIGURE_MARGIN_PX
-        new_h = round(Int, yhi * px_per_h) + PhyloPicDB.PhyloPicMakie.DEFAULT_THUMBNAIL_GRID_FIGURE_MARGIN_PX
-        Makie.resize!(fig, new_w, new_h)
-    end
-
-    return fig
 end
 
 """
@@ -450,7 +325,7 @@ function phylopic_thumbnail_grid(
     taxon_name::AbstractString;
     kwargs...,
 )::Makie.Figure
-    return phylopic_thumbnail_grid([taxon_name]; kwargs...)
+    phylopic_thumbnail_grid([taxon_name]; kwargs...)
 end
 
 """
@@ -460,14 +335,14 @@ end
         kwargs...,
     ) -> Makie.Figure
 
-Table-oriented factory variant.  Extracts `taxon` column and calls the vector
-factory.
+Table-oriented factory variant.  Extracts `taxon` column and calls the
+vector factory.
 """
 function phylopic_thumbnail_grid(
     table;
     taxon,
     kwargs...,
 )::Makie.Figure
-    taxa = _extract_column(table, taxon)
-    return phylopic_thumbnail_grid(collect(String, string.(taxa)); kwargs...)
+    taxa = PhyloPicDB.PhyloPicMakie._extract_column(table, taxon)
+    phylopic_thumbnail_grid(collect(String, string.(taxa)); kwargs...)
 end
