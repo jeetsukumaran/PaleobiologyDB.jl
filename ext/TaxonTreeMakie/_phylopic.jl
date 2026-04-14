@@ -324,38 +324,28 @@ function _render_tip_phylopic!(
             continue
         end
 
-        Makie.scatter!(
-            p,
-            [x_anchor],
-            [y_anchor],
-            # marker = rotr90(img),
-            marker = img,
-            markersize = 20,   # now interpreted in pixels
-            markerspace = :pixel,
-            visible = p[:show_phylopic]
-        )
-
         # img from _load_tip_phylopic_image is column-major (height × width).
         # Pass width and height in the order _compute_tip_image_bbox expects.
-        # h_px, w_px = size(img)
-        # x_lo, x_hi, y_lo, y_hi = _compute_tip_image_bbox(
-        #     x_anchor, y_anchor, w_px, h_px;
-        #     glyph_size = glyph_size,
-        #     aspect     = aspect,
-        #     placement  = :left,
-        #     xoffset    = 0.0,
-        #     yoffset    = 0.0,
-        # )
+        h_px, w_px = size(img)
+        x_lo, x_hi, y_lo, y_hi = _compute_tip_image_bbox(
+            x_anchor, y_anchor, w_px, h_px;
+            glyph_size = glyph_size,
+            aspect     = aspect,
+            placement  = :left,
+            xoffset    = 0.0,
+            yoffset    = 0.0,
+        )
+
         # Makie.image! expects row-major data; rotr90 converts Julia column-major.
-        # Makie.image!(
-        #     p,
-        #     (x_lo, x_hi),
-        #     (y_lo, y_hi),
-        #     rotr90(img);
-        #     interpolate = true,
-        #     visible     = p[:show_phylopic],
-        #     clip_planes = Makie.Plane3f[],
-        # )
+        Makie.image!(
+            p,
+            (x_lo, x_hi),
+            (y_lo, y_hi),
+            rotr90(img);
+            interpolate = true,
+            visible     = p[:show_phylopic],
+            clip_planes = Makie.Plane3f[],
+        )
     end
 
     return nothing
