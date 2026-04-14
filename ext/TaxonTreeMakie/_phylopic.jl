@@ -337,15 +337,15 @@ function _render_tip_phylopic!(
 
         # img from _load_tip_phylopic_image is column-major (height × width).
         # Pass width and height in the order _compute_tip_image_bbox expects.
-        h_px, w_px = size(img)
-        x_lo, x_hi, y_lo, y_hi = _compute_tip_image_bbox(
-            x_anchor, y_anchor, w_px, h_px;
-            glyph_size = glyph_size,
-            aspect     = aspect,
-            placement  = :left,
-            xoffset    = 0.0,
-            yoffset    = 0.0,
-        )
+        # h_px, w_px = size(img)
+        # x_lo, x_hi, y_lo, y_hi = _compute_tip_image_bbox(
+        #     x_anchor, y_anchor, w_px, h_px;
+        #     glyph_size = glyph_size,
+        #     aspect     = aspect,
+        #     placement  = :left,
+        #     xoffset    = 0.0,
+        #     yoffset    = 0.0,
+        # )
         # Makie.image! expects row-major data; rotr90 converts Julia column-major.
         # Makie.image!(
         #     p,
