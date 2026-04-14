@@ -1,5 +1,5 @@
 # ---------------------------------------------------------------------------
-# PhyloPicMakie — thumbnail grid rendering
+# PhyloPicPBDB — thumbnail grid rendering
 #
 # Provides a gallery-style view of PhyloPic thumbnails paired with taxon names.
 # The bang variant draws into an existing axis; the non-bang variant builds a
@@ -234,7 +234,7 @@ function _draw_thumbnail_placeholder!(
     y::Real;
     glyph_size::Real,
 )::Nothing
-    x_lo, x_hi, y_lo, y_hi = _compute_image_bbox(
+    x_lo, x_hi, y_lo, y_hi = PhyloPicDB.PhyloPicMakie._compute_image_bbox(
         x,
         y,
         1,
@@ -394,7 +394,7 @@ function _download_image(
     url = _select_image_url(img, image_rendering)
     ismissing(url) && return nothing
     try
-        return _load_phylopic_image(url)
+        return PhyloPicDB.PhyloPicMakie._load_phylopic_image(url)
     catch err
         @warn "phylopic_thumbnail_grid: could not load image for \"$label\"" exception = err
         return nothing
@@ -834,9 +834,9 @@ function phylopic_thumbnail_grid!(
     title_gap ≥ 0 || throw(ArgumentError(
         "phylopic_thumbnail_grid!: `title_gap` must be non-negative. Got $title_gap."
     ))
-    on_missing ∈ VALID_ON_MISSING || throw(ArgumentError(
+    on_missing ∈ PhyloPicDB.PhyloPicMakie.VALID_ON_MISSING || throw(ArgumentError(
         "phylopic_thumbnail_grid!: unknown `on_missing` value `$on_missing`. " *
-        "Valid values: $(join(VALID_ON_MISSING, ", "))."
+        "Valid values: $(join(PhyloPicDB.PhyloPicMakie.VALID_ON_MISSING, ", "))."
     ))
     image_filter ∈ VALID_IMAGE_FILTERS || throw(ArgumentError(
         "phylopic_thumbnail_grid!: unknown `image_filter` value `$image_filter`. " *
@@ -909,7 +909,7 @@ function phylopic_thumbnail_grid!(
             end
         else
             h_px, w_px = size(img)
-            x_lo, x_hi, y_lo, y_hi = _compute_image_bbox(
+            x_lo, x_hi, y_lo, y_hi = PhyloPicDB.PhyloPicMakie._compute_image_bbox(
                 x,
                 y,
                 w_px,
@@ -1012,6 +1012,9 @@ the auto-resize.  Any entries of the `axis` named tuple are forwarded to the
 See [`phylopic_thumbnail_grid!`](@ref) for full documentation of
 `image_filter`, `image_selector`, `image_max_pages`, `image_layout`,
 `image_rendering`, `image_label`, `labeljoin`, and `label_lines`.
+
+Requires `PaleobiologyDB.PhyloPicPBDB` to be loaded (triggered by `CairoMakie`
+or another Makie backend together with `FileIO`).
 
 Returns the created `Makie.Figure`.
 """

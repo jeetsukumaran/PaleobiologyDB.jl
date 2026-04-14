@@ -5,14 +5,24 @@ authors = ["Jeet Sukumaran <jeetsukumaran@gmail.com>"]
 
 [deps]
 DataCaches = "c1455f2b-6d6f-4f37-b463-919f923708a5"
+Downloads = "f43a241f-c20a-4ad4-852c-f6b1247861c6"
 HTTP = "cd3eb016-35fb-5094-929b-558a96fad6f3"
 JSON3 = "0f8b85d8-7281-11e9-16c2-39a750bddbf1"
+
+[weakdeps]
+FileIO = "5789e2e9-d7fb-5bc7-8068-2c6fae9b9549"
+Makie  = "ee78f7c6-11fb-53f2-987a-cfe4a2b5a57a"
+
+[extensions]
+PhyloPicMakie = ["Makie", "FileIO"]
 
 [compat]
 Aqua = "0.8"
 DataCaches = "0.3.1"
+FileIO = "1.18.0"
 HTTP = "1.11.0"
 JSON3 = "1.14.3"
+Makie = "0.24.9"
 Test = "1"
 julia = "1.10"
 

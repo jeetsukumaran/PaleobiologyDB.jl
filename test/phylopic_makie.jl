@@ -1,5 +1,5 @@
 # test/phylopic_makie.jl
-# Tests for PaleobiologyDB.PhyloPicMakie extension.
+# Tests for PaleobiologyDB.PhyloPicPBDB and PhyloPicDB.PhyloPicMakie extensions.
 #
 # Structure:
 #   1. Offline / pure-function tests — no Makie needed (coordinates, rotation, range)
@@ -23,12 +23,13 @@ const _FILEIO_AVAILABLE = !isnothing(Base.find_package("FileIO"))
 const _EXT_AVAILABLE = _CAIRO_AVAILABLE && _FILEIO_AVAILABLE
 
 if _EXT_AVAILABLE
-    # Load trigger packages — this causes the extension to load automatically.
+    # Load trigger packages — this causes the extensions to load automatically.
     @eval using CairoMakie
     @eval using FileIO
-    # Explicitly reference the extension module to ensure it is bound.
-    @eval using PaleobiologyDB.PhyloPicMakie
-    # PhyloPicDB is loaded as a transitive dep; import it for unit-test helpers.
+    # Explicitly reference the extension modules to ensure they are bound.
+    @eval using PaleobiologyDB.PhyloPicPBDB
+    # PhyloPicDB is loaded as a transitive dep; import it for unit-test helpers
+    # and to access PhyloPicDB.PhyloPicMakie (the image utilities extension).
     @eval using PhyloPicDB
 end
 
@@ -37,10 +38,10 @@ end
 # ---------------------------------------------------------------------------
 
 if _EXT_AVAILABLE
-    # Access coordinate helpers through the extension module.
-    const _bbox_fn = PaleobiologyDB.PhyloPicMakie._compute_image_bbox
-    const _rot_fn  = PaleobiologyDB.PhyloPicMakie._apply_rotation
-    const _ra_fn   = PaleobiologyDB.PhyloPicMakie._range_anchor
+    # Coordinate helpers live in PhyloPicDB.PhyloPicMakie (the utilities layer).
+    const _bbox_fn = PhyloPicDB.PhyloPicMakie._compute_image_bbox
+    const _rot_fn  = PhyloPicDB.PhyloPicMakie._apply_rotation
+    const _ra_fn   = PhyloPicDB.PhyloPicMakie._range_anchor
 
     @testset "PhyloPicMakie — _compute_image_bbox" begin
 
@@ -114,7 +115,56 @@ if _EXT_AVAILABLE
             )
         end
 
+        @testset "axis_scale_correction scales half_w for :preserve" begin
+            # scale_correction = 2.0 → x-extent doubles, y-extent unchanged
+            x_lo1, x_hi1, y_lo1, y_hi1 = _bbox_fn(
+                0.0, 0.0, 8, 4;
+                glyph_size = 1.0, aspect = :preserve,
+                placement = :center, xoffset = 0.0, yoffset = 0.0,
+                axis_scale_correction = 1.0,
+            )
+            x_lo2, x_hi2, y_lo2, y_hi2 = _bbox_fn(
+                0.0, 0.0, 8, 4;
+                glyph_size = 1.0, aspect = :preserve,
+                placement = :center, xoffset = 0.0, yoffset = 0.0,
+                axis_scale_correction = 2.0,
+            )
+            @test (x_hi2 - x_lo2) ≈ 2 * (x_hi1 - x_lo1)
+            @test y_lo2 ≈ y_lo1
+            @test y_hi2 ≈ y_hi1
+        end
+
+        @testset "axis_scale_correction ignored for :stretch" begin
+            x_lo1, x_hi1, _, _ = _bbox_fn(
+                0.0, 0.0, 8, 4;
+                glyph_size = 1.0, aspect = :stretch,
+                placement = :center, xoffset = 0.0, yoffset = 0.0,
+                axis_scale_correction = 1.0,
+            )
+            x_lo2, x_hi2, _, _ = _bbox_fn(
+                0.0, 0.0, 8, 4;
+                glyph_size = 1.0, aspect = :stretch,
+                placement = :center, xoffset = 0.0, yoffset = 0.0,
+                axis_scale_correction = 3.0,
+            )
+            @test x_lo1 ≈ x_lo2
+            @test x_hi1 ≈ x_hi2
+        end
+
     end  # _compute_image_bbox
+
+    @testset "PhyloPicMakie — _axis_scale_correction_obs" begin
+        # Creates a Figure + Axis and checks the observable returns a positive Float64.
+        # Before the figure is displayed the projectionview may be degenerate, in
+        # which case _axis_scale_correction_obs returns the safe default 1.0.
+        fig = Figure()
+        ax  = Axis(fig[1, 1])
+        obs = PhyloPicDB.PhyloPicMakie._axis_scale_correction_obs(ax.scene)
+        @test obs isa Makie.Observable
+        sc = obs[]
+        @test sc isa Float64
+        @test sc > 0.0
+    end
 
     @testset "PhyloPicMakie — _apply_rotation" begin
         img = collect(reshape(1:8, 2, 4))   # 2 rows × 4 cols
@@ -148,8 +198,8 @@ if _EXT_AVAILABLE
         @test_throws ArgumentError _ra_fn(10.0, 20.0, :unknown)
     end
 
-    @testset "PhyloPicMakie — _infer_thumbnail_grid_shape" begin
-        infer_shape = PaleobiologyDB.PhyloPicMakie._infer_thumbnail_grid_shape
+    @testset "PhyloPicPBDB — _infer_thumbnail_grid_shape" begin
+        infer_shape = PaleobiologyDB.PhyloPicPBDB._infer_thumbnail_grid_shape
         @test infer_shape(0) == (1, 1)
         @test infer_shape(1) == (1, 1)
         @test infer_shape(6) == (3, 2)
@@ -162,8 +212,8 @@ if _EXT_AVAILABLE
 
     # Unit tests for _extract_image_field, _join_fields, _build_label.
     # Uses PhyloPicDB._null_image to construct a minimal PhyloPicImage offline.
-    @testset "PhyloPicMakie — _extract_image_field" begin
-        extract  = PaleobiologyDB.PhyloPicMakie._extract_image_field
+    @testset "PhyloPicPBDB — _extract_image_field" begin
+        extract  = PaleobiologyDB.PhyloPicPBDB._extract_image_field
         null_img = PhyloPicDB._null_image(1)   # all optional fields missing/nothing, uuid = ""
 
         @testset "virtual field :taxon_name" begin
@@ -200,8 +250,8 @@ if _EXT_AVAILABLE
         end
     end
 
-    @testset "PhyloPicMakie — _join_fields" begin
-        join_f   = PaleobiologyDB.PhyloPicMakie._join_fields
+    @testset "PhyloPicPBDB — _join_fields" begin
+        join_f   = PaleobiologyDB.PhyloPicPBDB._join_fields
         null_img = PhyloPicDB._null_image(1)
 
         @testset "virtual-only fields always present" begin
@@ -237,8 +287,8 @@ if _EXT_AVAILABLE
         end
     end
 
-    @testset "PhyloPicMakie — _build_label" begin
-        bl       = PaleobiologyDB.PhyloPicMakie._build_label
+    @testset "PhyloPicPBDB — _build_label" begin
+        bl       = PaleobiologyDB.PhyloPicPBDB._build_label
         null_img = PhyloPicDB._null_image(1)
 
         @testset "nothing, single-image group → name only" begin
@@ -301,15 +351,20 @@ else
 
 using Makie: RGBA, N0f8, Image
 
-@testset "PhyloPicMakie — extension loaded" begin
-    @test isdefined(PaleobiologyDB, :PhyloPicMakie)
-    @test PaleobiologyDB.PhyloPicMakie isa Module
-    @test :augment_phylopic!        ∈ names(PaleobiologyDB.PhyloPicMakie)
-    @test :augment_phylopic         ∈ names(PaleobiologyDB.PhyloPicMakie)
-    @test :augment_phylopic_ranges! ∈ names(PaleobiologyDB.PhyloPicMakie)
-    @test :augment_phylopic_ranges  ∈ names(PaleobiologyDB.PhyloPicMakie)
-    @test :phylopic_thumbnail_grid! ∈ names(PaleobiologyDB.PhyloPicMakie)
-    @test :phylopic_thumbnail_grid  ∈ names(PaleobiologyDB.PhyloPicMakie)
+@testset "PhyloPicPBDB — extension loaded" begin
+    # PhyloPicPBDB: the PBDB-specific augment/grid functions.
+    @test isdefined(PaleobiologyDB, :PhyloPicPBDB)
+    @test PaleobiologyDB.PhyloPicPBDB isa Module
+    @test :augment_phylopic!        ∈ names(PaleobiologyDB.PhyloPicPBDB)
+    @test :augment_phylopic         ∈ names(PaleobiologyDB.PhyloPicPBDB)
+    @test :augment_phylopic_ranges! ∈ names(PaleobiologyDB.PhyloPicPBDB)
+    @test :augment_phylopic_ranges  ∈ names(PaleobiologyDB.PhyloPicPBDB)
+    @test :phylopic_thumbnail_grid! ∈ names(PaleobiologyDB.PhyloPicPBDB)
+    @test :phylopic_thumbnail_grid  ∈ names(PaleobiologyDB.PhyloPicPBDB)
+
+    # PhyloPicMakie: the image utilities layer in PhyloPicDB.
+    @test isdefined(PhyloPicDB, :PhyloPicMakie)
+    @test PhyloPicDB.PhyloPicMakie isa Module
 end
 
 # Synthetic 4-row × 8-column opaque grey RGBA image for offline render tests.
@@ -318,7 +373,7 @@ const _TEST_IMG = fill(RGBA{N0f8}(0.5, 0.5, 0.5, 1.0), 4, 8)
 # Convenience: count Image plots added to an axis.
 _count_images(ax) = count(p -> p isa Image, ax.scene.plots)
 
-@testset "PhyloPicMakie — augment_phylopic! vector API" begin
+@testset "PhyloPicPBDB — augment_phylopic! vector API" begin
 
     @testset "glyph broadcast to all data points" begin
         fig = Figure(); ax = Axis(fig[1, 1])
@@ -376,7 +431,7 @@ _count_images(ax) = count(p -> p isa Image, ax.scene.plots)
 
 end  # augment_phylopic! vector API
 
-@testset "PhyloPicMakie — augment_phylopic_ranges! vector API" begin
+@testset "PhyloPicPBDB — augment_phylopic_ranges! vector API" begin
 
     @testset "at=:start" begin
         fig = Figure(); ax = Axis(fig[1, 1])
@@ -414,7 +469,7 @@ end  # augment_phylopic! vector API
 
 end  # augment_phylopic_ranges! vector API
 
-@testset "PhyloPicMakie — table API (DataFrame)" begin
+@testset "PhyloPicPBDB — table API (DataFrame)" begin
     df = DataFrame(x = [0.0, 1.0, 2.0], y = [0.0, 1.0, 2.0])
 
     @testset "augment_phylopic! with Symbol column selectors" begin
@@ -439,7 +494,7 @@ end  # augment_phylopic_ranges! vector API
 
 end  # table API
 
-@testset "PhyloPicMakie — range table API (DataFrame)" begin
+@testset "PhyloPicPBDB — range table API (DataFrame)" begin
     df = DataFrame(
         first_app = [68.0, 68.0],
         last_app  = [66.0, 66.0],
@@ -465,7 +520,7 @@ end  # table API
 end  # range table API
 
 
-@testset "PhyloPicMakie — thumbnail grid" begin
+@testset "PhyloPicPBDB — thumbnail grid" begin
 
     # Offline tests: no network needed.
     #
@@ -558,7 +613,7 @@ end  # range table API
     end
 
     @testset "_rows_grid_positions: empty groups → 1×1 grid, no positions" begin
-        pos, r, c = PaleobiologyDB.PhyloPicMakie._rows_grid_positions(
+        pos, r, c = PaleobiologyDB.PhyloPicPBDB._rows_grid_positions(
             Int[]; cell_width = 1.0, cell_height = 1.6)
         @test isempty(pos)
         @test r == 1
@@ -566,7 +621,7 @@ end  # range table API
     end
 
     @testset "_rows_grid_positions: two groups of sizes [2, 3]" begin
-        pos, r, c = PaleobiologyDB.PhyloPicMakie._rows_grid_positions(
+        pos, r, c = PaleobiologyDB.PhyloPicPBDB._rows_grid_positions(
             [2, 3]; cell_width = 1.0, cell_height = 1.6)
         @test length(pos) == 5   # 2 + 3
         @test r == 2             # two non-empty groups
@@ -626,7 +681,7 @@ end  # range table API
         fig = Figure(); ax = Axis(fig[1, 1])
         phylopic_thumbnail_grid!(ax, ["", " "]; image_filter = :primary, label_lines = 3)
         ymax         = ax.limits[][2][2]
-        default_cell = PhyloPicMakie.DEFAULT_THUMBNAIL_GRID_CELL_HEIGHT
+        default_cell = PaleobiologyDB.PhyloPicPBDB.DEFAULT_THUMBNAIL_GRID_CELL_HEIGHT
         @test ymax > default_cell
     end
 
@@ -719,7 +774,8 @@ end  # if _EXT_AVAILABLE
 
     @testset "image download and DataCache hit" begin
         cache  = DataCache(mktempdir())
-        loader = PaleobiologyDB.PhyloPicMakie._load_phylopic_image
+        # _load_phylopic_image lives in PhyloPicDB.PhyloPicMakie (the utilities layer).
+        loader = PhyloPicDB.PhyloPicMakie._load_phylopic_image
         PaleobiologyDB.set_autocaching!(true, loader; cache = cache)
 
         rec = PaleobiologyDB.Taxonomy.acquire_phylopic("Tyrannosaurus")
@@ -735,6 +791,7 @@ end  # if _EXT_AVAILABLE
         @test length(cache) == n_before   # no new cache entry
 
         PaleobiologyDB.set_autocaching!(false, loader; cache = cache)
+        # (loader is PhyloPicDB.PhyloPicMakie._load_phylopic_image)
     end
 
     @testset "augment_phylopic! end-to-end with real taxon" begin

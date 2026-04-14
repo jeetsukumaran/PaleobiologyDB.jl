@@ -1,15 +1,17 @@
 
 # ---------------------------------------------------------------------------
-# PhyloPicMakie — pure coordinate and placement calculations
+# PhyloPicDB.PhyloPicMakie — pure coordinate and placement calculations
 #
 # All functions here are pure: they depend only on their arguments and
-# produce no side effects.  They can be tested without loading Makie.
+# produce no side effects.  They can be tested without loading Makie,
+# except for _axis_scale_correction_obs which requires a live Makie.Scene.
 #
 # Public (within extension):
 #   _compute_image_bbox(x, y, img_width, img_height; ...)
 #       → NTuple{4, Float64}  (x_lo, x_hi, y_lo, y_hi)
 #   _apply_rotation(img, rotation_deg) → AbstractMatrix
 #   _range_anchor(xstart, xstop, at) → Float64
+#   _axis_scale_correction_obs(scene) → Makie.Observable{Float64}
 # ---------------------------------------------------------------------------
 
 """
@@ -83,7 +85,8 @@ end
 """
     _compute_image_bbox(
         x, y, img_width, img_height;
-        glyph_size, aspect, placement, xoffset, yoffset
+        glyph_size, aspect, placement, xoffset, yoffset,
+        axis_scale_correction = 1.0,
     ) -> NTuple{4, Float64}
 
 Compute the axis data-space bounding box `(x_lo, x_hi, y_lo, y_hi)` for a
@@ -104,6 +107,12 @@ pixel-to-data conversion before calling this function.
 - `placement`: anchor position on the glyph (see `VALID_PLACEMENTS`).
 - `xoffset`, `yoffset`: additional offset in data units applied after
   anchoring.
+- `axis_scale_correction`: ratio `(pixels per y data-unit) / (pixels per
+  x data-unit)` for the target axis.  Multiply the image aspect ratio by
+  this factor so the rendered glyph appears with the correct pixel-space
+  proportions on anisotropic axes.  Default `1.0` (no correction, assumes
+  isotropic axes).  Obtain a reactive value from
+  [`_axis_scale_correction_obs`](@ref).
 
 ## Returns
 
@@ -112,10 +121,11 @@ pixel-to-data conversion before calling this function.
 ## Examples
 
 ```julia
-using PaleobiologyDB.PhyloPicMakie
+using PhyloPicDB
+using CairoMakie, FileIO   # trigger extension load
 
-# 40×20 image, glyph_size = 0.4, placement = :center
-bbox = PaleobiologyDB.PhyloPicMakie._compute_image_bbox(
+# 40×20 image, glyph_size = 0.4, placement = :center, isotropic axis
+bbox = PhyloPicDB.PhyloPicMakie._compute_image_bbox(
     5.0, 3.0, 40, 20;
     glyph_size = 0.4, aspect = :preserve,
     placement = :center, xoffset = 0.0, yoffset = 0.0,
@@ -133,11 +143,13 @@ function _compute_image_bbox(
     placement::Symbol,
     xoffset::Real,
     yoffset::Real,
+    axis_scale_correction::Real = 1.0,
 )::NTuple{4, Float64}
     half_h = Float64(glyph_size)
 
     half_w = if aspect === :preserve
-        img_height == 0 ? half_h : half_h * (Float64(img_width) / Float64(img_height))
+        img_height == 0 ? half_h :
+            half_h * (Float64(img_width) / Float64(img_height)) * Float64(axis_scale_correction)
     elseif aspect === :stretch
         half_h
     else
@@ -224,4 +236,54 @@ function _range_anchor(xstart::Real, xstop::Real, at::Symbol)::Float64
         "augment_phylopic_ranges: unknown `at` value `$at`. " *
         "Valid values: $(join(VALID_AT_POSITIONS, ", "))."
     ))
+end
+
+# ---------------------------------------------------------------------------
+# Public: reactive axis scale correction
+# ---------------------------------------------------------------------------
+
+"""
+    _axis_scale_correction_obs(scene::Makie.Scene) -> Makie.Observable{Float64}
+
+Return a reactive scale-correction factor
+
+    (pixels per y data-unit) / (pixels per x data-unit)
+
+derived from the Makie scene camera projection matrix and viewport.
+
+In a 2-D Makie axis the diagonal entries of `scene.camera.projectionview`
+satisfy:
+
+    pv[1,1] ≈ 2 / (x_max − x_min)   # NDC units per x data-unit
+    pv[2,2] ≈ 2 / (y_max − y_min)   # NDC units per y data-unit
+
+Multiplying each by the corresponding viewport pixel dimension gives relative
+pixel densities; their ratio is the correction to apply to a data-space
+half-width so the rendered glyph appears with the correct pixel-space
+proportions on an anisotropic axis.
+
+Both `scene.camera.projectionview` and `scene.viewport` are
+`Makie.Observable`s: `Makie.lift` on both produces a correction that updates
+automatically when axis limits change (including auto-limits) or the figure
+viewport changes.
+
+Returns `1.0` (identity) when the projection or viewport is degenerate, e.g.
+before the figure layout has been resolved.
+
+## Arguments
+
+- `scene`: the `Makie.Scene` associated with the target axis (typically
+  `ax.scene` or `Makie.parent_scene(p)` inside a recipe).
+
+## Returns
+
+`Makie.Observable{Float64}` — multiply a data-space half-width by the
+current value to obtain the correct screen-proportioned half-width.
+"""
+function _axis_scale_correction_obs(scene::Makie.Scene)::Makie.Observable{Float64}
+    return Makie.lift(scene.camera.projectionview, scene.viewport) do pv, vp
+        px_per_x = abs(Float64(pv[1, 1])) * Float64(vp.widths[1])
+        px_per_y = abs(Float64(pv[2, 2])) * Float64(vp.widths[2])
+        (px_per_x > 0.0 && px_per_y > 0.0) ? px_per_y / px_per_x : 1.0
+    end
 end

@@ -325,9 +325,9 @@ fig3, ax3, p3 = taxontreeplot(tree;
 
 See the [TaxonTreeMakie guide](https://jeetsukumaran.github.io/PaleobiologyDB.jl/dev/guide/taxontree_makie/) for the full attribute reference and worked examples.
 
-## PhyloPicMakie — Makie plot integration
+## PhyloPicPBDB — Makie plot integration
 
-`PaleobiologyDB.PhyloPicMakie` is an optional extension that adds PhyloPic
+`PaleobiologyDB.PhyloPicPBDB` is an optional extension that adds PhyloPic
 silhouette overlays to existing Makie axes.  It activates automatically when a
 Makie backend (e.g. `CairoMakie`) and `FileIO` are loaded.
 
@@ -338,7 +338,7 @@ pkg> add CairoMakie FileIO PNGFiles
 ```julia
 using PaleobiologyDB
 using CairoMakie, FileIO
-using PaleobiologyDB.PhyloPicMakie
+using PaleobiologyDB.PhyloPicPBDB
 
 taxa      = ["Tyrannosaurus", "Triceratops", "Ankylosaurus",
              "Pachycephalosaurus", "Edmontosaurus"]
@@ -371,7 +371,7 @@ display(fig)
 
 A table-oriented variant accepts a `DataFrame` and column-selector keywords
 (`xstart`, `xstop`, `y`, `taxon`) — see the
-[PhyloPicMakie guide](https://jeetsukumaran.github.io/PaleobiologyDB.jl/dev/guide/phylopic_makie/)
+[PhyloPicPBDB guide](https://jeetsukumaran.github.io/PaleobiologyDB.jl/dev/guide/phylopic_makie/)
 for full documentation.
 
 
@@ -385,7 +385,7 @@ and its descendants.  Each image in the clade gets its own cell:
 ```julia
 using PaleobiologyDB
 using CairoMakie, FileIO
-using PaleobiologyDB.PhyloPicMakie
+using PaleobiologyDB.PhyloPicPBDB
 
 # All clade images for Felis (one cell per image, auto-sized figure)
 fig = phylopic_thumbnail_grid("Felis")
@@ -448,7 +448,7 @@ fig3 = phylopic_thumbnail_grid(["Felis", "Canis"];
 ```julia
 using PaleobiologyDB, PaleobiologyDB.Taxonomy
 using CairoMakie, FileIO
-using PaleobiologyDB.PhyloPicMakie
+using PaleobiologyDB.PhyloPicPBDB
 
 # Primary image for every family in Pterosauria
 pterosaur_families = child_taxa("Pterosauria", "family")
@@ -536,7 +536,7 @@ fig = phylopic_thumbnail_grid(taxa;
 * Counts: `pbdb_count`
 * Taxonomy (submodule): `drop_unqualified_taxa`, `drop_unresolved_taxa`, `drop_unrecognized_taxa`, `augment_taxonomy`, `child_taxa`, `parent_taxa`, `registered_taxa`, `taxon_occursin`, `contains_taxon`, `taxon_subtree`, `root_taxon`, `leaf_taxa`, `taxa_at_rank`
 * PhyloPic (submodule): `acquire_phylopic`, `augment_phylopic`, `phylopic_images_dataframe`
-* PhyloPicMakie (extension): `augment_phylopic!`, `augment_phylopic`, `augment_phylopic_ranges!`, `augment_phylopic_ranges`, `phylopic_thumbnail_grid!`, `phylopic_thumbnail_grid`
+* PhyloPicPBDB (extension): `augment_phylopic!`, `augment_phylopic`, `augment_phylopic_ranges!`, `augment_phylopic_ranges`, `phylopic_thumbnail_grid!`, `phylopic_thumbnail_grid`
 * TaxonTreeMakie (extension): `taxontreeplot`, `taxontreeplot!`, `TaxonTreePlot`, `set_rank_axis_ticks!`
 
 ## Documentation
@@ -546,7 +546,7 @@ Full documentation: <https://jeetsukumaran.github.io/PaleobiologyDB.jl/>
 - [Quick Start](https://jeetsukumaran.github.io/PaleobiologyDB.jl/dev/guide/quickstart/) — examples for all endpoint types, advanced query options
 - [Caching](https://jeetsukumaran.github.io/PaleobiologyDB.jl/dev/guide/caching/) — file, memory, and auto-caching
 - [TaxonTreeMakie](https://jeetsukumaran.github.io/PaleobiologyDB.jl/dev/guide/taxontree_makie/) — dendrogram visualization of taxonomic trees
-- [PhyloPicMakie](https://jeetsukumaran.github.io/PaleobiologyDB.jl/dev/guide/phylopic_makie/) — PhyloPic silhouette overlays on Makie plots
+- [PhyloPicPBDB](https://jeetsukumaran.github.io/PaleobiologyDB.jl/dev/guide/phylopic_makie/) — PhyloPic silhouette overlays on Makie plots
 - [API Reference](https://jeetsukumaran.github.io/PaleobiologyDB.jl/dev/api/occurrences/) — per-function docstrings
 - [Interactive Help](https://jeetsukumaran.github.io/PaleobiologyDB.jl/dev/api/apihelp/) — REPL-based parameter and field discovery
 - [Contributing](https://jeetsukumaran.github.io/PaleobiologyDB.jl/dev/guide/contributing/) — testing, development, and external resources

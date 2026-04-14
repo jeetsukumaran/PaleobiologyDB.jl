@@ -6,114 +6,23 @@
 # images at the tip positions of a TaxonTree dendrogram.
 #
 # Public (within extension):
-#   _compute_tip_image_bbox(x, y, img_width, img_height; ...)
-#       → NTuple{4, Float64}   (x_lo, x_hi, y_lo, y_hi)
 #   _load_tip_phylopic_image(taxon_name) → Union{Matrix{Makie.RGBA{Makie.N0f8}}, Nothing}
 #   _render_tip_phylopic!(p, tree, xs, ys; ...) → Nothing
 #
-# Image loading delegates to PaleobiologyDB.PhyloPicMakie when that extension
-# is loaded (i.e. when FileIO is in the session).  If PhyloPicMakie is not
-# yet loaded, _load_tip_phylopic_image returns nothing and a one-time warning
-# is emitted; the on_missing policy at the call site then applies.
+# Image loading delegates to PhyloPicDB.PhyloPicMakie when that extension is
+# loaded (i.e. when both Makie and FileIO are in the session).  If
+# PhyloPicMakie is not yet loaded, _load_tip_phylopic_image returns nothing
+# and a one-time warning is emitted; the on_missing policy at the call site
+# then applies.
 #
-# The coordinate helper _compute_tip_image_bbox is a pure duplicate of
-# PhyloPicMakie._compute_image_bbox — copied here to avoid cross-extension
-# coupling.  Both implementations must be kept in sync.
+# Coordinate geometry and reactive axis-scale correction are delegated to
+# PhyloPicDB.PhyloPicMakie._compute_image_bbox and
+# PhyloPicDB.PhyloPicMakie._axis_scale_correction_obs so that the bug-fix
+# (anisotropic-axis aspect correction) is applied consistently.
 # ---------------------------------------------------------------------------
 
 import PhyloPicDB
 using PaleobiologyDB.Taxonomy: acquire_phylopic
-
-# ---------------------------------------------------------------------------
-# Pure coordinate helpers
-# ---------------------------------------------------------------------------
-
-# Placement-anchor offsets: fraction of half-width/half-height to add to the
-# centre so the requested edge/corner lands on the anchor point.
-#
-#   :left  → anchor is the left edge → shift centre rightward by +half_w
-#   :right → anchor is the right edge → shift centre leftward by -half_w
-#   (etc.)
-#
-# Returns (pfx, pfy) in half-dimension units.
-function _tip_placement_offsets(placement::Symbol)::Tuple{Float64, Float64}
-    placement === :center      && return (0.0,   0.0)
-    placement === :left        && return (0.5,   0.0)
-    placement === :right       && return (-0.5,  0.0)
-    placement === :top         && return (0.0,  -0.5)
-    placement === :bottom      && return (0.0,   0.5)
-    placement === :topleft     && return (0.5,  -0.5)
-    placement === :topright    && return (-0.5, -0.5)
-    placement === :bottomleft  && return (0.5,   0.5)
-    placement === :bottomright && return (-0.5,  0.5)
-    throw(ArgumentError(
-        "_render_tip_phylopic!: unknown placement `$placement`."
-    ))
-end
-
-"""
-    _compute_tip_image_bbox(
-        x, y, img_width, img_height;
-        glyph_size, aspect, placement, xoffset, yoffset,
-    ) -> NTuple{4, Float64}
-
-Compute the axis data-space bounding box `(x_lo, x_hi, y_lo, y_hi)` for a
-PhyloPic glyph image centred (or anchored by `placement`) at `(x, y)`.
-
-This is a local pure duplicate of `PhyloPicMakie._compute_image_bbox`,
-intentionally kept here to avoid cross-extension coupling.  Both must be
-kept in sync.
-
-## Arguments
-
-- `x`, `y`: anchor coordinates in axis data space.
-- `img_width`, `img_height`: pixel dimensions of the source image (used only
-  when `aspect = :preserve`).
-- `glyph_size`: half-height of the rendered glyph in data units.
-- `aspect`: `:preserve` maintains the image's aspect ratio; `:stretch`
-  renders as a square.
-- `placement`: anchor position on the glyph.  `:left` places the left edge
-  of the glyph at `(x + xoffset, y + yoffset)`.
-- `xoffset`, `yoffset`: additional offset in data units applied after
-  anchoring.
-
-## Returns
-
-`(x_lo, x_hi, y_lo, y_hi)` — the bounding rectangle in data space.
-"""
-function _compute_tip_image_bbox(
-    x::Real,
-    y::Real,
-    img_width::Integer,
-    img_height::Integer;
-    glyph_size::Real,
-    aspect::Symbol,
-    placement::Symbol,
-    xoffset::Real,
-    yoffset::Real,
-)::NTuple{4, Float64}
-    half_h = Float64(glyph_size)
-
-    half_w = if aspect === :preserve
-        img_height == 0 ? half_h : half_h * (Float64(img_width) / Float64(img_height))
-    elseif aspect === :stretch
-        half_h
-    else
-        throw(ArgumentError(
-            "_render_tip_phylopic!: unknown aspect `$aspect`. " *
-            "Valid values: :preserve, :stretch."
-        ))
-    end
-
-    cx = Float64(x) + Float64(xoffset)
-    cy = Float64(y) + Float64(yoffset)
-
-    (pfx, pfy) = _tip_placement_offsets(placement)
-    cx += pfx * 2 * half_w
-    cy += pfy * 2 * half_h
-
-    return (cx - half_w, cx + half_w, cy - half_h, cy + half_h)
-end
 
 # ---------------------------------------------------------------------------
 # Image loading
@@ -141,7 +50,7 @@ Look up and download the PhyloPic image for `taxon_name`.
 | `:vector` | `:phylopic_vector` | SVG; black silhouette on transparent — requires FileIO SVG plugin |
 | `:source_file` | `:phylopic_source_file` | SVG or raster — format matches the original upload |
 
-Delegates to `PaleobiologyDB.PhyloPicMakie` for URL resolution and image
+Delegates to `PhyloPicDB.PhyloPicMakie` for URL resolution and image
 decoding (which requires `FileIO` to be loaded in the session).  When
 `PhyloPicMakie` is not yet available, emits a one-time warning and returns
 `nothing`.
@@ -165,7 +74,7 @@ function _load_tip_phylopic_image(
         "Valid values: $(join(string.(':', PhyloPicDB.PHYLOPIC_IMAGE_RENDERINGS), ", "))."
     ))
 
-    if !isdefined(PaleobiologyDB, :PhyloPicMakie)
+    if !isdefined(PhyloPicDB, :PhyloPicMakie)
         if !_PHYLOPIC_MISSING_WARNED[]
             _PHYLOPIC_MISSING_WARNED[] = true
             @warn "TaxonTreeMakie: PhyloPic silhouettes require FileIO.jl. " *
@@ -199,7 +108,7 @@ function _load_tip_phylopic_image(
     end
 
     try
-        return PaleobiologyDB.PhyloPicMakie._load_phylopic_image(string(url))
+        return PhyloPicDB.PhyloPicMakie._load_phylopic_image(string(url))
     catch err
         @warn "TaxonTreeMakie: image load failed for \"$taxon_name\"" exception = err
         return nothing
@@ -231,6 +140,12 @@ compound plot `p`.
 This function is called **once** during `Makie.plot!` when `show_phylopic`
 is true.  Images are static after creation; toggling `p[:show_phylopic][]`
 changes their visibility without re-fetching.
+
+For `aspect = :preserve`, the x-range of each image is a reactive
+`Makie.Observable` derived from `PhyloPicDB.PhyloPicMakie._axis_scale_correction_obs`.
+This corrects for anisotropic axes (where one data unit occupies a different
+number of pixels in x vs y) so rendered glyphs maintain correct pixel-space
+proportions after auto-limits or window resize events.
 
 ## Arguments
 
@@ -285,7 +200,13 @@ function _render_tip_phylopic!(
     leaf_vertices = [v for v in Graphs.vertices(g) if isempty(Graphs.outneighbors(g, v))]
     isempty(leaf_vertices) && return nothing
 
-    # Aligned mode: all images share a single x column
+    # Reactive scale correction: recomputes whenever the axis limits or
+    # viewport change so :preserve images stay correctly proportioned.
+    scale_corr_obs = PhyloPicDB.PhyloPicMakie._axis_scale_correction_obs(
+        Makie.parent_scene(p)
+    )
+
+    # Aligned mode: all images share a single x column.
     x_align = maximum(Float64(xs[v]) for v in leaf_vertices) + Float64(tip_xoffset) +
                Float64(phylopic_xoffset)
 
@@ -293,7 +214,7 @@ function _render_tip_phylopic!(
         taxon_name = tree.taxa[v].name
         img = _load_tip_phylopic_image(taxon_name; image_rendering)
 
-        # x anchor: either per-leaf or uniform column
+        # x anchor: either per-leaf or uniform column.
         x_anchor = do_align ? x_align : Float64(xs[v]) + Float64(tip_xoffset) +
                                          Float64(phylopic_xoffset)
         y_anchor = Float64(ys[v])
@@ -325,21 +246,51 @@ function _render_tip_phylopic!(
         end
 
         # img from _load_tip_phylopic_image is column-major (height × width).
-        # Pass width and height in the order _compute_tip_image_bbox expects.
         h_px, w_px = size(img)
-        x_lo, x_hi, y_lo, y_hi = _compute_tip_image_bbox(
+
+        # Static y-range: glyph_size governs y extent; independent of scale.
+        _, _, y_lo, y_hi = PhyloPicDB.PhyloPicMakie._compute_image_bbox(
             x_anchor, y_anchor, w_px, h_px;
-            glyph_size = glyph_size,
-            aspect     = aspect,
-            placement  = :left,
-            xoffset    = 0.0,
-            yoffset    = 0.0,
+            glyph_size            = glyph_size,
+            aspect                = aspect,
+            placement             = :left,
+            xoffset               = 0.0,
+            yoffset               = 0.0,
+            axis_scale_correction = 1.0,
         )
+
+        # Reactive x-range for :preserve aspect: recalculates whenever the
+        # axis scale changes so the glyph stays proportioned on anisotropic axes.
+        x_range = if aspect === :preserve
+            Makie.lift(scale_corr_obs) do sc
+                x_lo, x_hi, _, _ = PhyloPicDB.PhyloPicMakie._compute_image_bbox(
+                    x_anchor, y_anchor, w_px, h_px;
+                    glyph_size            = glyph_size,
+                    aspect                = :preserve,
+                    placement             = :left,
+                    xoffset               = 0.0,
+                    yoffset               = 0.0,
+                    axis_scale_correction = sc,
+                )
+                (x_lo, x_hi)
+            end
+        else
+            # :stretch — equal data-unit width and height; no anisotropy correction.
+            x_lo, x_hi, _, _ = PhyloPicDB.PhyloPicMakie._compute_image_bbox(
+                x_anchor, y_anchor, w_px, h_px;
+                glyph_size = glyph_size,
+                aspect     = :stretch,
+                placement  = :left,
+                xoffset    = 0.0,
+                yoffset    = 0.0,
+            )
+            (x_lo, x_hi)
+        end
 
         # Makie.image! expects row-major data; rotr90 converts Julia column-major.
         Makie.image!(
             p,
-            (x_lo, x_hi),
+            x_range,
             (y_lo, y_hi),
             rotr90(img);
             interpolate = true,

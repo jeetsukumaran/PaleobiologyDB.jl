@@ -1,12 +1,17 @@
 """
-    PaleobiologyDB.PhyloPicMakie
+    PaleobiologyDB.PhyloPicPBDB
 
-Makie extension for [`PaleobiologyDB`](@ref).
+Makie + FileIO extension providing PBDB-specific PhyloPic silhouette overlay
+functions for [`PaleobiologyDB`](@ref).
 
-Provides functions to overlay [PhyloPic](https://www.phylopic.org/) silhouette
-images on existing Makie axes.  The extension is automatically loaded when
-both `Makie` (or any Makie backend such as `CairoMakie` or `GLMakie`) and
-`FileIO` are loaded in the same Julia session.
+Activates automatically when both `Makie` (or any backend such as `CairoMakie`)
+and `FileIO` are loaded in the same Julia session as `PaleobiologyDB`.
+
+This module handles the **PBDB taxon-name resolution layer**: looking up taxon
+names via [`PaleobiologyDB.Taxonomy.acquire_phylopic`](@ref), downloading and
+caching images, and rendering them onto Makie axes.  Pure image utilities
+(download, decode, coordinate geometry, core rendering loop) live in
+`PhyloPicDB.PhyloPicMakie`, which this module delegates to.
 
 ## Activation
 
@@ -14,13 +19,13 @@ both `Makie` (or any Makie backend such as `CairoMakie` or `GLMakie`) and
 using PaleobiologyDB
 using CairoMakie   # or GLMakie, WGLMakie, …
 using FileIO       # required for PNG decoding
-# → PaleobiologyDB.PhyloPicMakie is now available
+# → PaleobiologyDB.PhyloPicPBDB is now available
 ```
 
 ## Quick start
 
 ```julia
-using PaleobiologyDB, PaleobiologyDB.PhyloPicMakie
+using PaleobiologyDB, PaleobiologyDB.PhyloPicPBDB
 using CairoMakie, FileIO
 
 fig = Figure()
@@ -61,15 +66,15 @@ Downloaded silhouette images are automatically cached via the same
 thumbnail URL is downloaded at most once per cache lifetime.  The cache can
 be controlled via the standard `PaleobiologyDB.set_autocaching!` mechanism.
 """
-module PhyloPicMakie
+module PhyloPicPBDB
 
 import Makie
 import FileIO
-import Downloads
 import DataCaches: autocache
 using Makie: RGBA, N0f8, Colorant
 
 using PaleobiologyDB
+import PhyloPicDB
 
 export augment_phylopic!
 export augment_phylopic
@@ -78,17 +83,16 @@ export augment_phylopic_ranges
 export phylopic_thumbnail_grid!
 export phylopic_thumbnail_grid
 
-include("_image_cache.jl")
-include("_coordinates.jl")
+include("_resolve.jl")
 include("_render.jl")
 include("_phylopic_thumbnail_grid.jl")
 
 function __init__()
-    # Bind this extension module to PaleobiologyDB.PhyloPicMakie so that
-    # callers can access it as PaleobiologyDB.PhyloPicMakie after the extension
-    # has been triggered.  This is necessary because Julia 1.9+ extensions are
-    # loaded as top-level modules; they are not automatically installed as
-    # submodule bindings in the parent package.
+    # Bind this extension module to PaleobiologyDB.PhyloPicPBDB so that
+    # callers can access it as PaleobiologyDB.PhyloPicPBDB after the extension
+    # has been triggered.  Julia 1.9+ extensions are loaded as top-level
+    # modules and are not automatically installed as submodule bindings in the
+    # parent package.
     #
     # Guard against incremental precompilation: during precompilation of another
     # extension that also triggers on Makie (e.g. TaxonTreeMakie), Julia 1.12+
@@ -97,8 +101,8 @@ function __init__()
     # because the parent module is "closed".  The guard below ensures the eval
     # only runs at actual runtime, not during precompilation.
     if ccall(:jl_generating_output, Cint, ()) == 0
-        Core.eval(PaleobiologyDB, :(const PhyloPicMakie = $(@__MODULE__)))
+        Core.eval(PaleobiologyDB, :(const PhyloPicPBDB = $(@__MODULE__)))
     end
 end
 
-end # module PhyloPicMakie
+end # module PhyloPicPBDB

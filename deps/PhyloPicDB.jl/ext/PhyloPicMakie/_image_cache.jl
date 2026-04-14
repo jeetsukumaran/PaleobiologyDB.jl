@@ -1,14 +1,14 @@
 
 # ---------------------------------------------------------------------------
-# PhyloPicMakie — image download and caching
+# PhyloPicDB.PhyloPicMakie — image download and caching
 #
 # Provides a cached image loader keyed on the thumbnail URL returned by
 # acquire_phylopic.  Each unique URL is downloaded at most once per cache
 # lifetime; subsequent calls return the stored matrix without any network
 # activity.
 #
-# Cache layer 1 (taxon → metadata/URL): handled by acquire_phylopic in the
-# main package via DataCaches.autocache.
+# Cache layer 1 (taxon → metadata/URL): handled by acquire_phylopic in
+# PaleobiologyDB.Taxonomy via DataCaches.autocache.
 #
 # Cache layer 2 (URL → decoded image matrix): handled here.
 #
@@ -34,7 +34,7 @@ same URL within the same cache lifetime, with no network activity.
 ## Arguments
 
 - `url`: HTTPS URL to a PNG image (typically `rec.phylopic_thumbnail` from
-  [`PaleobiologyDB.Taxonomy.acquire_phylopic`](@ref)).
+  the PhyloPic API).
 
 ## Returns
 
@@ -51,11 +51,10 @@ available.
 ## Examples
 
 ```julia
-using PaleobiologyDB, PaleobiologyDB.Taxonomy
-using CairoMakie, FileIO
+using PhyloPicDB
+using CairoMakie, FileIO   # trigger extension load
 
-rec = acquire_phylopic("Tyrannosaurus")
-img = PaleobiologyDB.PhyloPicMakie._load_phylopic_image(rec.phylopic_thumbnail)
+img = PhyloPicDB.PhyloPicMakie._load_phylopic_image(some_thumbnail_url)
 # img isa Matrix{RGBA{N0f8}}
 ```
 """

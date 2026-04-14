@@ -23,7 +23,7 @@ Makie = "ee78f7c6-11fb-53f2-987a-cfe4a2b5a57a"
 DataCaches = {url = "https://github.com/JuliaData/DataCaches.jl.git"}
 
 [extensions]
-PhyloPicMakie = ["Makie", "FileIO"]
+PhyloPicPBDB  = ["Makie", "FileIO"]
 TaxonTreeMakie = ["Makie"]
 
 [compat]

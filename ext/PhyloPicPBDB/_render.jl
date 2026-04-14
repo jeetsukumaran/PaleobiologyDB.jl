@@ -1,245 +1,26 @@
 
 # ---------------------------------------------------------------------------
-# PhyloPicMakie — rendering: augment_phylopic! and all public variants
+# PhyloPicPBDB — rendering: augment_phylopic! and all public variants
 #
-# All public functions delegate to _augment_phylopic_core! after resolving
-# the image source and computing anchor coordinates.
+# All public functions resolve images via _resolve_images (from _resolve.jl)
+# and then delegate to PhyloPicDB.PhyloPicMakie._augment_phylopic_core!.
 #
 # Call graph:
 #
 #   augment_phylopic  / augment_phylopic!  (vector API)
 #   augment_phylopic  / augment_phylopic!  (table API)
 #       └─► _augment_phylopic_core!(ax, xs, ys, images; kwargs...)
-#               ├─ _compute_image_bbox(...)       from _coordinates.jl
-#               └─ Makie.image!(ax, ...)
+#               (PhyloPicDB.PhyloPicMakie._augment_phylopic_core!)
 #
 #   augment_phylopic_ranges  / augment_phylopic_ranges!  (vector API)
 #   augment_phylopic_ranges  / augment_phylopic_ranges!  (table API)
-#       └─► augment_phylopic!(ax, xs_anchor, ys; ...)   (after _range_anchor)
+#       └─► augment_phylopic!(ax, xs_anchor, ys; ...)
+#               (after PhyloPicDB.PhyloPicMakie._range_anchor)
 #
 # ---------------------------------------------------------------------------
 
 import Makie
 import PhyloPicDB
-using PaleobiologyDB.Taxonomy: acquire_phylopic
-
-# ---------------------------------------------------------------------------
-# Internal: image rendering field resolution
-# ---------------------------------------------------------------------------
-
-"""
-    _phylopic_field_for_rendering(image_rendering::Symbol) -> Symbol
-
-Map an `image_rendering` symbol to the corresponding field key in the
-NamedTuple returned by `acquire_phylopic` (with the default `"phylopic_"` prefix).
-
-| `image_rendering` | `acquire_phylopic` field | Format |
-|---|---|---|
-| `:thumbnail`   | `:phylopic_thumbnail`   | PNG; square thumbnail, largest available (default) |
-| `:raster`      | `:phylopic_raster`      | PNG; full-resolution, largest available |
-| `:og_image`    | `:phylopic_og_image`    | PNG; Open Graph social-media preview |
-| `:vector`      | `:phylopic_vector`      | SVG; black silhouette on transparent — requires SVG-capable `FileIO` plugin |
-| `:source_file` | `:phylopic_source_file` | SVG or raster — format matches the original upload |
-
-Throws `ArgumentError` for unrecognised symbols.
-"""
-function _phylopic_field_for_rendering(image_rendering::Symbol)::Symbol
-    image_rendering === :thumbnail   && return :phylopic_thumbnail
-    image_rendering === :raster      && return :phylopic_raster
-    image_rendering === :og_image    && return :phylopic_og_image
-    image_rendering === :vector      && return :phylopic_vector
-    image_rendering === :source_file && return :phylopic_source_file
-    throw(ArgumentError(
-        "_phylopic_field_for_rendering: unknown `image_rendering` value " *
-        "`:$image_rendering`. " *
-        "Valid values: $(join(string.(':', PhyloPicDB.PHYLOPIC_IMAGE_RENDERINGS), ", "))."
-    ))
-end
-
-# ---------------------------------------------------------------------------
-# Internal: resolve images for a vector of taxa / glyphs
-# ---------------------------------------------------------------------------
-
-"""
-    _resolve_images(
-        taxon::Union{AbstractVector, Nothing},
-        glyph::Union{AbstractMatrix{<:Colorant}, Nothing},
-        n::Integer;
-        image_rendering::Symbol = :thumbnail,
-    ) -> Vector{Union{Matrix{RGBA{N0f8}}, Nothing}}
-
-For each of the `n` data points, return either a decoded image matrix or
-`nothing` (when the image could not be resolved).
-
-Exactly one of `taxon` or `glyph` must be non-`nothing`:
-- If `glyph` is provided, it is broadcast to all `n` points.
-- If `taxon` is provided, `acquire_phylopic` is called for each unique name
-  and the selected URL is downloaded via `_load_phylopic_image`.
-
-`image_rendering` controls which URL is fetched; see
-[`_phylopic_field_for_rendering`](@ref) for the full symbol table.
-"""
-function _resolve_images(
-    taxon::Union{AbstractVector, Nothing},
-    glyph::Union{AbstractMatrix, Nothing},
-    n::Integer;
-    image_rendering::Symbol = :thumbnail,
-)::Vector{Union{Matrix{RGBA{N0f8}}, Nothing}}
-    if !isnothing(glyph)
-        # Broadcast the single pre-loaded image to every data point.
-        img_rgba = Matrix{RGBA{N0f8}}(RGBA{N0f8}.(glyph))
-        return fill(img_rgba, n)
-    end
-
-    isnothing(taxon) && throw(ArgumentError(
-        "augment_phylopic: one of `taxon` or `glyph` must be provided."
-    ))
-    length(taxon) == n || throw(ArgumentError(
-        "augment_phylopic: `taxon` length ($(length(taxon))) must match " *
-        "coordinate length ($n)."
-    ))
-
-    field = _phylopic_field_for_rendering(image_rendering)
-
-    # Deduplicate: call acquire_phylopic once per unique non-missing name.
-    unique_names = unique(skipmissing(taxon))
-    url_cache = Dict{String, Union{String, Missing}}()
-    for name in unique_names
-        s = string(name)
-        isempty(strip(s)) && continue
-        rec = acquire_phylopic(s)
-        url_cache[s] = get(rec, field, missing)
-    end
-
-    results = Vector{Union{Matrix{RGBA{N0f8}}, Nothing}}(undef, n)
-    for i in 1:n
-        v = taxon[i]
-        if ismissing(v)
-            results[i] = nothing
-            continue
-        end
-        s = string(v)
-        if isempty(strip(s))
-            results[i] = nothing
-            continue
-        end
-        url = get(url_cache, s, missing)
-        if ismissing(url)
-            results[i] = nothing
-        else
-            try
-                results[i] = _load_phylopic_image(url)
-            catch err
-                @warn "augment_phylopic: could not load image for \"$s\"" exception = err
-                results[i] = nothing
-            end
-        end
-    end
-    return results
-end
-
-# ---------------------------------------------------------------------------
-# Internal: core rendering loop
-# ---------------------------------------------------------------------------
-
-"""
-    _augment_phylopic_core!(
-        ax, xs, ys, images;
-        glyph_size, aspect, placement, xoffset, yoffset,
-        rotation, mirror, on_missing,
-    ) -> Nothing
-
-Add one `image!` call per data point to `ax`.
-
-`images` is a `Vector{Union{Matrix{RGBA{N0f8}}, Nothing}}` — `nothing`
-entries are handled according to `on_missing`.
-"""
-function _augment_phylopic_core!(
-    ax::Makie.Axis,
-    xs::AbstractVector{<:Real},
-    ys::AbstractVector{<:Real},
-    images::AbstractVector;
-    glyph_size::Real,
-    aspect::Symbol,
-    placement::Symbol,
-    xoffset::Real,
-    yoffset::Real,
-    rotation::Real,
-    mirror::Bool,
-    on_missing::Symbol,
-)::Nothing
-    on_missing ∈ VALID_ON_MISSING || throw(ArgumentError(
-        "augment_phylopic: unknown `on_missing` value `$on_missing`. " *
-        "Valid values: $(join(VALID_ON_MISSING, ", "))."
-    ))
-
-    n = length(xs)
-    n == length(ys) == length(images) || throw(ArgumentError(
-        "augment_phylopic: xs, ys, and images must all have the same length."
-    ))
-
-    for i in 1:n
-        img = images[i]
-
-        if isnothing(img)
-            if on_missing === :error
-                throw(ErrorException(
-                    "augment_phylopic: missing image for data point $i " *
-                    "(on_missing = :error)."
-                ))
-            elseif on_missing === :placeholder
-                # Draw a small grey rectangle as a stand-in.
-                x_lo, x_hi, y_lo, y_hi = _compute_image_bbox(
-                    xs[i], ys[i], 1, 1;
-                    glyph_size = glyph_size,
-                    aspect = :stretch,
-                    placement = placement,
-                    xoffset = xoffset,
-                    yoffset = yoffset,
-                )
-                Makie.poly!(
-                    ax,
-                    Makie.Rect2f(x_lo, y_lo, x_hi - x_lo, y_hi - y_lo);
-                    color = (:lightgray, 0.5),
-                    strokecolor = :gray,
-                    strokewidth = 0.5,
-                )
-            end
-            # :skip falls through to the next iteration
-            continue
-        end
-
-        # Apply rotation (multiples of 90° only in v1)
-        rendered = _apply_rotation(img, rotation)
-
-        # Apply mirror (horizontal flip)
-        if mirror
-            rendered = rendered[:, end:-1:1]
-        end
-
-        # Compute bounding box (after rotation the dimensions may swap)
-        h_px, w_px = size(rendered)   # after rotr90, height and width are swapped
-        x_lo, x_hi, y_lo, y_hi = _compute_image_bbox(
-            xs[i], ys[i], w_px, h_px;
-            glyph_size = glyph_size,
-            aspect = aspect,
-            placement = placement,
-            xoffset = xoffset,
-            yoffset = yoffset,
-        )
-
-        # Makie.image! expects column-major order: apply rotr90 so
-        # image rows become plot columns (standard Makie convention).
-        Makie.image!(
-            ax,
-            (x_lo, x_hi),
-            (y_lo, y_hi),
-            rotr90(rendered);
-            interpolate = true,
-        )
-    end
-    return nothing
-end
 
 # ---------------------------------------------------------------------------
 # Public: core vector API
@@ -330,7 +111,7 @@ reduce to this.
 ## Examples
 
 ```julia
-using PaleobiologyDB, PaleobiologyDB.PhyloPicMakie
+using PaleobiologyDB, PaleobiologyDB.PhyloPicPBDB
 using CairoMakie, FileIO
 
 fig = Figure()
@@ -370,7 +151,7 @@ function augment_phylopic!(
         "augment_phylopic!: `x` and `y` must have the same length."
     ))
     images = _resolve_images(taxon, glyph, n; image_rendering)
-    _augment_phylopic_core!(
+    PhyloPicDB.PhyloPicMakie._augment_phylopic_core!(
         ax, x, y, images;
         glyph_size = glyph_size,
         aspect = aspect,
@@ -457,7 +238,7 @@ then calls [`augment_phylopic!`](@ref).
 ## Examples
 
 ```julia
-using PaleobiologyDB, PaleobiologyDB.PhyloPicMakie
+using PaleobiologyDB, PaleobiologyDB.PhyloPicPBDB
 using CairoMakie, FileIO
 
 taxa      = ["Tyrannosaurus", "Triceratops"]
@@ -499,7 +280,7 @@ function augment_phylopic_ranges!(
     length(y) == n || throw(ArgumentError(
         "augment_phylopic_ranges!: `y` must have the same length as `xstart`."
     ))
-    xs = [_range_anchor(xstart[i], xstop[i], at) for i in 1:n]
+    xs = [PhyloPicDB.PhyloPicMakie._range_anchor(xstart[i], xstop[i], at) for i in 1:n]
     augment_phylopic!(ax, xs, y; kwargs...)
 end
 
@@ -606,7 +387,7 @@ Extracts coordinate and taxon columns from any Tables.jl-compatible source
 ## Examples
 
 ```julia
-using PaleobiologyDB, PaleobiologyDB.PhyloPicMakie
+using PaleobiologyDB, PaleobiologyDB.PhyloPicPBDB
 using CairoMakie, FileIO, DataFrames
 
 df = DataFrame(
@@ -691,7 +472,7 @@ forwards to the vector range API.
 ## Examples
 
 ```julia
-using PaleobiologyDB, PaleobiologyDB.PhyloPicMakie
+using PaleobiologyDB, PaleobiologyDB.PhyloPicPBDB
 using CairoMakie, FileIO, DataFrames
 
 df = DataFrame(
