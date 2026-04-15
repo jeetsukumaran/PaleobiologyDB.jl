@@ -5,8 +5,8 @@ PaleobiologyDB = "c9cb2f45-518b-476d-9b58-4dd79871b05b"
 PhyloPicMakie = "29f7fcc2-58b8-448e-949b-ed9dd2d8a249"
 
 [sources]
+PhyloPicMakie = {url = "https://github.com/jeetsukumaran/PhyloPicMakie.jl.git"}
 PaleobiologyDB = {path = ".."}
-PhyloPicMakie = {path = "../deps/PhyloPicMakie.jl"}
 
 [compat]
 Documenter = "1"
