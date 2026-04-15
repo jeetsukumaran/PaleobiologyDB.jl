@@ -12,8 +12,27 @@ Every PBDB API endpoint has a corresponding Julia function; keyword arguments ma
 
 ## Installation
 
+### Standard installation
+
 ```
 pkg> add PaleobiologyDB
+```
+
+### Developmental version installation
+
+The developmental version requires that the Julia environment be provisioned with PhyloPicMakie before installation:
+
+```
+pkg> add https://github.com/jeetsukumaran/PhyloPicMakie.jl
+pkg> add https://github.com/jeetsukumaran/PaleobiologyDB.jl 
+```
+
+or, in Julia:
+
+```julia
+using Pkg
+Pkg.add(url = "https://github.com/jeetsukumaran/PhyloPicMakie.jl")
+Pkg.add(url = "https://github.com/jeetsukumaran/PaleobiologyDB.jl")
 ```
 
 ## Quick start
