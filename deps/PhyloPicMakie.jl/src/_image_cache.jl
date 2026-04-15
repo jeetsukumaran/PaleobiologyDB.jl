@@ -1,21 +1,3 @@
-
-# ---------------------------------------------------------------------------
-# PhyloPicMakie — image download and caching
-#
-# Provides a cached image loader keyed on the thumbnail URL returned by
-# acquire_phylopic.  Each unique URL is downloaded at most once per cache
-# lifetime; subsequent calls return the stored matrix without any network
-# activity.
-#
-# Cache layer 1 (taxon → metadata/URL): handled by acquire_phylopic in
-# PaleobiologyDB.Taxonomy via DataCaches.autocache.
-#
-# Cache layer 2 (URL → decoded image matrix): handled here.
-#
-# Public:
-#   _load_phylopic_image(url)  → Matrix{RGBA{N0f8}}
-# ---------------------------------------------------------------------------
-
 import Downloads: download as _downloads_download
 import FileIO
 import DataCaches: autocache

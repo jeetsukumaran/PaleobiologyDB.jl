@@ -7,20 +7,21 @@ version = "0.1.0"
 DataCaches = "c1455f2b-6d6f-4f37-b463-919f923708a5"
 Downloads   = "f43a241f-c20a-4ad4-852c-f6b1247861c6"
 FileIO      = "5789e2e9-d7fb-5bc7-8068-2c6fae9b9549"
+HTTP = "cd3eb016-35fb-5094-929b-558a96fad6f3"
+JSON3 = "0f8b85d8-7281-11e9-16c2-39a750bddbf1"
 Makie       = "ee78f7c6-11fb-53f2-987a-cfe4a2b5a57a"
-PhyloPicDB  = "c9272f45-9a18-4009-bf68-1964ca18c300"
 
 [sources]
 DataCaches = {url = "https://github.com/JuliaData/DataCaches.jl.git"}
-PhyloPicDB = {path = "../PhyloPicDB.jl"}
 
 [compat]
 julia      = "1.11"
 DataCaches = "0.3"
 Downloads  = "1.6"
 FileIO     = "1.18"
+HTTP       = "1.11"
+JSON3      = "1.14"
 Makie      = "0.24"
-PhyloPicDB = "0.1"
 
 [extras]
 Aqua = "4c88cf16-eb10-579e-8560-4a9242c79595"

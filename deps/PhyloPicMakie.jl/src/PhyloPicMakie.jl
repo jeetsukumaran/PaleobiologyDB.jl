@@ -69,9 +69,8 @@ integrate with PhyloPicMakie (e.g. `PaleobiologyDB.PhyloPicPBDB`,
 """
 module PhyloPicMakie
 
-# PhyloPicDB is imported here so that PhyloPicMakie.PhyloPicDB is the
-# natural Julia module-nesting accessor for the data/API layer.
-import PhyloPicDB
+include("PhyloPicDB/PhyloPicDB.jl")
+import .PhyloPicDB
 
 import Makie
 import FileIO

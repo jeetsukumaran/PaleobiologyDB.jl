@@ -54,6 +54,8 @@ module PaleobiologyDB
 using DataCaches
 export DataCaches
 
+# include("../deps/PhyloPicMakie.jl/src/PhyloPicMakie.jl")
+# import .PhyloPicMakie
 import PhyloPicMakie
 
 include("dbapi.jl")

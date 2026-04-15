@@ -1,19 +1,4 @@
 
-# ---------------------------------------------------------------------------
-# PhyloPicMakie — pure coordinate and placement calculations
-#
-# All functions here are pure: they depend only on their arguments and
-# produce no side effects.  They can be tested without loading Makie,
-# except for _axis_scale_correction_obs which requires a live Makie.Scene.
-#
-# Public:
-#   _compute_image_bbox(x, y, img_width, img_height; ...)
-#       → NTuple{4, Float64}  (x_lo, x_hi, y_lo, y_hi)
-#   _apply_rotation(img, rotation_deg) → AbstractMatrix
-#   _range_anchor(xstart, xstop, at) → Float64
-#   _axis_scale_correction_obs(scene) → Makie.Observable{Float64}
-# ---------------------------------------------------------------------------
-
 """
 Valid placement symbols for the anchor corner/edge on the glyph.
 """

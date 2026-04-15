@@ -1,22 +1,3 @@
-
-# ---------------------------------------------------------------------------
-# PhyloPicMakie — PhyloPic-native image resolution
-#
-# Provides:
-#   _resolve_images_by_uuid(node_uuids, glyph, n; image_rendering)
-#       → Vector{Union{Matrix{RGBA{N0f8}}, Nothing}}
-#
-# This is the PhyloPic-native counterpart of
-# PaleobiologyDB.PhyloPicPBDB's _resolve_images, which maps PBDB
-# taxon names → URLs → matrices.  Here the key is a PhyloPic node UUID;
-# image fetching is handled entirely within the PhyloPicDB ecosystem via
-# primary_image + _select_image_url + _load_phylopic_image.  No
-# PaleobiologyDB dependency.
-# ---------------------------------------------------------------------------
-
-import PhyloPicDB
-using Makie: RGBA, N0f8
-
 """
     _resolve_images_by_uuid(
         node_uuids::Union{AbstractVector{<:Union{AbstractString, Nothing}}, Nothing},

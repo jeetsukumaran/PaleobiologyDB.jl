@@ -1,31 +1,3 @@
-
-# ---------------------------------------------------------------------------
-# PhyloPicMakie — PhyloPic-native thumbnail grid
-#
-# Provides the public PhyloPic-native thumbnail-gallery API keyed on
-# PhyloPic node UUIDs.  This is the counterpart of PhyloPicPBDB's
-# _phylopic_thumbnail_grid.jl, which is keyed on PBDB taxon names.  All
-# PBDB-specific name resolution lives in PaleobiologyDB.PhyloPicPBDB;
-# everything here depends only on PhyloPicDB types and Makie.
-#
-# Call graph:
-#
-#   phylopic_thumbnail_grid! / phylopic_thumbnail_grid  (vector UUID API)
-#   phylopic_thumbnail_grid! / phylopic_thumbnail_grid  (single UUID API)
-#   phylopic_thumbnail_grid! / phylopic_thumbnail_grid  (table API)
-#       └─► _build_node_grid_cells(node_uuids, node_labels; ...)
-#               └─► _fetch_node_image_pool(uuid, image_filter, max_pages)
-#               └─► _apply_image_selector(pool, image_selector)
-#               └─► _download_image(img, label; image_rendering)
-#               └─► _build_label(label, k, multi, img, image_label, labeljoin)
-#           └─► phylopic_thumbnail_grid!(ax, cell_images, labels, group_sizes; ...)
-#                   [_thumbnail_grid.jl — unchanged low-level renderer]
-# ---------------------------------------------------------------------------
-
-import Makie
-import PhyloPicDB
-using Makie: RGBA, N0f8
-
 # ---------------------------------------------------------------------------
 # Constants
 # ---------------------------------------------------------------------------
