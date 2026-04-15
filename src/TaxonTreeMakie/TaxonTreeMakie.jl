@@ -40,7 +40,12 @@ augment_tip_phylopic!(ax3, p3; xoffset = 1.0)
 """
 module TaxonTreeMakie
 
-import Makie
+import PhyloPicMakie
+import PhyloPicMakie.Makie
+# Bring @recipe and Attributes into scope; import Makie alone does not expose
+# macros.  All other Makie symbols are accessed as Makie.xxx via the module-
+# level `import Makie` in TaxonTreeMakie.jl.
+using PhyloPicMakie.Makie: @recipe, Attributes
 import Graphs
 
 using PaleobiologyDB

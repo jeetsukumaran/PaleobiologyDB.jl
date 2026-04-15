@@ -19,7 +19,7 @@
 # consistently.
 # ---------------------------------------------------------------------------
 
-import PhyloPicMakie
+# import PhyloPicMakie
 const PhyloPicDB = PhyloPicMakie.PhyloPicDB
 using PaleobiologyDB.PhyloPicPBDB: acquire_phylopic
 

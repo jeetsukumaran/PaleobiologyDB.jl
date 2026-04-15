@@ -1,9 +1,4 @@
 
-# Bring @recipe and Attributes into scope; import Makie alone does not expose
-# macros.  All other Makie symbols are accessed as Makie.xxx via the module-
-# level `import Makie` in TaxonTreeMakie.jl.
-using Makie: @recipe, Attributes
-
 # ---------------------------------------------------------------------------
 # TaxonTreeMakie — @recipe definition, Makie.plot! implementation, and
 # convenience wrappers.
