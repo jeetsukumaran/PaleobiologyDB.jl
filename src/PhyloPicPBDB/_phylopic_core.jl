@@ -129,16 +129,16 @@ end
 # Cached per (taxon_name, build) so that separate image-selection calls for
 # the same taxon reuse the PBDB and PhyloPic node lookups.
 function _resolve_pbdb_to_node(
-    taxon_name::AbstractString,
-    build::Int,
-)::Tuple{Union{Int, Nothing}, Union{String, Missing}, Union{PhyloPicDB.PhyloPicNode, Nothing}}
+        taxon_name::AbstractString,
+        build::Int,
+    )::Tuple{Union{Int, Nothing}, Union{String, Missing}, Union{PhyloPicDB.PhyloPicNode, Nothing}}
     return autocache(
         () -> begin
             orig_no = _pbdb_taxon_orig_no(taxon_name)
             isnothing(orig_no) && return (nothing, missing, nothing)
             lineage_nos = _pbdb_lineage_nos(orig_no)
             lineage_str = join(string.(lineage_nos), ",")
-            node_uuid   = PhyloPicDB.resolve_pbdb_node(lineage_nos; build = build)
+            node_uuid = PhyloPicDB.resolve_pbdb_node(lineage_nos; build = build)
             isnothing(node_uuid) && return (orig_no, lineage_str, nothing)
             node = PhyloPicDB.fetch_node(node_uuid; build = build)
             return (orig_no, lineage_str, node)
@@ -181,9 +181,9 @@ imgs = PhyloPicDB.clade_images(node.uuid; max_pages = 2)
 See also [`phylopic_images`](@ref), [`acquire_phylopic`](@ref).
 """
 function phylopic_node(
-    taxon_name::AbstractString;
-    build::Union{Int, Nothing} = nothing,
-)::Union{PhyloPicDB.PhyloPicNode, Nothing}
+        taxon_name::AbstractString;
+        build::Union{Int, Nothing} = nothing,
+    )::Union{PhyloPicDB.PhyloPicNode, Nothing}
     b = PhyloPicDB.ensure_build(build)
     _, _, node = _resolve_pbdb_to_node(taxon_name, b)
     return node
@@ -222,12 +222,12 @@ chosen = PhyloPicDB.select_image(imgs, 3)
 See also [`phylopic_images_dataframe`](@ref), [`phylopic_node`](@ref).
 """
 function phylopic_images(
-    taxon_name::AbstractString;
-    build::Union{Int, Nothing}     = nothing,
-    filter::Symbol                 = :clade,
-    max_pages::Union{Int, Nothing} = nothing,
-)::Vector{PhyloPicDB.PhyloPicImage}
-    b    = PhyloPicDB.ensure_build(build)
+        taxon_name::AbstractString;
+        build::Union{Int, Nothing} = nothing,
+        filter::Symbol = :clade,
+        max_pages::Union{Int, Nothing} = nothing,
+    )::Vector{PhyloPicDB.PhyloPicImage}
+    b = PhyloPicDB.ensure_build(build)
     node = phylopic_node(taxon_name; build = b)
     isnothing(node) && return PhyloPicDB.PhyloPicImage[]
     return PhyloPicDB.fetch_images(node.uuid; build = b, filter = filter, max_pages = max_pages)
@@ -246,48 +246,48 @@ end
 # Convert a (PhyloPicImage or nothing, PhyloPicNode or nothing, PBDB metadata)
 # to the 14-column NamedTuple expected by acquire_phylopic.
 function _image_to_record(
-    img::Union{PhyloPicDB.PhyloPicImage, Nothing},
-    node::Union{PhyloPicDB.PhyloPicNode, Nothing},
-    pbdb_id::Union{Int, Nothing},
-    lineage_str::Union{String, Missing},
-)::NamedTuple
+        img::Union{PhyloPicDB.PhyloPicImage, Nothing},
+        node::Union{PhyloPicDB.PhyloPicNode, Nothing},
+        pbdb_id::Union{Int, Nothing},
+        lineage_str::Union{String, Missing},
+    )::NamedTuple
     return (
         pbdb_taxon_id = something(pbdb_id, missing),
-        pbdb_lineage  = lineage_str,
-        node_uuid     = isnothing(node) ? missing : node.uuid,
-        matched_name  = isnothing(node) ? missing : node.preferred_name,
-        uuid          = isnothing(img) ? missing : img.uuid,
-        thumbnail     = isnothing(img) ? missing : img.thumbnail_url,
-        vector        = isnothing(img) ? missing : img.vector_url,
-        raster        = isnothing(img) ? missing : img.raster_url,
-        source_file   = isnothing(img) ? missing : img.source_file_url,
-        og_image      = isnothing(img) ? missing : img.og_image_url,
-        license       = isnothing(img) ? missing : img.license,
-        license_url   = isnothing(img) ? missing : img.license_url,
-        contributor   = isnothing(img) ? missing : img.contributor_href,
-        attribution   = isnothing(img) ? missing : img.attribution,
+        pbdb_lineage = lineage_str,
+        node_uuid = isnothing(node) ? missing : node.uuid,
+        matched_name = isnothing(node) ? missing : node.preferred_name,
+        uuid = isnothing(img) ? missing : img.uuid,
+        thumbnail = isnothing(img) ? missing : img.thumbnail_url,
+        vector = isnothing(img) ? missing : img.vector_url,
+        raster = isnothing(img) ? missing : img.raster_url,
+        source_file = isnothing(img) ? missing : img.source_file_url,
+        og_image = isnothing(img) ? missing : img.og_image_url,
+        license = isnothing(img) ? missing : img.license,
+        license_url = isnothing(img) ? missing : img.license_url,
+        contributor = isnothing(img) ? missing : img.contributor_href,
+        attribution = isnothing(img) ? missing : img.attribution,
     )
 end
 
 # Convert a PhyloPicImage to the 12-column NamedTuple used by phylopic_images_dataframe.
 function _image_list_row(
-    img::PhyloPicDB.PhyloPicImage,
-    query_taxon_name::AbstractString,
-    query_node_uuid::AbstractString,
-)::NamedTuple
+        img::PhyloPicDB.PhyloPicImage,
+        query_taxon_name::AbstractString,
+        query_node_uuid::AbstractString,
+    )::NamedTuple
     return (
         query_taxon_name = query_taxon_name,
-        query_node_uuid  = query_node_uuid,
-        uuid             = img.uuid,
-        thumbnail        = img.thumbnail_url,
-        vector           = img.vector_url,
-        raster           = img.raster_url,
-        source_file      = img.source_file_url,
-        og_image         = img.og_image_url,
-        license          = img.license,
-        license_url      = img.license_url,
-        contributor      = img.contributor_href,
-        attribution      = img.attribution,
+        query_node_uuid = query_node_uuid,
+        uuid = img.uuid,
+        thumbnail = img.thumbnail_url,
+        vector = img.vector_url,
+        raster = img.raster_url,
+        source_file = img.source_file_url,
+        og_image = img.og_image_url,
+        license = img.license,
+        license_url = img.license_url,
+        contributor = img.contributor_href,
+        attribution = img.attribution,
     )
 end
 
@@ -313,10 +313,10 @@ end
 # :primary uses batch_primary_images (one round-trip, autocached).
 # Any other selector fetches clade images then dispatches to select_image.
 function _get_image_for_node(
-    node::PhyloPicDB.PhyloPicNode,
-    build::Int,
-    image_selector,
-)::Union{PhyloPicDB.PhyloPicImage, Nothing}
+        node::PhyloPicDB.PhyloPicNode,
+        build::Int,
+        image_selector,
+    )::Union{PhyloPicDB.PhyloPicImage, Nothing}
     if image_selector === :primary
         result = PhyloPicDB.batch_primary_images([node.uuid]; build = build)
         return get(result, node.uuid, nothing)
@@ -328,10 +328,10 @@ end
 
 # Full pipeline for one taxon name: PBDB → node → image → NamedTuple.
 function _phylopic_lookup_taxon(
-    taxon_name::AbstractString,
-    build::Int,
-    image_selector,
-)::NamedTuple
+        taxon_name::AbstractString,
+        build::Int,
+        image_selector,
+    )::NamedTuple
     pbdb_id, lineage_str, node = _resolve_pbdb_to_node(taxon_name, build)
     img = isnothing(node) ? nothing : _get_image_for_node(node, build, image_selector)
     return _image_to_record(img, node, pbdb_id, lineage_str)
@@ -399,13 +399,13 @@ genus_rec.genus_phylopic_uuid
 See also [`acquire_phylopic`](@ref) (DataFrame variant), [`augment_phylopic`](@ref).
 """
 function acquire_phylopic(
-    taxon_name::AbstractString,
-    fieldname_prefix::AbstractString = "phylopic_";
-    image_selector = :primary,
-    kwargs...,
-)::NamedTuple
+        taxon_name::AbstractString,
+        fieldname_prefix::AbstractString = "phylopic_";
+        image_selector = :primary,
+        kwargs...,
+    )::NamedTuple
     build = PhyloPicDB.ensure_build(nothing)
-    rec   = _phylopic_lookup_taxon(taxon_name, build, image_selector)
+    rec = _phylopic_lookup_taxon(taxon_name, build, image_selector)
     return _apply_fieldname_prefix(rec, fieldname_prefix)
 end
 
@@ -443,17 +443,19 @@ hcat(df, g_pics, s_pics)
 ```
 """
 function acquire_phylopic(
-    df::AbstractDataFrame,
-    taxon_field::Symbol = :accepted_name,
-    fieldname_prefix::AbstractString = "phylopic_";
-    image_selector = :primary,
-    kwargs...,
-)::DataFrame
+        df::AbstractDataFrame,
+        taxon_field::Symbol = :accepted_name,
+        fieldname_prefix::AbstractString = "phylopic_";
+        image_selector = :primary,
+        kwargs...,
+    )::DataFrame
     hasproperty(df, taxon_field) ||
-        throw(ArgumentError(
+        throw(
+        ArgumentError(
             "acquire_phylopic: column `$taxon_field` not found in DataFrame. " *
-            "Available columns: $(join(propertynames(df), ", "))",
-        ))
+                "Available columns: $(join(propertynames(df), ", "))",
+        )
+    )
 
     # Collect unique non-empty names before fetching the build number so that an
     # all-missing / all-empty input never triggers a network call.
@@ -471,10 +473,10 @@ function acquire_phylopic(
         end
     end
 
-    null_rec   = _phylopic_null_record()
-    col_names  = [Symbol(fieldname_prefix * string(col)) for col in _PHYLOPIC_BASE_COLUMNS]
+    null_rec = _phylopic_null_record()
+    col_names = [Symbol(fieldname_prefix * string(col)) for col in _PHYLOPIC_BASE_COLUMNS]
 
-    n        = nrow(df)
+    n = nrow(df)
     col_vecs = Vector{Vector{Any}}(undef, length(_PHYLOPIC_BASE_COLUMNS))
     for (i, base_col) in enumerate(_PHYLOPIC_BASE_COLUMNS)
         col_vecs[i] = Vector{Any}(undef, n)
@@ -508,11 +510,11 @@ enriched_genus = augment_phylopic(df, :genus, "genus_phylopic_")
 ```
 """
 function augment_phylopic(
-    df::AbstractDataFrame,
-    taxon_field::Symbol = :accepted_name,
-    fieldname_prefix::AbstractString = "phylopic_";
-    kwargs...,
-)::DataFrame
+        df::AbstractDataFrame,
+        taxon_field::Symbol = :accepted_name,
+        fieldname_prefix::AbstractString = "phylopic_";
+        kwargs...,
+    )::DataFrame
     return hcat(
         copy(df),
         acquire_phylopic(df, taxon_field, fieldname_prefix; kwargs...),
@@ -559,20 +561,22 @@ imgs.dog_uuid
 See also [`acquire_phylopic`](@ref), [`phylopic_images`](@ref).
 """
 function phylopic_images_dataframe(
-    taxon_name::AbstractString,
-    fieldname_prefix::AbstractString = "phylopic_";
-    filter::Symbol = :clade,
-    max_pages::Union{Int, Nothing} = nothing,
-)::DataFrame
+        taxon_name::AbstractString,
+        fieldname_prefix::AbstractString = "phylopic_";
+        filter::Symbol = :clade,
+        max_pages::Union{Int, Nothing} = nothing,
+    )::DataFrame
     filter in (:clade, :node) ||
-        throw(ArgumentError(
+        throw(
+        ArgumentError(
             "phylopic_images_dataframe: `filter` must be :clade or :node, got :$filter",
-        ))
+        )
+    )
 
     col_names = [Symbol(fieldname_prefix * string(col)) for col in _PHYLOPIC_IMAGE_LIST_COLUMNS]
     _empty() = _make_empty_phylopic_df(col_names)
 
-    b    = PhyloPicDB.ensure_build(nothing)
+    b = PhyloPicDB.ensure_build(nothing)
     node = phylopic_node(taxon_name; build = b)
     isnothing(node) && return _empty()
 

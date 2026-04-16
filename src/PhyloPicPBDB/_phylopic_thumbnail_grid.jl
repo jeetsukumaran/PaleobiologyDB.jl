@@ -1,4 +1,3 @@
-
 # ---------------------------------------------------------------------------
 # PhyloPicPBDB — thumbnail grid: PBDB name-resolution bridge
 #
@@ -42,20 +41,20 @@ Each unique non-empty name is resolved once via
 [`PaleobiologyDB.Taxonomy.phylopic_node`](@ref) (cached via `autocache`).
 """
 function _pbdb_names_to_uuids(
-    taxon::AbstractVector{<:AbstractString},
-)::Tuple{Vector{Union{String, Nothing}}, Vector{String}}
+        taxon::AbstractVector{<:AbstractString},
+    )::Tuple{Vector{Union{String, Nothing}}, Vector{String}}
     unique_names = unique(s for s in taxon if !isempty(strip(s)))
-    uuid_cache   = Dict{String, Union{String, Nothing}}()
+    uuid_cache = Dict{String, Union{String, Nothing}}()
     for name in unique_names
         node = phylopic_node(name)
         uuid_cache[name] = isnothing(node) ? nothing : node.uuid
     end
 
-    node_uuids    = Vector{Union{String, Nothing}}(undef, length(taxon))
-    taxon_labels  = Vector{String}(undef, length(taxon))
+    node_uuids = Vector{Union{String, Nothing}}(undef, length(taxon))
+    taxon_labels = Vector{String}(undef, length(taxon))
     for (i, name) in enumerate(taxon)
-        s              = string(name)
-        node_uuids[i]  = isempty(strip(s)) ? nothing : get(uuid_cache, s, nothing)
+        s = string(name)
+        node_uuids[i] = isempty(strip(s)) ? nothing : get(uuid_cache, s, nothing)
         taxon_labels[i] = s
     end
     return (node_uuids, taxon_labels)
@@ -139,52 +138,52 @@ taxon may produce multiple cells (one per image in its clade).
 `Nothing`.
 """
 function phylopic_thumbnail_grid!(
-    ax::Makie.Axis,
-    taxon::AbstractVector{<:AbstractString};
-    ncols::Union{Integer, Nothing} = nothing,
-    nrows::Union{Integer, Nothing} = nothing,
-    cell_width::Real = PhyloPicMakie.DEFAULT_THUMBNAIL_GRID_CELL_WIDTH,
-    cell_height::Real = PhyloPicMakie.DEFAULT_THUMBNAIL_GRID_CELL_HEIGHT,
-    glyph_fraction::Real = PhyloPicMakie.DEFAULT_THUMBNAIL_GRID_GLYPH_FRACTION,
-    label_gap::Real = PhyloPicMakie.DEFAULT_THUMBNAIL_GRID_LABEL_GAP,
-    label_fontsize::Real = PhyloPicMakie.DEFAULT_THUMBNAIL_GRID_FONT_SIZE,
-    title::Union{AbstractString, Nothing} = nothing,
-    title_gap::Real = PhyloPicMakie.DEFAULT_THUMBNAIL_GRID_TITLE_GAP,
-    on_missing::Symbol = :skip,
-    image_interpolate::Bool = true,
-    image_filter::Symbol = :clade,
-    image_selector = nothing,
-    image_max_pages::Union{Int, Nothing} = nothing,
-    image_layout::Symbol = :blocks,
-    image_rendering::Symbol = :thumbnail,
-    image_label = :BASICFIELDS,
-    labeljoin::AbstractString = "\n",
-    label_lines::Union{Int, Nothing} = nothing,
-)::Nothing
+        ax::Makie.Axis,
+        taxon::AbstractVector{<:AbstractString};
+        ncols::Union{Integer, Nothing} = nothing,
+        nrows::Union{Integer, Nothing} = nothing,
+        cell_width::Real = PhyloPicMakie.DEFAULT_THUMBNAIL_GRID_CELL_WIDTH,
+        cell_height::Real = PhyloPicMakie.DEFAULT_THUMBNAIL_GRID_CELL_HEIGHT,
+        glyph_fraction::Real = PhyloPicMakie.DEFAULT_THUMBNAIL_GRID_GLYPH_FRACTION,
+        label_gap::Real = PhyloPicMakie.DEFAULT_THUMBNAIL_GRID_LABEL_GAP,
+        label_fontsize::Real = PhyloPicMakie.DEFAULT_THUMBNAIL_GRID_FONT_SIZE,
+        title::Union{AbstractString, Nothing} = nothing,
+        title_gap::Real = PhyloPicMakie.DEFAULT_THUMBNAIL_GRID_TITLE_GAP,
+        on_missing::Symbol = :skip,
+        image_interpolate::Bool = true,
+        image_filter::Symbol = :clade,
+        image_selector = nothing,
+        image_max_pages::Union{Int, Nothing} = nothing,
+        image_layout::Symbol = :blocks,
+        image_rendering::Symbol = :thumbnail,
+        image_label = :BASICFIELDS,
+        labeljoin::AbstractString = "\n",
+        label_lines::Union{Int, Nothing} = nothing,
+    )::Nothing
     node_uuids, taxon_labels = _pbdb_names_to_uuids(taxon)
-    PhyloPicMakie.phylopic_thumbnail_grid!(
+    return PhyloPicMakie.phylopic_thumbnail_grid!(
         ax,
         node_uuids;
-        node_labels       = taxon_labels,
-        ncols             = ncols,
-        nrows             = nrows,
-        cell_width        = cell_width,
-        cell_height       = cell_height,
-        glyph_fraction    = glyph_fraction,
-        label_gap         = label_gap,
-        label_fontsize    = label_fontsize,
-        title             = title,
-        title_gap         = title_gap,
-        on_missing        = on_missing,
+        node_labels = taxon_labels,
+        ncols = ncols,
+        nrows = nrows,
+        cell_width = cell_width,
+        cell_height = cell_height,
+        glyph_fraction = glyph_fraction,
+        label_gap = label_gap,
+        label_fontsize = label_fontsize,
+        title = title,
+        title_gap = title_gap,
+        on_missing = on_missing,
         image_interpolate = image_interpolate,
-        image_filter      = image_filter,
-        image_selector    = image_selector,
-        image_max_pages   = image_max_pages,
-        image_layout      = image_layout,
-        image_rendering   = image_rendering,
-        image_label       = image_label,
-        labeljoin         = labeljoin,
-        label_lines       = label_lines,
+        image_filter = image_filter,
+        image_selector = image_selector,
+        image_max_pages = image_max_pages,
+        image_layout = image_layout,
+        image_rendering = image_rendering,
+        image_label = image_label,
+        labeljoin = labeljoin,
+        label_lines = label_lines,
     )
 end
 
@@ -201,11 +200,11 @@ Single-taxon convenience wrapper.  Equivalent to
 See [`phylopic_thumbnail_grid!`](@ref) for full keyword documentation.
 """
 function phylopic_thumbnail_grid!(
-    ax::Makie.Axis,
-    taxon_name::AbstractString;
-    kwargs...,
-)::Nothing
-    phylopic_thumbnail_grid!(ax, [taxon_name]; kwargs...)
+        ax::Makie.Axis,
+        taxon_name::AbstractString;
+        kwargs...,
+    )::Nothing
+    return phylopic_thumbnail_grid!(ax, [taxon_name]; kwargs...)
 end
 
 # ---------------------------------------------------------------------------
@@ -229,13 +228,13 @@ Extracts the taxon column from any Tables.jl-compatible source (e.g. a
 - All remaining keyword arguments are forwarded to the vector API.
 """
 function phylopic_thumbnail_grid!(
-    ax::Makie.Axis,
-    table;
-    taxon,
-    kwargs...,
-)::Nothing
+        ax::Makie.Axis,
+        table;
+        taxon,
+        kwargs...,
+    )::Nothing
     taxa = PhyloPicMakie._extract_column(table, taxon)
-    phylopic_thumbnail_grid!(ax, collect(String, string.(taxa)); kwargs...)
+    return phylopic_thumbnail_grid!(ax, collect(String, string.(taxa)); kwargs...)
 end
 
 # ---------------------------------------------------------------------------
@@ -273,37 +272,37 @@ See [`phylopic_thumbnail_grid!`](@ref) for full documentation.
 Returns the created `Makie.Figure`.
 """
 function phylopic_thumbnail_grid(
-    taxon::AbstractVector{<:AbstractString};
-    figure_size::Union{Tuple{<:Integer, <:Integer}, Nothing} = nothing,
-    axis = NamedTuple(),
-    ncols::Union{Integer, Nothing} = nothing,
-    nrows::Union{Integer, Nothing} = nothing,
-    image_filter::Symbol = :clade,
-    image_selector = nothing,
-    image_max_pages::Union{Int, Nothing} = nothing,
-    image_layout::Symbol = :blocks,
-    image_rendering::Symbol = :thumbnail,
-    image_label = :BASICFIELDS,
-    labeljoin::AbstractString = "\n",
-    label_lines::Union{Int, Nothing} = nothing,
-    kwargs...,
-)::Makie.Figure
+        taxon::AbstractVector{<:AbstractString};
+        figure_size::Union{Tuple{<:Integer, <:Integer}, Nothing} = nothing,
+        axis = NamedTuple(),
+        ncols::Union{Integer, Nothing} = nothing,
+        nrows::Union{Integer, Nothing} = nothing,
+        image_filter::Symbol = :clade,
+        image_selector = nothing,
+        image_max_pages::Union{Int, Nothing} = nothing,
+        image_layout::Symbol = :blocks,
+        image_rendering::Symbol = :thumbnail,
+        image_label = :BASICFIELDS,
+        labeljoin::AbstractString = "\n",
+        label_lines::Union{Int, Nothing} = nothing,
+        kwargs...,
+    )::Makie.Figure
     node_uuids, taxon_labels = _pbdb_names_to_uuids(taxon)
-    PhyloPicMakie.phylopic_thumbnail_grid(
+    return PhyloPicMakie.phylopic_thumbnail_grid(
         node_uuids;
-        figure_size     = figure_size,
-        axis            = axis,
-        ncols           = ncols,
-        nrows           = nrows,
-        node_labels     = taxon_labels,
-        image_filter    = image_filter,
-        image_selector  = image_selector,
+        figure_size = figure_size,
+        axis = axis,
+        ncols = ncols,
+        nrows = nrows,
+        node_labels = taxon_labels,
+        image_filter = image_filter,
+        image_selector = image_selector,
         image_max_pages = image_max_pages,
-        image_layout    = image_layout,
+        image_layout = image_layout,
         image_rendering = image_rendering,
-        image_label     = image_label,
-        labeljoin       = labeljoin,
-        label_lines     = label_lines,
+        image_label = image_label,
+        labeljoin = labeljoin,
+        label_lines = label_lines,
         kwargs...,
     )
 end
@@ -320,10 +319,10 @@ Single-taxon convenience wrapper.  Equivalent to
 See [`phylopic_thumbnail_grid`](@ref) for full keyword documentation.
 """
 function phylopic_thumbnail_grid(
-    taxon_name::AbstractString;
-    kwargs...,
-)::Makie.Figure
-    phylopic_thumbnail_grid([taxon_name]; kwargs...)
+        taxon_name::AbstractString;
+        kwargs...,
+    )::Makie.Figure
+    return phylopic_thumbnail_grid([taxon_name]; kwargs...)
 end
 
 """
@@ -337,10 +336,10 @@ Table-oriented factory variant.  Extracts `taxon` column and calls the
 vector factory.
 """
 function phylopic_thumbnail_grid(
-    table;
-    taxon,
-    kwargs...,
-)::Makie.Figure
+        table;
+        taxon,
+        kwargs...,
+    )::Makie.Figure
     taxa = PhyloPicMakie._extract_column(table, taxon)
-    phylopic_thumbnail_grid(collect(String, string.(taxa)); kwargs...)
+    return phylopic_thumbnail_grid(collect(String, string.(taxa)); kwargs...)
 end

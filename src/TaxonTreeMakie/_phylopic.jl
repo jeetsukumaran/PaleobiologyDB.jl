@@ -1,4 +1,3 @@
-
 # ---------------------------------------------------------------------------
 # TaxonTreeMakie — PhyloPic silhouette support for dendrogram leaf tips
 #
@@ -57,13 +56,15 @@ image could not be resolved or loaded.  Callers should apply `rotr90` before
 passing to `Makie.image!`.
 """
 function _load_tip_phylopic_image(
-    taxon_name::AbstractString;
-    image_rendering::Symbol = :thumbnail,
-)::Union{Matrix{Makie.RGBA{Makie.N0f8}}, Nothing}
-    image_rendering ∈ PhyloPicDB.PHYLOPIC_IMAGE_RENDERINGS || throw(ArgumentError(
-        "_load_tip_phylopic_image: unknown `image_rendering` value `:$image_rendering`. " *
-        "Valid values: $(join(string.(':', PhyloPicDB.PHYLOPIC_IMAGE_RENDERINGS), ", "))."
-    ))
+        taxon_name::AbstractString;
+        image_rendering::Symbol = :thumbnail,
+    )::Union{Matrix{Makie.RGBA{Makie.N0f8}}, Nothing}
+    image_rendering ∈ PhyloPicDB.PHYLOPIC_IMAGE_RENDERINGS || throw(
+        ArgumentError(
+            "_load_tip_phylopic_image: unknown `image_rendering` value `:$image_rendering`. " *
+                "Valid values: $(join(string.(':', PhyloPicDB.PHYLOPIC_IMAGE_RENDERINGS), ", "))."
+        )
+    )
 
     rec = try
         acquire_phylopic(string(taxon_name))
@@ -157,26 +158,30 @@ proportions after auto-limits or window resize events.
 `Nothing`.  Child plots are added as side effects to `p`.
 """
 function _render_tip_phylopic!(
-    p,
-    tree::TaxonTree,
-    xs::AbstractVector{<:Real},
-    ys::AbstractVector{<:Real};
-    glyph_size::Real,
-    do_align::Bool,
-    phylopic_xoffset::Real,
-    tip_xoffset::Real,
-    on_missing::Symbol,
-    aspect::Symbol,
-    image_rendering::Symbol = :thumbnail,
-)::Nothing
-    on_missing ∈ (:skip, :placeholder, :error) || throw(ArgumentError(
-        "_render_tip_phylopic!: unknown `on_missing` value `$on_missing`. " *
-        "Valid values: :skip, :placeholder, :error."
-    ))
-    image_rendering ∈ PhyloPicDB.PHYLOPIC_IMAGE_RENDERINGS || throw(ArgumentError(
-        "_render_tip_phylopic!: unknown `image_rendering` value `:$image_rendering`. " *
-        "Valid values: $(join(string.(':', PhyloPicDB.PHYLOPIC_IMAGE_RENDERINGS), ", "))."
-    ))
+        p,
+        tree::TaxonTree,
+        xs::AbstractVector{<:Real},
+        ys::AbstractVector{<:Real};
+        glyph_size::Real,
+        do_align::Bool,
+        phylopic_xoffset::Real,
+        tip_xoffset::Real,
+        on_missing::Symbol,
+        aspect::Symbol,
+        image_rendering::Symbol = :thumbnail,
+    )::Nothing
+    on_missing ∈ (:skip, :placeholder, :error) || throw(
+        ArgumentError(
+            "_render_tip_phylopic!: unknown `on_missing` value `$on_missing`. " *
+                "Valid values: :skip, :placeholder, :error."
+        )
+    )
+    image_rendering ∈ PhyloPicDB.PHYLOPIC_IMAGE_RENDERINGS || throw(
+        ArgumentError(
+            "_render_tip_phylopic!: unknown `image_rendering` value `:$image_rendering`. " *
+                "Valid values: $(join(string.(':', PhyloPicDB.PHYLOPIC_IMAGE_RENDERINGS), ", "))."
+        )
+    )
 
     g = tree.graph
     leaf_vertices = [v for v in Graphs.vertices(g) if isempty(Graphs.outneighbors(g, v))]
@@ -190,7 +195,7 @@ function _render_tip_phylopic!(
 
     # Aligned mode: all images share a single x column.
     x_align = maximum(Float64(xs[v]) for v in leaf_vertices) + Float64(tip_xoffset) +
-               Float64(phylopic_xoffset)
+        Float64(phylopic_xoffset)
 
     for v in leaf_vertices
         taxon_name = tree.taxa[v].name
@@ -198,15 +203,17 @@ function _render_tip_phylopic!(
 
         # x anchor: either per-leaf or uniform column.
         x_anchor = do_align ? x_align : Float64(xs[v]) + Float64(tip_xoffset) +
-                                         Float64(phylopic_xoffset)
+            Float64(phylopic_xoffset)
         y_anchor = Float64(ys[v])
 
         if isnothing(img)
             if on_missing === :error
-                throw(ErrorException(
-                    "_render_tip_phylopic!: no PhyloPic image available for " *
-                    "\"$taxon_name\" (on_missing = :error)."
-                ))
+                throw(
+                    ErrorException(
+                        "_render_tip_phylopic!: no PhyloPic image available for " *
+                            "\"$taxon_name\" (on_missing = :error)."
+                    )
+                )
             elseif on_missing === :placeholder
                 # Draw a grey rectangle as a stand-in glyph.
                 x_lo = x_anchor
@@ -216,10 +223,10 @@ function _render_tip_phylopic!(
                 Makie.poly!(
                     p,
                     Makie.Rect2f(x_lo, y_lo, x_hi - x_lo, y_hi - y_lo);
-                    color       = (:lightgray, 0.5),
+                    color = (:lightgray, 0.5),
                     strokecolor = :gray,
                     strokewidth = 0.5,
-                    visible     = p[:show_phylopic],
+                    visible = p[:show_phylopic],
                     clip_planes = Makie.Plane3f[],
                 )
             end
@@ -233,11 +240,11 @@ function _render_tip_phylopic!(
         # Static y-range: glyph_size governs y extent; independent of scale.
         _, _, y_lo, y_hi = PhyloPicMakie._compute_image_bbox(
             x_anchor, y_anchor, w_px, h_px;
-            glyph_size            = glyph_size,
-            aspect                = aspect,
-            placement             = :left,
-            xoffset               = 0.0,
-            yoffset               = 0.0,
+            glyph_size = glyph_size,
+            aspect = aspect,
+            placement = :left,
+            xoffset = 0.0,
+            yoffset = 0.0,
             axis_scale_correction = 1.0,
         )
 
@@ -247,11 +254,11 @@ function _render_tip_phylopic!(
             Makie.lift(scale_corr_obs) do sc
                 x_lo, x_hi, _, _ = PhyloPicMakie._compute_image_bbox(
                     x_anchor, y_anchor, w_px, h_px;
-                    glyph_size            = glyph_size,
-                    aspect                = :preserve,
-                    placement             = :left,
-                    xoffset               = 0.0,
-                    yoffset               = 0.0,
+                    glyph_size = glyph_size,
+                    aspect = :preserve,
+                    placement = :left,
+                    xoffset = 0.0,
+                    yoffset = 0.0,
                     axis_scale_correction = sc,
                 )
                 (x_lo, x_hi)
@@ -261,10 +268,10 @@ function _render_tip_phylopic!(
             x_lo, x_hi, _, _ = PhyloPicMakie._compute_image_bbox(
                 x_anchor, y_anchor, w_px, h_px;
                 glyph_size = glyph_size,
-                aspect     = :stretch,
-                placement  = :left,
-                xoffset    = 0.0,
-                yoffset    = 0.0,
+                aspect = :stretch,
+                placement = :left,
+                xoffset = 0.0,
+                yoffset = 0.0,
             )
             (x_lo, x_hi)
         end
@@ -276,7 +283,7 @@ function _render_tip_phylopic!(
             (y_lo, y_hi),
             rotr90(img);
             interpolate = true,
-            visible     = p[:show_phylopic],
+            visible = p[:show_phylopic],
             clip_planes = Makie.Plane3f[],
         )
     end

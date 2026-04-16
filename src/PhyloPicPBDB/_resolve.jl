@@ -1,4 +1,3 @@
-
 # ---------------------------------------------------------------------------
 # PhyloPicPBDB — PBDB taxon name → PhyloPic node UUID bridge
 #
@@ -51,11 +50,13 @@ function _phylopic_field_for_rendering(image_rendering::Symbol)::Symbol
     image_rendering === :og_image    && return :phylopic_og_image
     image_rendering === :vector      && return :phylopic_vector
     image_rendering === :source_file && return :phylopic_source_file
-    throw(ArgumentError(
-        "_phylopic_field_for_rendering: unknown `image_rendering` value " *
-        "`:$image_rendering`. " *
-        "Valid values: $(join(string.(':', PhyloPicDB.PHYLOPIC_IMAGE_RENDERINGS), ", "))."
-    ))
+    throw(
+        ArgumentError(
+            "_phylopic_field_for_rendering: unknown `image_rendering` value " *
+                "`:$image_rendering`. " *
+                "Valid values: $(join(string.(':', PhyloPicDB.PHYLOPIC_IMAGE_RENDERINGS), ", "))."
+        )
+    )
 end
 
 # ---------------------------------------------------------------------------
@@ -85,11 +86,11 @@ Exactly one of `taxon` or `glyph` must be non-`nothing`:
 [`PhyloPicMakie._select_image_url`](@ref) for the full symbol table.
 """
 function _resolve_images(
-    taxon::Union{AbstractVector, Nothing},
-    glyph::Union{AbstractMatrix, Nothing},
-    n::Integer;
-    image_rendering::Symbol = :thumbnail,
-)::Vector{Union{Matrix{RGBA{N0f8}}, Nothing}}
+        taxon::Union{AbstractVector, Nothing},
+        glyph::Union{AbstractMatrix, Nothing},
+        n::Integer;
+        image_rendering::Symbol = :thumbnail,
+    )::Vector{Union{Matrix{RGBA{N0f8}}, Nothing}}
     if !isnothing(glyph)
         # Delegate glyph broadcast to PhyloPicMakie.
         return PhyloPicMakie._resolve_images_by_uuid(
@@ -97,21 +98,25 @@ function _resolve_images(
         )
     end
 
-    isnothing(taxon) && throw(ArgumentError(
-        "augment_phylopic: one of `taxon` or `glyph` must be provided."
-    ))
-    length(taxon) == n || throw(ArgumentError(
-        "augment_phylopic: `taxon` length ($(length(taxon))) must match " *
-        "coordinate length ($n)."
-    ))
+    isnothing(taxon) && throw(
+        ArgumentError(
+            "augment_phylopic: one of `taxon` or `glyph` must be provided."
+        )
+    )
+    length(taxon) == n || throw(
+        ArgumentError(
+            "augment_phylopic: `taxon` length ($(length(taxon))) must match " *
+                "coordinate length ($n)."
+        )
+    )
 
     # Resolve each unique non-missing, non-empty taxon name to a PhyloPic
     # node UUID.  phylopic_node is cached via autocache so repeated calls
     # for the same name within a session incur no extra PBDB API traffic.
     unique_names = unique(v for v in taxon if !ismissing(v) && !isempty(strip(string(v))))
-    uuid_cache   = Dict{String, Union{String, Nothing}}()
+    uuid_cache = Dict{String, Union{String, Nothing}}()
     for name in unique_names
-        s    = string(name)
+        s = string(name)
         node = phylopic_node(s)
         uuid_cache[s] = isnothing(node) ? nothing : node.uuid
     end

@@ -37,10 +37,10 @@ import PhyloPicMakie
 # so it cannot be imported directly here.  PhyloPicMakie carries Makie as a
 # hard dep, so we alias it the same way we alias PhyloPicDB.
 const PhyloPicDB = PhyloPicMakie.PhyloPicDB
-const Makie      = PhyloPicMakie.Makie
-const RGBA       = Makie.RGBA
-const N0f8       = Makie.N0f8
-const Colorant   = Makie.Colorant
+const Makie = PhyloPicMakie.Makie
+const RGBA = Makie.RGBA
+const N0f8 = Makie.N0f8
+const Colorant = Makie.Colorant
 import DataCaches: autocache
 import DataFrames: DataFrame, AbstractDataFrame, nrow, hcat
 

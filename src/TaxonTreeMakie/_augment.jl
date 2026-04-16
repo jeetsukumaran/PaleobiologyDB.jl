@@ -1,4 +1,3 @@
-
 # ---------------------------------------------------------------------------
 # TaxonTreeMakie — tree-aware PhyloPic overlay API
 #
@@ -52,7 +51,7 @@ tips = tip_positions(p)
 See also [`tip_positions`](@ref), [`augment_tip_phylopic!`](@ref).
 """
 function tip_positions(p::TaxonTreePlot)::NamedTuple
-    tree   = p[:taxontree][]
+    tree = p[:taxontree][]
     xs, ys = _compute_dendrogram_layout(tree; ladderize = p[:ladderize][])
     return tip_positions(tree, xs, ys)
 end
@@ -167,35 +166,37 @@ augment_tip_phylopic!(ax, p; align = true, xoffset = 0.2)
 See also [`tip_positions`](@ref), [`taxontreeplot`](@ref).
 """
 function augment_tip_phylopic!(
-    ax::Makie.Axis,
-    tree::TaxonTree,
-    xs::AbstractVector{<:Real},
-    ys::AbstractVector{<:Real};
-    anchor::Symbol                  = :tip,
-    align::Bool                     = false,
-    column_x::Union{Nothing, Real}  = nothing,
-    tip_xoffset::Real               = 0.0,
-    placement::Symbol               = :left,
-    xoffset::Real                   = 0.0,
-    yoffset::Real                   = 0.0,
-    glyph_size::Real                = 0.4,
-    aspect::Symbol                  = :preserve,
-    rotation::Real                  = 0.0,
-    mirror::Bool                    = false,
-    image_rendering::Symbol         = :thumbnail,
-    on_missing::Symbol              = :skip,
-)::Nothing
-    anchor ∈ VALID_TIP_ANCHORS || throw(ArgumentError(
-        "augment_tip_phylopic!: unknown `anchor` value `:$anchor`. " *
-        "Valid values: $(join(string.(':', VALID_TIP_ANCHORS), ", "))."
-    ))
+        ax::Makie.Axis,
+        tree::TaxonTree,
+        xs::AbstractVector{<:Real},
+        ys::AbstractVector{<:Real};
+        anchor::Symbol = :tip,
+        align::Bool = false,
+        column_x::Union{Nothing, Real} = nothing,
+        tip_xoffset::Real = 0.0,
+        placement::Symbol = :left,
+        xoffset::Real = 0.0,
+        yoffset::Real = 0.0,
+        glyph_size::Real = 0.4,
+        aspect::Symbol = :preserve,
+        rotation::Real = 0.0,
+        mirror::Bool = false,
+        image_rendering::Symbol = :thumbnail,
+        on_missing::Symbol = :skip,
+    )::Nothing
+    anchor ∈ VALID_TIP_ANCHORS || throw(
+        ArgumentError(
+            "augment_tip_phylopic!: unknown `anchor` value `:$anchor`. " *
+                "Valid values: $(join(string.(':', VALID_TIP_ANCHORS), ", "))."
+        )
+    )
 
     tips = tip_positions(tree, xs, ys)
     isempty(tips.vertices) && return nothing
 
     x_anchors = Float64[
         anchor === :tip ? Float64(xs[v]) : Float64(xs[v]) + Float64(tip_xoffset)
-        for v in tips.vertices
+            for v in tips.vertices
     ]
 
     if align
@@ -205,16 +206,16 @@ function augment_tip_phylopic!(
 
     PaleobiologyDB.PhyloPicPBDB.augment_phylopic!(
         ax, x_anchors, tips.y;
-        taxon           = tips.names,
-        placement       = placement,
-        xoffset         = xoffset,
-        yoffset         = yoffset,
-        glyph_size      = glyph_size,
-        aspect          = aspect,
-        rotation        = rotation,
-        mirror          = mirror,
+        taxon = tips.names,
+        placement = placement,
+        xoffset = xoffset,
+        yoffset = yoffset,
+        glyph_size = glyph_size,
+        aspect = aspect,
+        rotation = rotation,
+        mirror = mirror,
         image_rendering = image_rendering,
-        on_missing      = on_missing,
+        on_missing = on_missing,
     )
     return nothing
 end
@@ -240,11 +241,11 @@ augment_tip_phylopic!(ax, p; xoffset = 1.0)
 ```
 """
 function augment_tip_phylopic!(
-    ax::Makie.Axis,
-    p::TaxonTreePlot;
-    kwargs...,
-)::Nothing
-    tree   = p[:taxontree][]
+        ax::Makie.Axis,
+        p::TaxonTreePlot;
+        kwargs...,
+    )::Nothing
+    tree = p[:taxontree][]
     xs, ys = _compute_dendrogram_layout(tree; ladderize = p[:ladderize][])
     augment_tip_phylopic!(ax, tree, xs, ys; kwargs...)
     return nothing

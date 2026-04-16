@@ -1,4 +1,3 @@
-
 # ---------------------------------------------------------------------------
 # TaxonTreeMakie — pure dendrogram layout
 #
@@ -21,26 +20,26 @@ depth 19 (rightmost).  Ranks not present in this dict receive `-1` from
 approximate placement.
 """
 const _RANK_DEPTH = Dict{String, Int}(
-    "kingdom"     => 0,
-    "phylum"      => 1,
-    "subphylum"   => 2,
-    "superclass"  => 3,
-    "class"       => 4,
-    "subclass"    => 5,
-    "infraclass"  => 6,
-    "superorder"  => 7,
-    "order"       => 8,
-    "suborder"    => 9,
-    "infraorder"  => 10,
+    "kingdom" => 0,
+    "phylum" => 1,
+    "subphylum" => 2,
+    "superclass" => 3,
+    "class" => 4,
+    "subclass" => 5,
+    "infraclass" => 6,
+    "superorder" => 7,
+    "order" => 8,
+    "suborder" => 9,
+    "infraorder" => 10,
     "superfamily" => 11,
-    "family"      => 12,
-    "subfamily"   => 13,
-    "tribe"       => 14,
-    "subtribe"    => 15,
-    "genus"       => 16,
-    "subgenus"    => 17,
-    "species"     => 18,
-    "subspecies"  => 19,
+    "family" => 12,
+    "subfamily" => 13,
+    "tribe" => 14,
+    "subtribe" => 15,
+    "genus" => 16,
+    "subgenus" => 17,
+    "species" => 18,
+    "subspecies" => 19,
 )
 
 """
@@ -61,7 +60,7 @@ _rank_depth("unranked")  # → -1
 ```
 """
 function _rank_depth(rank::AbstractString)::Int
-    get(_RANK_DEPTH, rank, -1)
+    return get(_RANK_DEPTH, rank, -1)
 end
 
 """
@@ -80,9 +79,9 @@ the tree appear more balanced.
 - `v`: source vertex.
 """
 function _subtree_leaf_count(
-    graph::Graphs.SimpleDiGraph,
-    v::Integer,
-)::Int
+        graph::Graphs.SimpleDiGraph,
+        v::Integer,
+    )::Int
     children = Graphs.outneighbors(graph, v)
     isempty(children) && return 1
     return sum(_subtree_leaf_count(graph, c) for c in children)
@@ -110,19 +109,21 @@ which is required by [`_compute_dendrogram_layout`](@ref) to assign y-values
 bottom-up.
 """
 function _postorder_traversal(
-    graph::Graphs.SimpleDiGraph,
-    root::Int;
-    ladderize::Bool = false,
-)::Vector{Int}
+        graph::Graphs.SimpleDiGraph,
+        root::Int;
+        ladderize::Bool = false,
+    )::Vector{Int}
     # Precompute per-vertex child lists (sorted if ladderize).
     children_of = Dict{Int, Vector{Int}}(
         v => (
-            ladderize
-                ? sort(copy(Graphs.outneighbors(graph, v));
-                       by = c -> _subtree_leaf_count(graph, c))
+                ladderize
+                ? sort(
+                    copy(Graphs.outneighbors(graph, v));
+                    by = c -> _subtree_leaf_count(graph, c)
+                )
                 : copy(Graphs.outneighbors(graph, v))
-        )
-        for v in Graphs.vertices(graph)
+            )
+            for v in Graphs.vertices(graph)
     )
 
     order = Int[]
@@ -199,9 +200,9 @@ xs, ys = PaleobiologyDB.TaxonTreeMakie._compute_dendrogram_layout(tree)
 ```
 """
 function _compute_dendrogram_layout(
-    tree::TaxonTree;
-    ladderize::Bool = false,
-)::Tuple{Vector{Float64}, Vector{Float64}}
+        tree::TaxonTree;
+        ladderize::Bool = false,
+    )::Tuple{Vector{Float64}, Vector{Float64}}
     g = tree.graph
     n = Graphs.nv(g)
 
@@ -293,10 +294,10 @@ Leaf vertices produce no segments.
 `Vector{NTuple{4, Float64}}` — one `(x1, y1, x2, y2)` per segment.
 """
 function _dendrogram_segment_pairs(
-    tree::TaxonTree,
-    x::AbstractVector{<:Real},
-    y::AbstractVector{<:Real},
-)::Vector{NTuple{4, Float64}}
+        tree::TaxonTree,
+        x::AbstractVector{<:Real},
+        y::AbstractVector{<:Real},
+    )::Vector{NTuple{4, Float64}}
     g = tree.graph
     segs = NTuple{4, Float64}[]
 
@@ -354,16 +355,16 @@ tips = tip_positions(p)   # convenience overload
 See also [`augment_tip_phylopic!`](@ref).
 """
 function tip_positions(
-    tree::TaxonTree,
-    xs::AbstractVector{<:Real},
-    ys::AbstractVector{<:Real},
-)::NamedTuple
-    g   = tree.graph
+        tree::TaxonTree,
+        xs::AbstractVector{<:Real},
+        ys::AbstractVector{<:Real},
+    )::NamedTuple
+    g = tree.graph
     lvs = [v for v in Graphs.vertices(g) if isempty(Graphs.outneighbors(g, v))]
     return (
         vertices = lvs,
-        names    = [tree.taxa[v].name for v in lvs],
-        x        = [Float64(xs[v]) for v in lvs],
-        y        = [Float64(ys[v]) for v in lvs],
+        names = [tree.taxa[v].name for v in lvs],
+        x = [Float64(xs[v]) for v in lvs],
+        y = [Float64(ys[v]) for v in lvs],
     )
 end

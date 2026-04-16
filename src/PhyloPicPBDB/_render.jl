@@ -1,4 +1,3 @@
-
 # ---------------------------------------------------------------------------
 # PhyloPicPBDB — rendering: augment_phylopic! and all public variants
 #
@@ -128,27 +127,29 @@ augment_phylopic!(
 ```
 """
 function augment_phylopic!(
-    ax::Makie.Axis,
-    x::AbstractVector{<:Real},
-    y::AbstractVector{<:Real};
-    taxon::Union{AbstractVector, Nothing} = nothing,
-    glyph::Union{AbstractMatrix, Nothing} = nothing,
-    placement::Symbol = :center,
-    xoffset::Real = 0.0,
-    yoffset::Real = 0.0,
-    glyph_size::Real = 0.4,
-    aspect::Symbol = :preserve,
-    rotation::Real = 0.0,
-    mirror::Bool = false,
-    image_rendering::Symbol = :thumbnail,
-    on_missing::Symbol = :skip,
-)::Nothing
+        ax::Makie.Axis,
+        x::AbstractVector{<:Real},
+        y::AbstractVector{<:Real};
+        taxon::Union{AbstractVector, Nothing} = nothing,
+        glyph::Union{AbstractMatrix, Nothing} = nothing,
+        placement::Symbol = :center,
+        xoffset::Real = 0.0,
+        yoffset::Real = 0.0,
+        glyph_size::Real = 0.4,
+        aspect::Symbol = :preserve,
+        rotation::Real = 0.0,
+        mirror::Bool = false,
+        image_rendering::Symbol = :thumbnail,
+        on_missing::Symbol = :skip,
+    )::Nothing
     n = length(x)
-    length(y) == n || throw(ArgumentError(
-        "augment_phylopic!: `x` and `y` must have the same length."
-    ))
+    length(y) == n || throw(
+        ArgumentError(
+            "augment_phylopic!: `x` and `y` must have the same length."
+        )
+    )
     images = _resolve_images(taxon, glyph, n; image_rendering)
-    PhyloPicMakie.augment_phylopic!(
+    return PhyloPicMakie.augment_phylopic!(
         ax, x, y, images;
         glyph_size = glyph_size,
         aspect = aspect,
@@ -178,12 +179,12 @@ provided for naming symmetry only.
 See [`augment_phylopic!`](@ref) for the full keyword-argument documentation.
 """
 function augment_phylopic(
-    ax::Makie.Axis,
-    x::AbstractVector{<:Real},
-    y::AbstractVector{<:Real};
-    kwargs...,
-)::Nothing
-    augment_phylopic!(ax, x, y; kwargs...)
+        ax::Makie.Axis,
+        x::AbstractVector{<:Real},
+        y::AbstractVector{<:Real};
+        kwargs...,
+    )::Nothing
+    return augment_phylopic!(ax, x, y; kwargs...)
 end
 
 # ---------------------------------------------------------------------------
@@ -263,22 +264,26 @@ augment_phylopic_ranges!(
 ```
 """
 function augment_phylopic_ranges!(
-    ax::Makie.Axis,
-    xstart::AbstractVector{<:Real},
-    xstop::AbstractVector{<:Real},
-    y::AbstractVector{<:Real};
-    at::Symbol = :start,
-    kwargs...,
-)::Nothing
+        ax::Makie.Axis,
+        xstart::AbstractVector{<:Real},
+        xstop::AbstractVector{<:Real},
+        y::AbstractVector{<:Real};
+        at::Symbol = :start,
+        kwargs...,
+    )::Nothing
     n = length(xstart)
-    length(xstop) == n || throw(ArgumentError(
-        "augment_phylopic_ranges!: `xstart` and `xstop` must have the same length."
-    ))
-    length(y) == n || throw(ArgumentError(
-        "augment_phylopic_ranges!: `y` must have the same length as `xstart`."
-    ))
+    length(xstop) == n || throw(
+        ArgumentError(
+            "augment_phylopic_ranges!: `xstart` and `xstop` must have the same length."
+        )
+    )
+    length(y) == n || throw(
+        ArgumentError(
+            "augment_phylopic_ranges!: `y` must have the same length as `xstart`."
+        )
+    )
     xs = [PhyloPicMakie._range_anchor(xstart[i], xstop[i], at) for i in 1:n]
-    augment_phylopic!(ax, xs, y; kwargs...)
+    return augment_phylopic!(ax, xs, y; kwargs...)
 end
 
 """
@@ -295,13 +300,13 @@ Non-mutating alias for [`augment_phylopic_ranges!`](@ref).
 See [`augment_phylopic_ranges!`](@ref) for full documentation.
 """
 function augment_phylopic_ranges(
-    ax::Makie.Axis,
-    xstart::AbstractVector{<:Real},
-    xstop::AbstractVector{<:Real},
-    y::AbstractVector{<:Real};
-    kwargs...,
-)::Nothing
-    augment_phylopic_ranges!(ax, xstart, xstop, y; kwargs...)
+        ax::Makie.Axis,
+        xstart::AbstractVector{<:Real},
+        xstop::AbstractVector{<:Real},
+        y::AbstractVector{<:Real};
+        kwargs...,
+    )::Nothing
+    return augment_phylopic_ranges!(ax, xstart, xstop, y; kwargs...)
 end
 
 # ---------------------------------------------------------------------------
@@ -357,18 +362,18 @@ augment_phylopic!(ax, df; x = :x, y = :y, taxon = :taxon, glyph_size = 0.4)
 ```
 """
 function augment_phylopic!(
-    ax::Makie.Axis,
-    table;
-    x,
-    y,
-    taxon = nothing,
-    glyph::Union{AbstractMatrix, Nothing} = nothing,
-    kwargs...,
-)::Nothing
-    xs   = PhyloPicMakie._extract_column(table, x)
-    ys   = PhyloPicMakie._extract_column(table, y)
+        ax::Makie.Axis,
+        table;
+        x,
+        y,
+        taxon = nothing,
+        glyph::Union{AbstractMatrix, Nothing} = nothing,
+        kwargs...,
+    )::Nothing
+    xs = PhyloPicMakie._extract_column(table, x)
+    ys = PhyloPicMakie._extract_column(table, y)
     taxa = isnothing(taxon) ? nothing : PhyloPicMakie._extract_column(table, taxon)
-    augment_phylopic!(ax, xs, ys; taxon = taxa, glyph = glyph, kwargs...)
+    return augment_phylopic!(ax, xs, ys; taxon = taxa, glyph = glyph, kwargs...)
 end
 
 """
@@ -383,7 +388,7 @@ Non-mutating alias for the table-based [`augment_phylopic!`](@ref).
 See [`augment_phylopic!`](@ref) for full documentation.
 """
 function augment_phylopic(ax::Makie.Axis, table; kwargs...)::Nothing
-    augment_phylopic!(ax, table; kwargs...)
+    return augment_phylopic!(ax, table; kwargs...)
 end
 
 # ---------------------------------------------------------------------------
@@ -457,21 +462,21 @@ augment_phylopic_ranges!(
 ```
 """
 function augment_phylopic_ranges!(
-    ax::Makie.Axis,
-    table;
-    xstart,
-    xstop,
-    y,
-    taxon = nothing,
-    glyph::Union{AbstractMatrix, Nothing} = nothing,
-    at::Symbol = :start,
-    kwargs...,
-)::Nothing
-    xs   = PhyloPicMakie._extract_column(table, xstart)
-    xe   = PhyloPicMakie._extract_column(table, xstop)
-    ys   = PhyloPicMakie._extract_column(table, y)
+        ax::Makie.Axis,
+        table;
+        xstart,
+        xstop,
+        y,
+        taxon = nothing,
+        glyph::Union{AbstractMatrix, Nothing} = nothing,
+        at::Symbol = :start,
+        kwargs...,
+    )::Nothing
+    xs = PhyloPicMakie._extract_column(table, xstart)
+    xe = PhyloPicMakie._extract_column(table, xstop)
+    ys = PhyloPicMakie._extract_column(table, y)
     taxa = isnothing(taxon) ? nothing : PhyloPicMakie._extract_column(table, taxon)
-    augment_phylopic_ranges!(ax, xs, xe, ys; taxon = taxa, glyph = glyph, at = at, kwargs...)
+    return augment_phylopic_ranges!(ax, xs, xe, ys; taxon = taxa, glyph = glyph, at = at, kwargs...)
 end
 
 """
@@ -486,5 +491,5 @@ Non-mutating alias for the table-based [`augment_phylopic_ranges!`](@ref).
 See [`augment_phylopic_ranges!`](@ref) for full documentation.
 """
 function augment_phylopic_ranges(ax::Makie.Axis, table; kwargs...)::Nothing
-    augment_phylopic_ranges!(ax, table; kwargs...)
+    return augment_phylopic_ranges!(ax, table; kwargs...)
 end
