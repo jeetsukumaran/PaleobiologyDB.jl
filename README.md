@@ -371,10 +371,3 @@ If you use PaleobiologyDB.jl in your research, please cite both this package and
   doi = {10.1017/pab.2015.39}
 }
 ```
-
-## Acknowledgements
-
-- The [Paleobiology Database](https://paleobiodb.org/) for providing the data and API.
-- API endpoint naming convention based on the [paleobioDB](https://github.com/ropensci/paleobioDB) R package.
-- Julia community packages: JSON3.jl, HTTP.jl, DataFrames.jl, CSV.jl, URIs.jl.
-- The [Julia Community](https://julialang.org/community/).
