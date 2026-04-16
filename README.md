@@ -129,76 +129,13 @@ imgs_node = phylopic_images_dataframe("Carnivora"; filter = :node)
 
 ## PhyloPic visualization
 
-```julia
-using CairoMakie
-using PaleobiologyDB.PhyloPicPBDB: phylopic_thumbnail_grid
-
-phylopic_thumbnail_grid("Felis")
-```
-
-## TaxonTreeMakie — dendrogram visualisation
-
-`PaleobiologyDB.TaxonTreeMakie` is an optional Makie extension that renders `TaxonTree` objects as interactive dendrograms.
-It activates automatically when any Makie backend is loaded — no extra registration step.
-
-```
-pkg> add CairoMakie
-```
-
-```julia
-using PaleobiologyDB.Taxonomy: taxon_subtree
-using PaleobiologyDB.TaxonTreeMakie: taxontreeplot, taxontreeplot!, set_rank_axis_ticks!
-using CairoMakie: Figure, Axis, save, display
-
-# Build a subtree and render it — branches and nodes coloured by taxonomic rank
-tree = taxon_subtree("Carnivora"; leaf_rank = "family")
-fig, ax, p = taxontreeplot(tree; showtips = true, color_by_rank = true, ladderize = true)
-save("carnivora_families.png", fig)
-
-# Compose into an existing axis
-fig2 = Figure(size = (1000, 700))
-ax2  = Axis(fig2[1, 1]; title = "Canidae genera")
-tree2 = taxon_subtree("Canidae"; leaf_rank = "genus")
-taxontreeplot!(ax2, tree2; showtips = true, ladderize = true)
-set_rank_axis_ticks!(ax2, tree2)
-display(fig2)
-```
-
-PhyloPic silhouettes at leaf tips require `FileIO` and a PNG plugin:
-
-```
-pkg> add FileIO PNGFiles
-```
-
-```julia
-using PaleobiologyDB.Taxonomy: taxon_subtree
-using PaleobiologyDB.TaxonTreeMakie: taxontreeplot, augment_tip_phylopic!
-using CairoMakie: Figure, Axis, save
-using FileIO: load
-
-tree = taxon_subtree("Carnivora"; leaf_rank = "family")
-fig, ax, p = taxontreeplot(tree; showtips = true, color_by_rank = true, ladderize = true)
-
-# Overlay PhyloPic silhouettes at each leaf tip
-augment_tip_phylopic!(ax, p; xoffset = 0.5)
-save("carnivora_phylopic.png", fig)
-```
-
-See the [TaxonTreeMakie guide](https://jeetsukumaran.github.io/PaleobiologyDB.jl/dev/guide/taxontree_makie/) for the full attribute reference and worked examples.
 
 ## PhyloPicPBDB — Makie plot integration
 
-`PaleobiologyDB.PhyloPicPBDB` is an optional Makie extension for adding PhyloPic silhouette glyphs to existing axes.
-It activates automatically when a Makie backend and `FileIO` are both loaded.
-
-```
-pkg> add CairoMakie FileIO PNGFiles
-```
-
 ```julia
 # Anchor a PhyloPic glyph at each taxon's first appearance on a range chart
-using PaleobiologyDB.PhyloPicPBDB: augment_phylopic_ranges!
 using CairoMakie: Figure, Axis, lines!, xlims!, display
+using PaleobiologyDB.PhyloPicPBDB: augment_phylopic_ranges!
 
 taxa      = ["Tyrannosaurus", "Triceratops", "Ankylosaurus",
              "Pachycephalosaurus", "Edmontosaurus"]
@@ -242,6 +179,44 @@ display(fig2)
 ```
 
 See the [PhyloPicPBDB guide](https://jeetsukumaran.github.io/PaleobiologyDB.jl/dev/guide/phylopic_makie/) for the full API and layout options.
+
+
+## TaxonTreeMakie — dendrogram visualisation
+
+```julia
+using PaleobiologyDB.Taxonomy: taxon_subtree
+using PaleobiologyDB.TaxonTreeMakie: taxontreeplot, taxontreeplot!, set_rank_axis_ticks!
+using CairoMakie: Figure, Axis, save, display
+
+# Build a subtree and render it — branches and nodes coloured by taxonomic rank
+tree = taxon_subtree("Carnivora"; leaf_rank = "family")
+fig, ax, p = taxontreeplot(tree; showtips = true, color_by_rank = true, ladderize = true)
+save("carnivora_families.png", fig)
+
+# Compose into an existing axis
+fig2 = Figure(size = (1000, 700))
+ax2  = Axis(fig2[1, 1]; title = "Canidae genera")
+tree2 = taxon_subtree("Canidae"; leaf_rank = "genus")
+taxontreeplot!(ax2, tree2; showtips = true, ladderize = true)
+set_rank_axis_ticks!(ax2, tree2)
+display(fig2)
+```
+
+```julia
+using PaleobiologyDB.Taxonomy: taxon_subtree
+using PaleobiologyDB.TaxonTreeMakie: taxontreeplot, augment_tip_phylopic!
+using CairoMakie: Figure, Axis, save
+using FileIO: load
+
+tree = taxon_subtree("Carnivora"; leaf_rank = "family")
+fig, ax, p = taxontreeplot(tree; showtips = true, color_by_rank = true, ladderize = true)
+
+# Overlay PhyloPic silhouettes at each leaf tip
+augment_tip_phylopic!(ax, p; xoffset = 0.5)
+save("carnivora_phylopic.png", fig)
+```
+
+See the [TaxonTreeMakie guide](https://jeetsukumaran.github.io/PaleobiologyDB.jl/dev/guide/taxontree_makie/) for the full attribute reference and worked examples.
 
 ## Caching
 
