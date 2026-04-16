@@ -2,8 +2,11 @@
 # Tests for acquire_phylopic and augment_phylopic.
 #
 # Offline: structural tests on null record, prefix, missing/empty input,
-#          column counts, image_selector dispatch.
-# Live:    real PBDB + PhyloPic round-trips for single-name and DataFrame variants.
+#          column counts, image_selector dispatch, autocaching wiring.
+# Live:    real PBDB + PhyloPic round-trips for single-name and DataFrame variants,
+#          plus autocaching write/hit/cross-function tests.
+
+using DataCaches
 
 const _phylopic_acquire   = PaleobiologyDB.PhyloPicPBDB.acquire_phylopic
 const _phylopic_augment   = PaleobiologyDB.PhyloPicPBDB.augment_phylopic
@@ -115,6 +118,14 @@ const _apply_prefix       = PaleobiologyDB.PhyloPicPBDB._apply_fieldname_prefix
             :license, :license_url, :contributor, :attribution,
         ]
         @test _PHYLOPIC_BASE_COLS == expected
+    end
+
+    @testset "autocaching — acquire_phylopic is a valid func reference for set_autocaching!" begin
+        # Structural test: verify the caching machinery accepts acquire_phylopic as
+        # the func reference used in _phylopic_lookup_taxon.  Both acquire_phylopic
+        # and augment_phylopic are controlled via this reference.
+        @test_nowarn PaleobiologyDB.set_autocaching!(true,  _phylopic_acquire)
+        @test_nowarn PaleobiologyDB.set_autocaching!(false, _phylopic_acquire)
     end
 end
 
@@ -256,5 +267,67 @@ end
         rec1 = _phylopic_acquire("Canis")
         rec2 = _phylopic_acquire("Canis")
         @test rec1 == rec2
+    end
+
+    @testset "autocaching — string variant writes and hits cache" begin
+        test_cache = DataCache(mktempdir())
+        try
+            PaleobiologyDB.set_autocaching!(true, _phylopic_acquire; cache = test_cache)
+
+            rec1 = _phylopic_acquire("Tyrannosaurus")
+            @test length(test_cache) == 1       # one taxon entry stored
+
+            rec2 = _phylopic_acquire("Tyrannosaurus")
+            @test rec1 == rec2                  # identical result from cache
+            @test length(test_cache) == 1       # no new entry written
+        finally
+            PaleobiologyDB.set_autocaching!(false, _phylopic_acquire)
+        end
+    end
+
+    @testset "autocaching — DataFrame variant shares per-taxon cache across calls" begin
+        # Caching is keyed per (taxon_name, build), not per DataFrame.  Two
+        # DataFrames with the same unique taxa must produce no additional cache
+        # entries on the second call.
+        test_cache = DataCache(mktempdir())
+        try
+            PaleobiologyDB.set_autocaching!(true, _phylopic_acquire; cache = test_cache)
+
+            df1 = DataFrame(accepted_name = ["Tyrannosaurus", "Triceratops"])
+            df2 = DataFrame(accepted_name = ["Triceratops", "Tyrannosaurus", "Tyrannosaurus"])
+
+            pics1 = _phylopic_acquire(df1)
+            @test length(test_cache) == 2       # 2 unique taxa cached
+
+            pics2 = _phylopic_acquire(df2)
+            @test length(test_cache) == 2       # 0 new entries (all cache hits)
+
+            # Tyrannosaurus UUID must be consistent across both DataFrames
+            @test pics1.phylopic_uuid[1] == pics2.phylopic_uuid[2]  # T-rex row in df2
+            @test pics1.phylopic_uuid[1] == pics2.phylopic_uuid[3]  # duplicate T-rex
+        finally
+            PaleobiologyDB.set_autocaching!(false, _phylopic_acquire)
+        end
+    end
+
+    @testset "autocaching — augment_phylopic benefits via acquire_phylopic cache" begin
+        # augment_phylopic internally calls acquire_phylopic(df), which calls
+        # _phylopic_lookup_taxon, which is instrumented with acquire_phylopic as
+        # the func reference.  Enabling autocaching for acquire_phylopic therefore
+        # caches all taxon lookups made through augment_phylopic as well.
+        test_cache = DataCache(mktempdir())
+        try
+            PaleobiologyDB.set_autocaching!(true, _phylopic_acquire; cache = test_cache)
+
+            df       = DataFrame(accepted_name = ["Canis"])
+            enriched = _phylopic_augment(df)
+            @test length(test_cache) == 1       # taxon entry stored via acquire_phylopic
+
+            enriched2 = _phylopic_augment(df)
+            @test length(test_cache) == 1       # no new entries
+            @test all(enriched.phylopic_uuid .=== enriched2.phylopic_uuid)
+        finally
+            PaleobiologyDB.set_autocaching!(false, _phylopic_acquire)
+        end
     end
 end

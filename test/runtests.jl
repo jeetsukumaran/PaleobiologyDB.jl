@@ -16,7 +16,8 @@ const LIVE = get(ENV, "PBDB_LIVE", "") == "1"
 
 include("taxonomy_resolution.jl")
 include("taxonomy_namevalidation.jl")
-include("taxonomy_queries.jl")
+include("taxonomy_queries_basic.jl")
+include("taxonomy_queries_hierarchy.jl")
 include("taxonomy_graphs.jl")
 include("taxonomy_phylopic_acquire.jl")
 include("taxonomy_phylopic_images.jl")
