@@ -127,6 +127,15 @@ imgs.phylopic_raster[1:5]     # full-resolution PNG URLs
 imgs_node = phylopic_images_dataframe("Carnivora"; filter = :node)
 ```
 
+## PhyloPic visualization
+
+```julia
+using CairoMakie
+using PaleobiologyDB.PhyloPicPBDB: phylopic_thumbnail_grid
+
+phylopic_thumbnail_grid("Felis")
+```
+
 ## TaxonTreeMakie — dendrogram visualisation
 
 `PaleobiologyDB.TaxonTreeMakie` is an optional Makie extension that renders `TaxonTree` objects as interactive dendrograms.
