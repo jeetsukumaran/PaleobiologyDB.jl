@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Taxonomy: Search · PaleobiologyDB.jl</title><meta name="title" content="Taxonomy: Search · PaleobiologyDB.jl"/><meta property="og:title" content="Taxonomy: Search · PaleobiologyDB.jl"/><meta property="twitter:title" content="Taxonomy: Search · PaleobiologyDB.jl"/><meta name="description" content="Documentation for PaleobiologyDB.jl."/><meta property="og:description" content="Documentation for PaleobiologyDB.jl."/><meta property="twitter:description" content="Documentation for PaleobiologyDB.jl."/><meta property="og:url" content="https://jeetsukumaran.github.io/PaleobiologyDB.jl/api/taxonomy_search/"/><meta property="twitter:url" content="https://jeetsukumaran.github.io/PaleobiologyDB.jl/api/taxonomy_search/"/><link rel="canonical" href="https://jeetsukumaran.github.io/PaleobiologyDB.jl/api/taxonomy_search/"/><script data-outdated-warner src="../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../search_index.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../">PaleobiologyDB.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../">Home</a></li><li><span class="tocitem">Guide</span><ul><li><a class="tocitem" href="../../guide/quickstart/">Quick Start</a></li><li><a class="tocitem" href="../../guide/caching/">Caching</a></li><li><a class="tocitem" href="../../guide/taxontree_makie/">TaxonTreeMakie</a></li><li><a class="tocitem" href="../../guide/phylopic_makie/">PhyloPicMakie</a></li><li><a class="tocitem" href="../../guide/contributing/">Contributing</a></li></ul></li><li><span class="tocitem">API Reference</span><ul><li><a class="tocitem" href="../occurrences/">Occurrences</a></li><li><a class="tocitem" href="../collections/">Collections</a></li><li><a class="tocitem" href="../taxa/">Taxa</a></li><li><a class="tocitem" href="../specimens/">Specimens</a></li><li><a class="tocitem" href="../other/">Other</a></li><li><a class="tocitem" href="../apihelp/">Interactive Help</a></li><li><a class="tocitem" href="../taxonomy_filtering/">Taxonomy: Filtering</a></li><li><a class="tocitem" href="../taxonomy_queries/">Taxonomy: Queries</a></li><li><a class="tocitem" href="../taxonomy_graphs/">Taxonomy: Graphs</a></li><li class="is-active"><a class="tocitem" href>Taxonomy: Search</a><ul class="internal"><li><a class="tocitem" href="#Taxon-occurrence-search:-taxon_occursin"><span>Taxon occurrence search: taxon_occursin</span></a></li><li><a class="tocitem" href="#Taxon-occurrence-search:-contains_taxon"><span>Taxon occurrence search: contains_taxon</span></a></li><li><a class="tocitem" href="#Choosing-between-taxon*occursin-and-contains*taxon"><span>Choosing between taxon<em>occursin and contains</em>taxon</span></a></li></ul></li><li><a class="tocitem" href="../taxontree_makie/">TaxonTreeMakie</a></li><li><a class="tocitem" href="../phylopic_acquire/">PhyloPic: Acquisition</a></li><li><a class="tocitem" href="../phylopic_makie/">PhyloPic: Rendering</a></li><li><a class="tocitem" href="../depot/">Depot</a></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">API Reference</a></li><li class="is-active"><a href>Taxonomy: Search</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Taxonomy: Search</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/jeetsukumaran/PaleobiologyDB.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/jeetsukumaran/PaleobiologyDB.jl/blob/main/docs/src/api/taxonomy_search.md" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="Taxonomy-—-Search"><a class="docs-heading-anchor" href="#Taxonomy-—-Search">Taxonomy — Search</a><a id="Taxonomy-—-Search-1"></a><a class="docs-heading-anchor-permalink" href="#Taxonomy-—-Search" title="Permalink"></a></h1><h2 id="Taxon-occurrence-search:-taxon_occursin"><a class="docs-heading-anchor" href="#Taxon-occurrence-search:-taxon_occursin">Taxon occurrence search: taxon_occursin</a><a id="Taxon-occurrence-search:-taxon_occursin-1"></a><a class="docs-heading-anchor-permalink" href="#Taxon-occurrence-search:-taxon_occursin" title="Permalink"></a></h2><p><code>taxon_occursin</code> searches for taxonomic patterns across multiple columns. It comes in two forms:</p><ul><li><strong>2-arg</strong> <code>taxon_occursin(pattern, df)</code> → <code>Vector{Bool}</code> — searches across all taxonomy columns; use for <code>df[mask, :]</code> filtering.</li><li><strong>1-arg</strong> <code>taxon_occursin(pattern)</code> → <code>ByRow</code> predicate — for use directly with <code>subset(df, :col =&gt; taxon_occursin(pattern))</code>.</li></ul><p>By placing the pattern first, this function works naturally with piping and functional composition.</p><p>Vector inputs (<code>AbstractVector{&lt;:AbstractString}</code> or <code>AbstractVector{&lt;:Regex}</code>) accept a <code>combine</code> keyword (<code>all</code> by default): <code>combine=all</code> requires <strong>all</strong> elements to match (AND); <code>combine=any</code> requires <strong>any</strong> to match (OR).</p><pre><code class="language-julia hljs">using PaleobiologyDB, PaleobiologyDB.Taxonomy: taxon_occursin
+
+df = pbdb_occurrences(base_name = &quot;Canidae&quot;, interval = &quot;Miocene&quot;, show = &quot;full&quot;)
+
+# 2-arg: multi-column boolean mask
+df[taxon_occursin(&quot;Canis&quot;, df), :]
+df[taxon_occursin(r&quot;^Canis\b&quot;, df), :]
+
+# 2-arg: AND — every name must appear in some column (default combine=all)
+df[taxon_occursin([&quot;Canis&quot;, &quot;Mammalia&quot;], df), :]
+
+# 2-arg: OR — any name matches any column
+df[taxon_occursin([&quot;Canis&quot;, &quot;Vulpes&quot;], df; combine=any), :]
+
+# 2-arg: AND patterns — each regex must match at least one column
+df[taxon_occursin([r&quot;Canidae&quot;, r&quot;Canis&quot;], df), :]
+
+# 1-arg: use directly with subset
+df2 = augment_taxonomy(df)
+subset(df2, :taxonomy_genus =&gt; taxon_occursin(&quot;Canis&quot;))
+subset(df2, :taxonomy_clades =&gt; taxon_occursin(r&quot;Borophaginae&quot;))
+
+# 1-arg: regex AND on composite column (default combine=all)
+# rows where taxonomy_clades contains BOTH patterns
+subset(df2, :taxonomy_clades =&gt; taxon_occursin([r&quot;Canidae&quot;, r&quot;lupus&quot;]))
+
+# 1-arg: regex OR
+subset(df2, :taxonomy_clades =&gt; taxon_occursin([r&quot;^Canis\b&quot;, r&quot;^Vulpes\b&quot;]; combine=any))
+
+# 1-arg: string OR
+subset(df2, :taxonomy_genus =&gt; taxon_occursin([&quot;Canis&quot;, &quot;Vulpes&quot;]; combine=any))
+
+# Chain with subset (Chain.jl)
+using Chain
+@chain df begin
+    augment_taxonomy
+    subset(:taxonomy_family   =&gt; taxon_occursin(&quot;Canidae&quot;))
+    subset(:taxonomy_clades   =&gt; taxon_occursin([r&quot;Canis&quot;, r&quot;lupus&quot;]))
+end</code></pre><article><details class="docstring" open="true"><summary id="PaleobiologyDB.Taxonomy.taxon_occursin"><a class="docstring-binding" href="#PaleobiologyDB.Taxonomy.taxon_occursin"><code>PaleobiologyDB.Taxonomy.taxon_occursin</code></a> — <span class="docstring-category">Function</span></summary><section><div><pre><code class="language-julia hljs">taxon_occursin(name, df; autoaugment=true) -&gt; Vector{Bool}
+taxon_occursin(name)                       -&gt; ByRow predicate</code></pre><p>Search for patterns in taxonomic columns. This function searches across multiple taxonomic rank columns to find rows matching specified patterns in the Paleobiology Database taxonomy columns.</p><p><strong>Pattern-First Argument Order</strong></p><p>By placing the search pattern first, this function works naturally with piping and partial application, allowing easy composition of multiple pattern searches in data processing workflows.</p><p>Two forms:</p><ul><li><strong>2-arg</strong> <code>taxon_occursin(pattern, df)</code> — returns a <code>Vector{Bool}</code> of length <code>nrow(df)</code> where each element indicates whether the corresponding row matches the pattern across all relevant taxonomic columns in <code>df</code>.</li><li><strong>1-arg</strong> <code>taxon_occursin(pattern)</code> — returns a <code>ByRow(predicate)</code> function for use directly with <code>subset()</code>: <code>subset(df, :column =&gt; taxon_occursin(pattern))</code>.</li></ul><p><strong>Method signatures</strong></p><pre><code class="language-julia hljs"># 2-arg: multi-column mask
+taxon_occursin(name::Regex,                             df; autoaugment=true)
+taxon_occursin(name::AbstractString,                    df; autoaugment=true)
+taxon_occursin(names::AbstractVector{&lt;:AbstractString}, df; autoaugment=true, combine=all)
+taxon_occursin(names::AbstractVector{&lt;:Regex},          df; autoaugment=true, combine=all)
+
+# 1-arg: ByRow predicate for subset
+taxon_occursin(name::Regex)
+taxon_occursin(name::AbstractString)
+taxon_occursin(names::AbstractVector{&lt;:AbstractString}; combine=all)
+taxon_occursin(names::AbstractVector{&lt;:Regex};          combine=all)</code></pre><p><strong>Matching semantics</strong></p><ul><li><strong><code>Regex</code></strong> — <code>occursin(name, value)</code>.</li><li><strong><code>AbstractString</code></strong> — exact equality (<code>==</code>), case-sensitive.</li><li><strong><code>AbstractVector{&lt;:AbstractString}</code></strong> — controlled by <code>combine</code>:<ul><li><code>combine=all</code> (default) — <strong>AND</strong>: every name must appear in at least one column.</li><li><code>combine=any</code> — <strong>OR</strong>: any name matching any column is sufficient.</li></ul></li><li><strong><code>AbstractVector{&lt;:Regex}</code></strong> — controlled by <code>combine</code>:<ul><li><code>combine=all</code> (default) — <strong>AND</strong>: every pattern must match at least one column.</li><li><code>combine=any</code> — <strong>OR</strong>: any pattern matching any column is sufficient.</li></ul></li></ul><p><strong>Column selection (2-arg form)</strong></p><ol><li><strong>Augmented columns already present</strong> — if <code>df</code> has any <code>taxonomy_&lt;rank&gt;</code> or <code>taxonomy_clades</code> column (added by <a href="../taxonomy_filtering/#PaleobiologyDB.Taxonomy.augment_taxonomy"><code>augment_taxonomy</code></a>), those are searched.</li><li><strong>Auto-augmentation</strong> — if no augmented columns exist, <code>autoaugment=true</code> (default), and <code>:accepted_name</code> is present, <a href="../taxonomy_filtering/#PaleobiologyDB.Taxonomy.augment_taxonomy"><code>augment_taxonomy</code></a> is called on a copy of <code>df</code> and its columns are searched.</li><li><strong>Fallback</strong> — any column whose name matches a rank in <a href="../taxonomy_filtering/#PaleobiologyDB.Taxonomy.PBDB_RANK_HIERARCHY"><code>PBDB_RANK_HIERARCHY</code></a> plus <code>:accepted_name</code>, restricted to those present in <code>df</code>.</li></ol><p>Note: <code>:taxonomy_clades</code> is a composite string (<code>&quot;Animalia &gt; … &gt; Canis&quot;</code>).  Regex patterns match it; exact strings (e.g. <code>&quot;Canis&quot;</code>) do not — use the per-rank column (e.g. <code>taxonomy_genus</code>) for exact matching.</p><p><strong>Examples</strong></p><pre><code class="language-julia hljs">using PaleobiologyDB, PaleobiologyDB.Taxonomy: taxon_occursin
+
+df = pbdb_occurrences(base_name = &quot;Canidae&quot;, interval = &quot;Miocene&quot;, show = &quot;full&quot;)
+
+# 2-arg: exact string across all taxonomy columns
+df[taxon_occursin(&quot;Canis&quot;, df), :]
+
+# 2-arg: regex
+df[taxon_occursin(r&quot;^Canis&quot;, df), :]
+
+# 2-arg: AND — each name must appear in a separate column
+df[taxon_occursin([&quot;Canis&quot;, &quot;Mammalia&quot;], df), :]
+
+# 2-arg: OR — any name matches any column
+df[taxon_occursin([&quot;Canis&quot;, &quot;Vulpes&quot;], df; combine=any), :]
+
+# 2-arg: AND patterns — each regex must match at least one column
+df[taxon_occursin([r&quot;Canidae&quot;, r&quot;Canis&quot;], df), :]
+
+# 1-arg: subset with exact string
+subset(df, :taxonomy_genus =&gt; taxon_occursin(&quot;Canis&quot;))
+
+# 1-arg: subset with regex AND (default) on composite column
+subset(df, :taxonomy_clades =&gt; taxon_occursin([r&quot;Canidae&quot;, r&quot;lupus&quot;]))
+
+# 1-arg: subset with regex OR
+subset(df, :taxonomy_clades =&gt; taxon_occursin([r&quot;^Canis&quot;, r&quot;^Vulpes&quot;]; combine=any))
+
+# 1-arg: subset with string OR
+subset(df, :taxonomy_genus =&gt; taxon_occursin([&quot;Canis&quot;, &quot;Vulpes&quot;]; combine=any))
+
+# Suppress auto-augmentation for a pre-augmented DataFrame
+df2 = augment_taxonomy(df)
+df2[taxon_occursin(&quot;Canidae&quot;, df2; autoaugment=false), :]</code></pre><p>See also <a href="../taxonomy_filtering/#PaleobiologyDB.Taxonomy.augment_taxonomy"><code>augment_taxonomy</code></a>, <a href="../taxonomy_queries/#PaleobiologyDB.Taxonomy.child_taxa"><code>child_taxa</code></a>, <a href="../taxonomy_queries/#PaleobiologyDB.Taxonomy.parent_taxa"><code>parent_taxa</code></a>, <a href="../taxonomy_queries/#PaleobiologyDB.Taxonomy.registered_taxa"><code>registered_taxa</code></a>.</p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/jeetsukumaran/PaleobiologyDB.jl/blob/fa0e932b9878e7399cef66df739ea4740bd4c910/src/pbdbtools/_taxonomy/_taxonomy_queries.jl#L406-L510">source</a></section><section><div><pre><code class="language-julia hljs">taxon_occursin(name::AbstractString, df; autoaugment=true) -&gt; Vector{Bool}</code></pre><p>Exact-string variant of <a href="#PaleobiologyDB.Taxonomy.taxon_occursin"><code>taxon_occursin</code></a>.  Returns <code>true</code> for rows where any relevant taxonomic column equals <code>name</code> (case-sensitive).</p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/jeetsukumaran/PaleobiologyDB.jl/blob/fa0e932b9878e7399cef66df739ea4740bd4c910/src/pbdbtools/_taxonomy/_taxonomy_queries.jl#L521-L526">source</a></section><section><div><pre><code class="language-julia hljs">taxon_occursin(names::AbstractVector{&lt;:AbstractString}, df; autoaugment=true, combine=all) -&gt; Vector{Bool}</code></pre><p>Multi-name variant of <a href="#PaleobiologyDB.Taxonomy.taxon_occursin"><code>taxon_occursin</code></a>.</p><ul><li><code>combine=all</code> (default) — every name in <code>names</code> must appear in at least one relevant column (AND semantics across columns).</li><li><code>combine=any</code> — any name matching any column is sufficient (OR/set-membership).</li></ul><p>Note: <code>combine=all</code> is only meaningful for the multi-column (2-arg) form.  In a single-column <code>subset</code> context a single value cannot equal two different strings, so <code>combine=all</code> is always impractical for <code>length(names) &gt; 1</code>; use <code>combine=any</code> there.</p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/jeetsukumaran/PaleobiologyDB.jl/blob/fa0e932b9878e7399cef66df739ea4740bd4c910/src/pbdbtools/_taxonomy/_taxonomy_queries.jl#L537-L549">source</a></section><section><div><pre><code class="language-julia hljs">taxon_occursin(names::AbstractVector{&lt;:Regex}, df; autoaugment=true, combine=all) -&gt; Vector{Bool}</code></pre><p>Multi-pattern variant of <a href="#PaleobiologyDB.Taxonomy.taxon_occursin"><code>taxon_occursin</code></a>.</p><ul><li><code>combine=all</code> (default) — every pattern in <code>names</code> must match at least one relevant column value (AND semantics).  Useful for narrowing a search across multiple criteria, e.g. <code>[r&quot;Canidae&quot;, r&quot;Canis&quot;]</code> finds rows resolved to genus within that family.</li><li><code>combine=any</code> — any pattern matching any column is sufficient (OR semantics).</li></ul></div><a class="docs-sourcelink" target="_blank" href="https://github.com/jeetsukumaran/PaleobiologyDB.jl/blob/fa0e932b9878e7399cef66df739ea4740bd4c910/src/pbdbtools/_taxonomy/_taxonomy_queries.jl#L560-L570">source</a></section><section><div><pre><code class="language-julia hljs">taxon_occursin(name) -&gt; ByRow predicate</code></pre><p>Single-argument form of <a href="#PaleobiologyDB.Taxonomy.taxon_occursin"><code>taxon_occursin</code></a> for use with <code>subset</code>:</p><pre><code class="language-julia hljs">subset(df, :col =&gt; taxon_occursin(pattern))</code></pre><p><code>subset(df, :col =&gt; f)</code> passes the whole column vector to <code>f</code> and expects <code>Vector{Bool}</code>.  The returned <code>ByRow(predicate)</code> broadcasts a scalar predicate element-wise, satisfying that contract.  Missing and empty values always return <code>false</code>.</p><p><strong>Method signatures</strong></p><pre><code class="language-julia hljs">taxon_occursin(name::Regex)
+taxon_occursin(name::AbstractString)
+taxon_occursin(names::AbstractVector{&lt;:AbstractString}; combine=all)
+taxon_occursin(names::AbstractVector{&lt;:Regex};          combine=all)</code></pre><p><strong><code>combine</code> keyword (vector forms only)</strong></p><ul><li><code>combine=all</code> (default) — <strong>AND</strong>: all names/patterns must match the column value. For strings, rarely practical when <code>length(names) &gt; 1</code> (a single field value cannot equal two different strings).  For regex, useful on composite columns such as <code>taxonomy_clades</code> (e.g. <code>[r&quot;Canidae&quot;, r&quot;lupus&quot;]</code> narrows to species within that family).</li><li><code>combine=any</code> — <strong>OR</strong>: any name/pattern matching is sufficient.</li></ul><p><strong>Examples</strong></p><pre><code class="language-julia hljs">using PaleobiologyDB, PaleobiologyDB.Taxonomy
+
+df = pbdb_occurrences(base_name = &quot;Carnivora&quot;, interval = &quot;Miocene&quot;, show = &quot;full&quot;)
+df2 = augment_taxonomy(df)
+
+# Exact string on a single column
+subset(df2, :taxonomy_genus =&gt; taxon_occursin(&quot;Canis&quot;))
+
+# Regex on a single column
+subset(df2, :taxonomy_clades =&gt; taxon_occursin(r&quot;Borophaginae&quot;))
+
+# Regex AND (default): taxonomy_clades must contain both patterns
+subset(df2, :taxonomy_clades =&gt; taxon_occursin([r&quot;Canidae&quot;, r&quot;lupus&quot;]))
+
+# Regex OR: either pattern matches
+subset(df2, :taxonomy_clades =&gt; taxon_occursin([r&quot;^Canis&quot;, r&quot;^Vulpes&quot;]; combine=any))
+
+# String OR (combine=any): genus is Canis or Vulpes
+subset(df2, :taxonomy_genus =&gt; taxon_occursin([&quot;Canis&quot;, &quot;Vulpes&quot;]; combine=any))
+
+# @chain
+using Chain
+@chain df begin
+    augment_taxonomy
+    subset(:taxonomy_family   =&gt; taxon_occursin(&quot;Canidae&quot;))
+    subset(:taxonomy_clades   =&gt; taxon_occursin([r&quot;Canis&quot;, r&quot;lupus&quot;]))
+end</code></pre><p>See also <a href="../taxonomy_filtering/#PaleobiologyDB.Taxonomy.augment_taxonomy"><code>augment_taxonomy</code></a>, <a href="../taxonomy_queries/#PaleobiologyDB.Taxonomy.child_taxa"><code>child_taxa</code></a>, <a href="../taxonomy_queries/#PaleobiologyDB.Taxonomy.parent_taxa"><code>parent_taxa</code></a>, <a href="../taxonomy_queries/#PaleobiologyDB.Taxonomy.registered_taxa"><code>registered_taxa</code></a>.</p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/jeetsukumaran/PaleobiologyDB.jl/blob/fa0e932b9878e7399cef66df739ea4740bd4c910/src/pbdbtools/_taxonomy/_taxonomy_queries.jl#L585-L651">source</a></section><section><div><pre><code class="language-julia hljs">taxon_occursin(name::AbstractString) -&gt; ByRow predicate</code></pre><p>Exact-string 1-arg form of <a href="#PaleobiologyDB.Taxonomy.taxon_occursin"><code>taxon_occursin</code></a>.</p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/jeetsukumaran/PaleobiologyDB.jl/blob/fa0e932b9878e7399cef66df739ea4740bd4c910/src/pbdbtools/_taxonomy/_taxonomy_queries.jl#L656-L660">source</a></section><section><div><pre><code class="language-julia hljs">taxon_occursin(names::AbstractVector{&lt;:AbstractString}; combine=all) -&gt; ByRow predicate</code></pre><p>Multi-name 1-arg form of <a href="#PaleobiologyDB.Taxonomy.taxon_occursin"><code>taxon_occursin</code></a>.  See that docstring for <code>combine</code> semantics.</p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/jeetsukumaran/PaleobiologyDB.jl/blob/fa0e932b9878e7399cef66df739ea4740bd4c910/src/pbdbtools/_taxonomy/_taxonomy_queries.jl#L665-L669">source</a></section><section><div><pre><code class="language-julia hljs">taxon_occursin(names::AbstractVector{&lt;:Regex}; combine=all) -&gt; ByRow predicate</code></pre><p>Multi-pattern 1-arg form of <a href="#PaleobiologyDB.Taxonomy.taxon_occursin"><code>taxon_occursin</code></a>.  See that docstring for <code>combine</code> semantics.</p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/jeetsukumaran/PaleobiologyDB.jl/blob/fa0e932b9878e7399cef66df739ea4740bd4c910/src/pbdbtools/_taxonomy/_taxonomy_queries.jl#L674-L678">source</a></section></details></article><h2 id="Taxon-occurrence-search:-contains_taxon"><a class="docs-heading-anchor" href="#Taxon-occurrence-search:-contains_taxon">Taxon occurrence search: contains_taxon</a><a id="Taxon-occurrence-search:-contains_taxon-1"></a><a class="docs-heading-anchor-permalink" href="#Taxon-occurrence-search:-contains_taxon" title="Permalink"></a></h2><p><code>contains_taxon</code> provides an alternative syntax to <a href="#PaleobiologyDB.Taxonomy.taxon_occursin"><code>taxon_occursin</code></a> with the DataFrame as the first argument. It comes in the same two forms:</p><ul><li><strong>2-arg</strong> <code>contains_taxon(df, pattern)</code> → <code>Vector{Bool}</code> — searches across all taxonomy columns; use for <code>df[mask, :]</code> filtering.</li><li><strong>1-arg</strong> <code>contains_taxon(pattern)</code> → <code>ByRow</code> predicate — for use directly with <code>subset(df, :col =&gt; contains_taxon(pattern))</code>.</li></ul><p>By placing the DataFrame first, this function is more natural for statement chaining and method calls where data flows from left to right.</p><p>All matching semantics, column selection, and keywords are identical to <code>taxon_occursin</code>.</p><pre><code class="language-julia hljs">using PaleobiologyDB, PaleobiologyDB.Taxonomy: contains_taxon
+
+df = pbdb_occurrences(base_name = &quot;Canidae&quot;, interval = &quot;Miocene&quot;, show = &quot;full&quot;)
+
+# 2-arg: multi-column boolean mask (DataFrame first)
+df[contains_taxon(df, &quot;Canis&quot;), :]
+df[contains_taxon(df, r&quot;^Canis\b&quot;), :]
+
+# 2-arg: AND — every name must appear in some column (default combine=all)
+df[contains_taxon(df, [&quot;Canis&quot;, &quot;Mammalia&quot;]), :]
+
+# 2-arg: OR — any name matches any column
+df[contains_taxon(df, [&quot;Canis&quot;, &quot;Vulpes&quot;]; combine=any), :]
+
+# 2-arg: AND patterns — each regex must match at least one column
+df[contains_taxon(df, [r&quot;Canidae&quot;, r&quot;Canis&quot;]), :]
+
+# 1-arg: use directly with subset
+df2 = augment_taxonomy(df)
+subset(df2, :taxonomy_genus =&gt; contains_taxon(&quot;Canis&quot;))
+subset(df2, :taxonomy_clades =&gt; contains_taxon(r&quot;Borophaginae&quot;))
+
+# 1-arg: regex AND on composite column (default combine=all)
+# rows where taxonomy_clades contains BOTH patterns
+subset(df2, :taxonomy_clades =&gt; contains_taxon([r&quot;Canidae&quot;, r&quot;lupus&quot;]))
+
+# 1-arg: regex OR
+subset(df2, :taxonomy_clades =&gt; contains_taxon([r&quot;^Canis\b&quot;, r&quot;^Vulpes\b&quot;]; combine=any))
+
+# 1-arg: string OR
+subset(df2, :taxonomy_genus =&gt; contains_taxon([&quot;Canis&quot;, &quot;Vulpes&quot;]; combine=any))
+
+# Chain with subset (Chain.jl)
+using Chain
+@chain df begin
+    augment_taxonomy
+    subset(:taxonomy_family   =&gt; contains_taxon(&quot;Canidae&quot;))
+    subset(:taxonomy_clades   =&gt; contains_taxon([r&quot;Canidae&quot;, r&quot;lupus&quot;]))
+end</code></pre><article><details class="docstring" open="true"><summary id="PaleobiologyDB.Taxonomy.contains_taxon"><a class="docstring-binding" href="#PaleobiologyDB.Taxonomy.contains_taxon"><code>PaleobiologyDB.Taxonomy.contains_taxon</code></a> — <span class="docstring-category">Function</span></summary><section><div><pre><code class="language-julia hljs">contains_taxon(df, name; autoaugment=true) -&gt; Vector{Bool}
+contains_taxon(name)                       -&gt; ByRow predicate</code></pre><p>Search for patterns in taxonomic columns with DataFrame as the first argument. This provides an alternative to <a href="#PaleobiologyDB.Taxonomy.taxon_occursin"><code>taxon_occursin</code></a> with haystack-first argument order: the DataFrame being searched comes first, and the pattern (needle) to search for comes second.</p><p><strong>DataFrame-First Argument Order</strong></p><p>Unlike <a href="#PaleobiologyDB.Taxonomy.taxon_occursin"><code>taxon_occursin</code></a> which places the search pattern first, <code>contains_taxon</code> puts the DataFrame first, making it more natural for method chaining and piping operations where data transformations flow from left to right.</p><p>Two forms:</p><ul><li><strong>2-arg</strong> <code>contains_taxon(df, pattern)</code> — returns a <code>Vector{Bool}</code> of length <code>nrow(df)</code> where each element indicates whether the corresponding row matches the pattern across all relevant taxonomic columns in <code>df</code>.</li><li><strong>1-arg</strong> <code>contains_taxon(pattern)</code> — returns a <code>ByRow(predicate)</code> function for use directly with <code>subset()</code>: <code>subset(df, :column =&gt; contains_taxon(pattern))</code>.</li></ul><p><strong>Method signatures</strong></p><pre><code class="language-julia hljs"># 2-arg: multi-column mask (DataFrame first)
+contains_taxon(df, name::Regex;                             autoaugment=true)
+contains_taxon(df, name::AbstractString;                    autoaugment=true)
+contains_taxon(df, names::AbstractVector{&lt;:AbstractString}; autoaugment=true, combine=all)
+contains_taxon(df, names::AbstractVector{&lt;:Regex};          autoaugment=true, combine=all)
+
+# 1-arg: ByRow predicate for subset
+contains_taxon(name::Regex)
+contains_taxon(name::AbstractString)
+contains_taxon(names::AbstractVector{&lt;:AbstractString}; combine=all)
+contains_taxon(names::AbstractVector{&lt;:Regex};          combine=all)</code></pre><p><strong>Comparison with taxon_occursin</strong></p><p>All functionality is identical; only the argument order differs:</p><table><tr><th style="text-align: right">Task</th><th style="text-align: right">taxon_occursin</th><th style="text-align: right">contains_taxon</th></tr><tr><td style="text-align: right">2-arg exact string</td><td style="text-align: right"><code>taxon_occursin(&quot;Canis&quot;, df)</code></td><td style="text-align: right"><code>contains_taxon(df, &quot;Canis&quot;)</code></td></tr><tr><td style="text-align: right">2-arg regex</td><td style="text-align: right"><code>taxon_occursin(r&quot;^Canis&quot;, df)</code></td><td style="text-align: right"><code>contains_taxon(df, r&quot;^Canis&quot;)</code></td></tr><tr><td style="text-align: right">1-arg in subset</td><td style="text-align: right"><code>subset(df, :col =&gt; taxon_occursin(&quot;Canis&quot;))</code></td><td style="text-align: right"><code>subset(df, :col =&gt; contains_taxon(&quot;Canis&quot;))</code></td></tr></table><p><code>contains_taxon(df, pattern)</code> is semantically equivalent to <code>taxon_occursin(pattern, df)</code>.</p><p><strong>Examples</strong></p><pre><code class="language-julia hljs">using PaleobiologyDB, PaleobiologyDB.Taxonomy: contains_taxon
+
+df = pbdb_occurrences(base_name = &quot;Canidae&quot;, interval = &quot;Miocene&quot;, show = &quot;full&quot;)
+
+# 2-arg: exact string across all taxonomy columns (DataFrame first)
+df[contains_taxon(df, &quot;Canis&quot;), :]
+
+# 2-arg: regex
+df[contains_taxon(df, r&quot;^Canis\\b&quot;), :]
+
+# 2-arg: AND — each name must appear in a separate column
+df[contains_taxon(df, [&quot;Canis&quot;, &quot;Mammalia&quot;]), :]
+
+# 2-arg: OR — any name matches any column
+df[contains_taxon(df, [&quot;Canis&quot;, &quot;Vulpes&quot;]; combine=any), :]
+
+# 1-arg: subset with exact string
+subset(df, :taxonomy_genus =&gt; contains_taxon(&quot;Canis&quot;))
+
+# 1-arg: subset with regex AND on composite column
+subset(df, :taxonomy_clades =&gt; contains_taxon([r&quot;Canidae&quot;, r&quot;lupus&quot;]))
+
+# 1-arg: subset with regex OR
+subset(df, :taxonomy_clades =&gt; contains_taxon([r&quot;^Canis\b&quot;, r&quot;^Vulpes\b&quot;]; combine=any))</code></pre><p>See also <a href="#PaleobiologyDB.Taxonomy.taxon_occursin"><code>taxon_occursin</code></a>, <a href="../taxonomy_filtering/#PaleobiologyDB.Taxonomy.augment_taxonomy"><code>augment_taxonomy</code></a>, <a href="../taxonomy_queries/#PaleobiologyDB.Taxonomy.child_taxa"><code>child_taxa</code></a>, <a href="../taxonomy_queries/#PaleobiologyDB.Taxonomy.parent_taxa"><code>parent_taxa</code></a>, <a href="../taxonomy_queries/#PaleobiologyDB.Taxonomy.registered_taxa"><code>registered_taxa</code></a>.</p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/jeetsukumaran/PaleobiologyDB.jl/blob/fa0e932b9878e7399cef66df739ea4740bd4c910/src/pbdbtools/_taxonomy/_taxonomy_queries.jl#L687-L769">source</a></section></details></article><h2 id="Choosing-between-taxon*occursin-and-contains*taxon"><a class="docs-heading-anchor" href="#Choosing-between-taxon*occursin-and-contains*taxon">Choosing between taxon<em>occursin and contains</em>taxon</a><a id="Choosing-between-taxon*occursin-and-contains*taxon-1"></a><a class="docs-heading-anchor-permalink" href="#Choosing-between-taxon*occursin-and-contains*taxon" title="Permalink"></a></h2><p>Both <code>taxon_occursin</code> and <code>contains_taxon</code> are functionally identical and support all the same patterns, keywords, and use cases. The choice is purely stylistic:</p><table><tr><th style="text-align: right">Preference</th><th style="text-align: right">Function</th><th style="text-align: right">Usage</th></tr><tr><td style="text-align: right">Pattern-first (functional style)</td><td style="text-align: right"><code>taxon_occursin</code></td><td style="text-align: right"><code>df[taxon_occursin(&quot;Canis&quot;, df), :]</code></td></tr><tr><td style="text-align: right">DataFrame-first (method chaining style)</td><td style="text-align: right"><code>contains_taxon</code></td><td style="text-align: right"><code>df[contains_taxon(df, &quot;Canis&quot;), :]</code></td></tr></table><p>Use whichever feels more natural for your workflow. Both are equally idiomatic and supported.</p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../taxonomy_graphs/">« Taxonomy: Graphs</a><a class="docs-footer-nextpage" href="../taxontree_makie/">TaxonTreeMakie »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.17.0 on <span class="colophon-date" title="Thursday 16 April 2026 05:54">Thursday 16 April 2026</span>. Using Julia version 1.12.6.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
