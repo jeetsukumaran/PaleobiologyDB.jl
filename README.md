@@ -127,10 +127,9 @@ imgs.phylopic_raster[1:5]     # full-resolution PNG URLs
 imgs_node = phylopic_images_dataframe("Carnivora"; filter = :node)
 ```
 
-## PhyloPic visualization
 
 
-## PhyloPicPBDB — Makie plot integration
+## PhyloPicPBDB — Taxon visualization
 
 ```julia
 # Anchor a PhyloPic glyph at each taxon's first appearance on a range chart
