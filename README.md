@@ -12,28 +12,82 @@ Every PBDB API endpoint has a corresponding Julia function; keyword arguments ma
 
 ## Installation
 
-### Standard installation
+### General release version 
+
+This is the standard version available through the Julia General registry.
+
+In Pkg mode:
 
 ```
 pkg> add PaleobiologyDB
 ```
 
-### Developmental version installation
+In Julia:
 
-The developmental version requires that the Julia environment be provisioned with PhyloPicMakie before installation:
+```julia
+using Pkg
+# (if project-scoped environment): 
+# Pkg.activate(".") 
+Pkg.add("PaleobiologyDB")
+```
+
+In the shell:
+
+```bash
+# Global installation
+julia -e 'using Pkg; Pkg.add("PaleobiologyDB")'
+# if project-scoped environment
+julia --project=. -e 'using Pkg; Pkg.add("PaleobiologyDB")'
+```
+
+### Mainline version (production-ready pre-release) 
+
+This version requires that the Julia environment be provisioned with PhyloPicMakie before installation.
+
+In Pkg mode:
 
 ```
 pkg> add https://github.com/jeetsukumaran/PhyloPicMakie.jl
 pkg> add https://github.com/jeetsukumaran/PaleobiologyDB.jl 
 ```
 
-or, in Julia:
+Or, in Julia:
 
 ```julia
 using Pkg
 Pkg.add(url = "https://github.com/jeetsukumaran/PhyloPicMakie.jl")
 Pkg.add(url = "https://github.com/jeetsukumaran/PaleobiologyDB.jl")
 ```
+
+### Updating
+
+In Pkg mode:
+
+```
+pkg> update
+pkg> instantiate
+pkg> precompile
+```
+
+Or, in Julia:
+
+```julia
+using Pkg
+Pkg.update()
+Pkg.instantiate()
+Pkg.precompile()
+```
+
+On the shell:
+
+```bash
+# Global installation
+julia -e 'using Pkg; Pkg.update(); Pkg.instantiate(); Pkg.precompile()'
+# if project-scoped environment
+julia --project=. -e 'using Pkg; Pkg.update(); Pkg.instantiate(); Pkg.precompile()' 
+```
+
+
 
 ## Quick start
 
