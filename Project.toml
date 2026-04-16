@@ -23,7 +23,7 @@ PhyloPicMakie = {url = "https://github.com/jeetsukumaran/PhyloPicMakie.jl.git"}
 [compat]
 Aqua = "0.8"
 CSV = "0.10.15"
-DataCaches = "0.4"
+DataCaches = "0.3, 0.4"
 DataFrames = "1.7.1"
 Documenter = "1"
 Downloads = "1.6.0"
