@@ -1,8 +1,7 @@
 # TaxonTreeMakie — Makie tree visualization
 
-`PaleobiologyDB.TaxonTreeMakie` is an optional extension that renders
+`PaleobiologyDB.TaxonTreeMakie` is a submodule that renders
 [`TaxonTree`](@ref) objects as rectangular dendrograms in Makie figures.
-It activates automatically when any Makie backend is loaded.
 
 ## Installation
 
