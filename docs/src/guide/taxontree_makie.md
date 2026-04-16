@@ -16,14 +16,8 @@ pkg> add CairoMakie
 ```julia
 using PaleobiologyDB
 using CairoMakie   # or GLMakie, WGLMakie, …
-# → PaleobiologyDB.TaxonTreeMakie activates automatically
 using PaleobiologyDB.TaxonTreeMakie
 ```
-
-After loading the trigger package the extension module is accessible as
-`PaleobiologyDB.TaxonTreeMakie`, and its exported symbols (`taxontreeplot`,
-`taxontreeplot!`, `TaxonTreePlot`, `set_rank_axis_ticks!`) are brought into
-scope via `using PaleobiologyDB.TaxonTreeMakie`.
 
 ## Quick start — basic dendrogram
 
