@@ -147,7 +147,7 @@ end
 
 Makie plot type for rendering a [`TaxonTree`](@ref) as a rectangular
 dendrogram.  Produced by [`taxontreeplot`](@ref) (standalone figure) or
-[`taxontreeplot!`](@ref) (existing axis).
+`taxontreeplot!` (existing axis).
 
 ## Attributes
 
@@ -175,7 +175,7 @@ dendrogram.  Produced by [`taxontreeplot`](@ref) (standalone figure) or
 | `phylopic_xoffset` | `0.3` | Additional rightward gap in data units beyond the tip-label start position |
 | `phylopic_on_missing` | `:skip` | Policy when no PhyloPic image is found: `:skip` (omit), `:placeholder` (grey box), `:error` (throw) |
 | `phylopic_aspect` | `:preserve` | `:preserve` maintains the original image aspect ratio; `:stretch` renders as a square |
-| `phylopic_image_rendering` | `:thumbnail` | Image URL to fetch: `:thumbnail` (PNG thumbnail), `:raster` (PNG full-res), `:og_image` (PNG Open Graph), `:vector` (SVG — requires FileIO SVG plugin), `:source_file` (SVG or raster); see [`PhyloPicDB.PHYLOPIC_IMAGE_RENDERINGS`](@ref) |
+| `phylopic_image_rendering` | `:thumbnail` | Image URL to fetch: `:thumbnail` (PNG thumbnail), `:raster` (PNG full-res), `:og_image` (PNG Open Graph), `:vector` (SVG — requires FileIO SVG plugin), `:source_file` (SVG or raster); see `PhyloPicDB.PHYLOPIC_IMAGE_RENDERINGS` |
 
 ## Examples
 
@@ -194,7 +194,7 @@ set_rank_axis_ticks!(ax, tree)
 display(fig)
 ```
 
-See also [`taxontreeplot`](@ref), [`taxontreeplot!`](@ref),
+See also [`taxontreeplot`](@ref), `taxontreeplot!`,
 [`set_rank_axis_ticks!`](@ref).
 """
 @recipe(TaxonTreePlot, taxontree) do scene
@@ -389,7 +389,7 @@ Only ranks that are present in `tree` and whose depth is known (i.e. present
 in `_RANK_DEPTH`) are labelled.  Tick labels are rotated 45° to prevent
 overlap.
 
-Typically called immediately after [`taxontreeplot!`](@ref):
+Typically called immediately after `taxontreeplot!`:
 
 ```julia
 p = taxontreeplot!(ax, tree; showtips = true)
@@ -451,8 +451,8 @@ save("tree.png", fig)
   [`set_rank_axis_ticks!`](@ref) to label the x-axis with rank names.
 - `figure_kwargs`: keyword arguments forwarded to `Makie.Figure(; ...)`.
 - `axis_kwargs`: keyword arguments forwarded to `Makie.Axis(; ...)`.
-- All remaining keyword arguments are forwarded to [`TaxonTreePlot`](@ref)
-  attributes (see [`taxontreeplot!`](@ref)).
+- All remaining keyword arguments are forwarded to `TaxonTreePlot`
+  attributes (see `taxontreeplot!`).
 
 ## Examples
 
@@ -481,7 +481,7 @@ fig3, ax3, p3 = taxontreeplot(tree;
 )
 ```
 
-See also [`taxontreeplot!`](@ref), [`TaxonTreePlot`](@ref),
+See also `taxontreeplot!`, `TaxonTreePlot`,
 [`set_rank_axis_ticks!`](@ref).
 """
 function taxontreeplot(

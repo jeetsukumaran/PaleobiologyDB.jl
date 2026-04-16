@@ -27,7 +27,7 @@ const VALID_TIP_ANCHORS = (:tip, :tip_label_origin)
 
 Extract leaf-tip coordinates from a `TaxonTreePlot` object.
 
-Convenience overload of [`tip_positions(tree, xs, ys)`](@ref) that reads the
+Convenience overload of [`tip_positions`](@ref) that reads the
 tree and `ladderize` attribute from `p` and recomputes the dendrogram layout.
 
 Returns a `NamedTuple` with fields:
@@ -49,7 +49,7 @@ tips = tip_positions(p)
 # tips.y      — y positions in data space
 ```
 
-See also [`tip_positions(tree, xs, ys)`](@ref), [`augment_tip_phylopic!`](@ref).
+See also [`tip_positions`](@ref), [`augment_tip_phylopic!`](@ref).
 """
 function tip_positions(p::TaxonTreePlot)::NamedTuple
     tree   = p[:taxontree][]
@@ -88,14 +88,14 @@ This is the primary tree-aware overlay API.  It computes anchor positions
 from the dendrogram layout and delegates all rendering to
 [`PaleobiologyDB.PhyloPicPBDB.augment_phylopic!`](@ref).
 
-See also the convenience overload [`augment_tip_phylopic!(ax, p; ...)`](@ref)
+See also the convenience overload [`augment_tip_phylopic!`](@ref)
 which reads tree and layout directly from a `TaxonTreePlot`.
 
 ## Arguments
 
 - `ax`: the `Makie.Axis` to annotate.
 - `tree`: source [`TaxonTree`](@ref).
-- `xs`, `ys`: layout vectors from [`_compute_dendrogram_layout`](@ref), one
+- `xs`, `ys`: layout vectors from `_compute_dendrogram_layout`, one
   value per vertex in `tree.graph`.
 
 ## Keyword arguments
@@ -230,7 +230,7 @@ Convenience overload of [`augment_tip_phylopic!`](@ref) that reads tree and
 layout from a `TaxonTreePlot`.
 
 All keyword arguments are forwarded unchanged to the primary method.  See
-[`augment_tip_phylopic!(ax, tree, xs, ys; ...)`](@ref) for full documentation.
+[`augment_tip_phylopic!`](@ref) for full documentation.
 
 ## Examples
 

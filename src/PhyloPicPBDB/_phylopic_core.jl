@@ -164,7 +164,7 @@ images: resolve the node here, then retrieve images via `PhyloPicDB` functions.
 
 # Returns
 
-A [`PhyloPicDB.PhyloPicNode`](@ref), or `nothing` if the taxon cannot be found
+A `PhyloPicDB.PhyloPicNode`, or `nothing` if the taxon cannot be found
 in PBDB or PhyloPic.  The result is cached per `(taxon_name, build)`.
 
 # Examples
@@ -197,7 +197,7 @@ Return all PhyloPic images for a PBDB taxon as a typed vector.
 
 Typed companion to [`phylopic_images_dataframe`](@ref): returns the same images as a
 `Vector{PhyloPicDB.PhyloPicImage}` rather than a `DataFrame`, making it easy to
-pass the result directly to [`PhyloPicDB.select_image`](@ref).
+pass the result directly to `PhyloPicDB.select_image`.
 
 # Arguments
 
@@ -396,7 +396,7 @@ genus_rec = acquire_phylopic("Tyrannosaurus", "genus_phylopic_")
 genus_rec.genus_phylopic_uuid
 ```
 
-See also [`acquire_phylopic(df, ...)`](@ref), [`augment_phylopic`](@ref).
+See also [`acquire_phylopic`](@ref) (DataFrame variant), [`augment_phylopic`](@ref).
 """
 function acquire_phylopic(
     taxon_name::AbstractString,
@@ -497,7 +497,7 @@ end
 
 Enrich `df` with PhyloPic image columns and return the combined DataFrame.
 
-Thin wrapper: calls [`acquire_phylopic(df, ...)`](@ref) and concatenates the
+Thin wrapper: calls [`acquire_phylopic`](@ref) (DataFrame variant) and concatenates the
 result with a copy of `df` using `hcat`.
 
 ## Examples

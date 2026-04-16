@@ -58,7 +58,7 @@ reduce to this.
 ### Image source (exactly one required)
 
 - `taxon`: per-datum taxon names (used for glyph lookup via
-  [`PaleobiologyDB.Taxonomy.acquire_phylopic`](@ref)).  Missing or empty
+  [`acquire_phylopic`](@ref)).  Missing or empty
   strings are handled according to `on_missing`.
 - `glyph`: a single pre-loaded image matrix (e.g. from `FileIO.load`),
   broadcast to every data point.  When provided, `taxon` is ignored.

@@ -336,7 +336,7 @@ Returns a `NamedTuple` with fields:
 All four vectors are the same length and are aligned by index.
 
 `xs` and `ys` are the layout vectors returned by
-[`_compute_dendrogram_layout`](@ref).
+`_compute_dendrogram_layout`.
 
 ## Examples
 

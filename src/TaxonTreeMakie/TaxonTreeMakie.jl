@@ -31,9 +31,9 @@ augment_tip_phylopic!(ax3, p3; xoffset = 1.0)
 
 | Symbol | Description |
 |---|---|
-| [`TaxonTreePlot`](@ref) | Makie plot type (for dispatch / attribute access) |
+| `TaxonTreePlot` | Makie plot type (for dispatch / attribute access) |
 | [`taxontreeplot`](@ref) | Create a standalone figure; returns `(Figure, Axis, TaxonTreePlot)` |
-| [`taxontreeplot!`](@ref) | Add a dendrogram to an existing axis |
+| `taxontreeplot!` | Add a dendrogram to an existing axis |
 | [`set_rank_axis_ticks!`](@ref) | Label the x-axis with rank names at their depth positions |
 | [`tip_positions`](@ref) | Extract leaf-tip coordinates `(vertices, names, x, y)` from a tree or plot |
 | [`augment_tip_phylopic!`](@ref) | Add PhyloPic silhouettes at each leaf tip of an existing plot |

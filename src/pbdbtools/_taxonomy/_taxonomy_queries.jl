@@ -767,9 +767,6 @@ subset(df, :taxonomy_clades => contains_taxon([r"^Canis\\b", r"^Vulpes\\b"]; com
 See also [`taxon_occursin`](@ref), [`augment_taxonomy`](@ref),
 [`child_taxa`](@ref), [`parent_taxa`](@ref), [`registered_taxa`](@ref).
 """
-
-# 2-arg forms (delegate to taxon_occursin with arguments swapped)
-
 function contains_taxon(
         df::AbstractDataFrame,
         name::Regex;
