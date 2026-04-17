@@ -7,7 +7,7 @@ The paradigm is **idiomatic functional Julia**: functional principles applied
 with Julia's grain, not against it. The goal is equational reasoning, local
 correctness, and composability — not syntactic purity or Haskell cosplay. Where
 Julia's idioms and FP principles align, follow both. Where performance requires
-mutation, use the mutation contract in §3.
+mutation, use the mutation contract in §4.
 
 Code style formatting is enforced by `Runic.jl` (SciML standard). This
 document covers *design* decisions that no formatter can enforce.
@@ -23,7 +23,7 @@ When they conflict, programmer judgement wins.
 ## 1. Core principles and their Julia expression
 
 The principles below are ordered from most foundational to most derived. Each
-one follows from the one above it. All are in force unless §3 creates an
+one follows from the one above it. All are in force unless §4 creates an
 explicit carve-out.
 
 ---
@@ -144,7 +144,7 @@ end
 > instead of mutating existing ones.
 
 **In Julia**, immutability is the default for `struct`. Prefer it unless
-mutation is required for performance (see §3).
+mutation is required for performance (see §4).
 
 ```julia
 # Preferred: immutable struct — fields cannot change after construction
@@ -167,7 +167,7 @@ end
 - Do not mutate a `struct`'s fields from outside the module that defines it.
 - Prefer returning modified copies over modifying in place:
   `with_age(r::OccurrenceRecord, age::Float64)::OccurrenceRecord = OccurrenceRecord(r.taxon_id, age, r.locality)`
-- For large scientific data, the mutation contract in §3 applies — but only
+- For large scientific data, the mutation contract in §4 applies — but only
   for performance-critical paths, and only via `!`-named functions.
 
 ---
@@ -786,17 +786,46 @@ process_b(occ::OccurrenceRecord)::OccurrenceRecord = occ |> validate_age |> _pro
 
 ---
 
-## 2. SciML-specific conventions
+## 2. Naming conventions
+
+### 2.1 Types, modules, and functions
+
+- **Types**: `PascalCase` — first letter of each word capitalized.
+  E.g. `OccurrenceRecord`, `MarineHabitat`.
+- **Modules**: `PascalCase`. E.g. `PaleobioDatabase`, `DiversityMetrics`.
+- **Functions**: all lowercase; underscores between words when the name would
+  otherwise be hard to read. Constructors follow their type name.
+  E.g. `compute_diversity`, `filter_valid`, `taxon_richness`.
+
+### 2.2 Module file naming
+
+A file that declares a module has the same name as the module.
+E.g. the module `DiversityMetrics` is declared in `DiversityMetrics.jl`.
+
+### 2.3 Getters and setters
+
+Functions that access or update a field on a struct are not prefixed with
+`get` or `set`. The getter is named for the field; the setter takes the same
+name with a `!` suffix (consistent with §1.2):
+
+```julia
+age(record)              # get age field
+age!(record, 65.0)       # set age field
+```
+
+---
+
+## 3. SciML-specific conventions
 
 These are drawn directly from the SciML Style Guide and are normative here.
 
-### 2.1 Formatting
+### 3.1 Formatting
 
-- Use `Runic.jl` for code formatting. A `.JuliaFormatter.toml` with
-  `style = "sciml"` and a `FormatCheck.yml` CI action are the standard setup.
+- Use `Runic.jl` for code formatting.
+- Enforce formatting in CI with a Runic-based formatting check.
 - Do not mix style PRs with functional changes.
 
-### 2.2 Function argument order
+### 3.2 Function argument order
 
 SciML convention for argument ordering (from most to least important):
 
@@ -817,14 +846,14 @@ function lotka_volterra!(du::AbstractVector, u::AbstractVector, p, t)::AbstractV
 end
 ```
 
-### 2.3 Generic array support
+### 3.3 Generic array support
 
 - Never assume 1-based indexing. Use `eachindex`, `axes`, or broadcasting.
 - Construct output arrays with `similar(input)`, not `Vector{Float64}(undef, n)`,
   to preserve array type (GPU, static, offset).
 - Do not hardcode `Array` when `AbstractArray` or `AbstractVector` is intended.
 
-### 2.4 Tests
+### 3.4 Tests
 
 - All recommended (exported) functionality must be tested.
 - Tests should cover a wide gamut of input types — not just `Vector{Float64}`.
@@ -832,7 +861,7 @@ end
   omitted.
 - One test file per source file: `test/test_<module>.jl` mirrors `src/<module>.jl`.
 
-### 2.5 Error handling
+### 3.5 Error handling
 
 - Catch errors as high as possible — validate inputs at the public API boundary,
   not deep in a call chain.
@@ -842,12 +871,12 @@ end
   values outside a function's mathematical domain, `DimensionMismatch` for
   array size issues.
 
-### 2.6 Packages over modules
+### 3.6 Packages over modules
 
 - When in doubt, a submodule should become a subpackage or a separate package.
 - Prefer interface packages over `Requires.jl` conditional modules.
 
-### 2.7 Macros
+### 3.7 Macros
 
 - Use macros only for syntactic sugar where the generated code is easy to
   picture (`@.`, `@view`, `@inbounds`, `@muladd`).
@@ -856,7 +885,7 @@ end
 
 ---
 
-## 3. The mutation contract
+## 4. The mutation contract
 
 This section governs the one place where functional principles yield to
 performance: in-place mutation for numerical hot paths.
@@ -926,7 +955,7 @@ end
 
 ---
 
-## 4. Anti-patterns
+## 5. Anti-patterns
 
 These are explicitly prohibited. If you find yourself writing any of these,
 stop and redesign.
@@ -953,7 +982,7 @@ stop and redesign.
 
 ---
 
-## 5. Quick-reference decision tree
+## 6. Quick-reference decision tree
 
 When writing a function, answer these in order:
 
@@ -966,7 +995,7 @@ Does it need to mutate an argument?
 ├── No  → Immutable, out-of-place. Preferred.
 └── Yes → Is this a genuine performance requirement?
           ├── No  → Return a copy instead
-          └── Yes → Apply the mutation contract (§3):
+          └── Yes → Apply the mutation contract (§4):
                     name it f!, document which arg is mutated,
                     provide an f wrapper if callers need out-of-place
 
@@ -989,3 +1018,27 @@ Does it have an explicit return type annotations?
 └── Yes → You're done. Write the docstring.
 ```
 
+
+## 7. Project management
+
+- Documentation (`docs/`) and tests (`test/`) maintain their own project environments, using `[sources] ... = {path = "../"}` for the main package.
+- Use documented public Pkg.add, Pkg.develop, Pkg.rm etc. methods to curate the project environment rather than editing Project.toml file directly UNLESS there is no other way (e.g., adding a "`[sources]`" section to `Project.toml`), in which case bring to my attention for discussion.
+
+## 8. Codebase curation
+
+- Files that declare modules should only declare the module and import any
+  modules it requires. Any subsequent significant code should be included from
+  separate files via `include`. E.g.:
+  ```julia
+  module DiversityMetrics
+
+  using IntervalTrees, JSON
+
+  include("metrics.jl")
+  include("io.jl")
+
+  end
+  ```
+- Break large sources up into smaller files: 400-600 LOC's (lines of code, i.e. not including commented-out lines) is ideal.
+- Do not add dependencies by assuming you know the UUID. Always prefer to use Pkg.add unless there is no other way, in which case bring to my attention for discussion.
+- Never break existing functionality without approval/discussion, but if better approaches are available that would be enabled by a ground-up refactoring or breaking changes or an entirely different implementation, definitely bring it up for my consideration.
