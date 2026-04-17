@@ -173,7 +173,7 @@ dendrogram.  Produced by [`taxontreeplot`](@ref) (standalone figure) or
 | `internal_fontsize` | `7` | Internal label font size in points |
 | `internal_color` | `:gray40` | Internal label colour |
 | `show_phylopic` | `true` | Draw a PhyloPic silhouette to the right of each leaf tip label|
-| `phylopic_glyph_size` | `0.8` | Half-height of each silhouette glyph in data units (total height = `2 × phylopic_glyph_size`) |
+| `phylopic_glyph_size` | `1.0` | Fraction of the row height each silhouette occupies (`1.0` fills the row; `0.8` uses 80% of it). Absolute data-unit half-height = `phylopic_glyph_size × row_spacing / 2` |
 | `phylopic_align` | `false` | When `true`, all silhouettes are placed at a single right-hand column; when `false`, each appears immediately right of its label |
 | `phylopic_xoffset` | `0.9` | Additional rightward gap in data units beyond the tip-label start position |
 | `phylopic_yoffset` | `0.0` | Vertical offset for PhyloPic silhouettes in data units (positive = upward); applied independently of `tip_yoffset` |
@@ -229,7 +229,7 @@ See also [`taxontreeplot`](@ref), `taxontreeplot!`,
         internal_color = :gray40,
         # PhyloPic silhouettes at leaf tips
         show_phylopic = true,
-        phylopic_glyph_size = 0.8,
+        phylopic_glyph_size = 1.0,
         phylopic_align = false,
         phylopic_xoffset = 0.65,
         phylopic_yoffset = 0.0,
@@ -370,6 +370,7 @@ function Makie.plot!(p::TaxonTreePlot{<:Tuple{TaxonTree}})
         _render_tip_phylopic!(
             p, tree_obs[], layout_obs[]...;
             glyph_size = p[:phylopic_glyph_size][],
+            row_spacing = p[:row_spacing][],
             do_align = p[:phylopic_align][],
             phylopic_xoffset = p[:phylopic_xoffset][],
             phylopic_yoffset = p[:phylopic_yoffset][],
