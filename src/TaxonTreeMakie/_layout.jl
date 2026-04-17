@@ -157,6 +157,7 @@ end
     _compute_dendrogram_layout(
         tree::TaxonTree;
         ladderize::Bool = false,
+        row_spacing::Real = 1.0,
     ) -> Tuple{Vector{Float64}, Vector{Float64}}
 
 Compute `(x, y)` axis positions for all vertices of `tree` for a rectangular
@@ -172,7 +173,8 @@ dendrogram layout.
   child) so each unknown-rank vertex has a valid parent x already set.
 
 **y-coordinate** — assigned by post-order DFS:
-- Each leaf receives the next sequential integer (1, 2, 3, …).
+- Each leaf receives a y value incremented by `row_spacing` from the previous
+  leaf (default `1.0`, giving integer positions 1, 2, 3, …).
 - Each internal node receives the midpoint of its children's y range.
 
 ## Arguments
@@ -181,6 +183,9 @@ dendrogram layout.
 - `ladderize`: when `true`, children of each node are sorted by ascending
   subtree leaf count before the DFS.  This spreads the tree asymmetrically,
   placing dense subtrees at the bottom and sparse subtrees at the top.
+- `row_spacing`: vertical gap between consecutive leaf rows in data units.
+  Default `1.0` preserves the current unit spacing.  Values greater than `1.0`
+  spread rows apart; values less than `1.0` compress them.
 
 ## Returns
 
@@ -197,11 +202,13 @@ tree = taxon_subtree("Carnivora"; leaf_rank = "family")
 
 # Access the extension layout function after loading Makie:
 xs, ys = PaleobiologyDB.TaxonTreeMakie._compute_dendrogram_layout(tree)
+xs, ys = PaleobiologyDB.TaxonTreeMakie._compute_dendrogram_layout(tree; row_spacing = 2.0)
 ```
 """
 function _compute_dendrogram_layout(
         tree::TaxonTree;
         ladderize::Bool = false,
+        row_spacing::Real = 1.0,
     )::Tuple{Vector{Float64}, Vector{Float64}}
     g = tree.graph
     n = Graphs.nv(g)
@@ -242,12 +249,12 @@ function _compute_dendrogram_layout(
 
     # ── Step 3: assign y via post-order DFS ──────────────────────────────────
     postorder = _postorder_traversal(g, tree.root; ladderize = ladderize)
-    leaf_y = 0
+    leaf_y = 0.0
     for v in postorder
         children = Graphs.outneighbors(g, v)
         if isempty(children)
-            leaf_y += 1
-            y[v] = Float64(leaf_y)
+            leaf_y += Float64(row_spacing)
+            y[v] = leaf_y
         else
             y_min = minimum(y[c] for c in children)
             y_max = maximum(y[c] for c in children)

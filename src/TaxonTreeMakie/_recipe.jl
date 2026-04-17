@@ -161,19 +161,22 @@ dendrogram.  Produced by [`taxontreeplot`](@ref) (standalone figure) or
 | `show_unifurcation_nodes` | `true` | When `false`, suppress markers at single-child (unifurcation) nodes; branch segments are still drawn |
 | `node_color` | `:black` | Node marker colour (used when `color_by_rank = false`) |
 | `node_size` | `5` | Node marker size in points |
-| `color_by_rank` | `false` | Colour branches and nodes by taxonomic rank |
+| `color_by_rank` | `true` | Colour branches and nodes by taxonomic rank |
 | `rank_palette` | `nothing` | `Dict{String,Any}` mapping rank name → colour; `nothing` uses the built-in cycle |
 | `showtips` | `true` | Show leaf taxon-name labels |
 | `tip_fontsize` | `9` | Leaf label font size in points |
 | `tip_color` | `:black` | Leaf label colour |
-| `tip_xoffset` | `0.2` | Rightward offset for leaf labels in data units |
+| `row_spacing` | `1.0` | Vertical gap between consecutive leaf rows in data units; `1.0` gives integer positions, `2.0` doubles the spacing |
+| `tip_xoffset` | `0.1` | Rightward offset for leaf labels in data units |
+| `tip_yoffset` | `0.0` | Vertical offset for leaf labels in data units (positive = upward) |
 | `showinternal` | `false` | Show internal node name labels |
 | `internal_fontsize` | `7` | Internal label font size in points |
 | `internal_color` | `:gray40` | Internal label colour |
-| `show_phylopic` | `false` | Draw a PhyloPic silhouette to the right of each leaf tip label|
-| `phylopic_glyph_size` | `0.4` | Half-height of each silhouette glyph in data units (total height = `2 × phylopic_glyph_size`) |
+| `show_phylopic` | `true` | Draw a PhyloPic silhouette to the right of each leaf tip label|
+| `phylopic_glyph_size` | `0.8` | Half-height of each silhouette glyph in data units (total height = `2 × phylopic_glyph_size`) |
 | `phylopic_align` | `false` | When `true`, all silhouettes are placed at a single right-hand column; when `false`, each appears immediately right of its label |
-| `phylopic_xoffset` | `0.3` | Additional rightward gap in data units beyond the tip-label start position |
+| `phylopic_xoffset` | `0.9` | Additional rightward gap in data units beyond the tip-label start position |
+| `phylopic_yoffset` | `0.0` | Vertical offset for PhyloPic silhouettes in data units (positive = upward); applied independently of `tip_yoffset` |
 | `phylopic_on_missing` | `:skip` | Policy when no PhyloPic image is found: `:skip` (omit), `:placeholder` (grey box), `:error` (throw) |
 | `phylopic_aspect` | `:preserve` | `:preserve` maintains the original image aspect ratio; `:stretch` renders as a square |
 | `phylopic_image_rendering` | `:thumbnail` | Image URL to fetch: `:thumbnail` (PNG thumbnail), `:raster` (PNG full-res), `:og_image` (PNG Open Graph), `:vector` (SVG — requires FileIO SVG plugin), `:source_file` (SVG or raster); see `PhyloPicDB.PHYLOPIC_IMAGE_RENDERINGS` |
@@ -202,6 +205,7 @@ See also [`taxontreeplot`](@ref), `taxontreeplot!`,
     Attributes(
         # Layout
         ladderize = false,
+        row_spacing = 1.0,
         # Branches
         branch_color = :black,
         branch_linewidth = 1.5,
@@ -211,22 +215,24 @@ See also [`taxontreeplot`](@ref), `taxontreeplot!`,
         node_color = :black,
         node_size = 5,
         # Rank-based colouring
-        color_by_rank = false,
+        color_by_rank = true,
         rank_palette = nothing,
         # Leaf labels
         showtips = true,
         tip_fontsize = 9,
         tip_color = :black,
-        tip_xoffset = 0.2,
+        tip_xoffset = 0.1,
+        tip_yoffset = 0.0,
         # Internal labels
         showinternal = false,
         internal_fontsize = 7,
         internal_color = :gray40,
         # PhyloPic silhouettes at leaf tips
-        show_phylopic = false,
-        phylopic_glyph_size = 0.4,
+        show_phylopic = true,
+        phylopic_glyph_size = 0.8,
         phylopic_align = false,
-        phylopic_xoffset = 0.3,
+        phylopic_xoffset = 0.65,
+        phylopic_yoffset = 0.0,
         phylopic_on_missing = :skip,
         phylopic_aspect = :preserve,
         phylopic_image_rendering = :thumbnail,
@@ -241,8 +247,8 @@ function Makie.plot!(p::TaxonTreePlot{<:Tuple{TaxonTree}})
     tree_obs = p[:taxontree]
 
     # ── Layout (reactive to tree and ladderize) ───────────────────────────
-    layout_obs = Makie.lift(tree_obs, p[:ladderize]) do tree, lad
-        _compute_dendrogram_layout(tree; ladderize = lad)
+    layout_obs = Makie.lift(tree_obs, p[:ladderize], p[:row_spacing]) do tree, lad, rsp
+        _compute_dendrogram_layout(tree; ladderize = lad, row_spacing = rsp)
     end
 
     # ── Branch segments: (x1,y1,x2,y2) tuples ────────────────────────────
@@ -313,8 +319,8 @@ function Makie.plot!(p::TaxonTreePlot{<:Tuple{TaxonTree}})
         [v for v in Graphs.vertices(g) if isempty(Graphs.outneighbors(g, v))]
     end
 
-    leaf_pts_obs = Makie.lift(layout_obs, leaf_vertices_obs, p[:tip_xoffset]) do (xs, ys), lvs, xoff
-        [Makie.Point2f(xs[v] + xoff, ys[v]) for v in lvs]
+    leaf_pts_obs = Makie.lift(layout_obs, leaf_vertices_obs, p[:tip_xoffset], p[:tip_yoffset]) do (xs, ys), lvs, xoff, yoff
+        [Makie.Point2f(xs[v] + xoff, ys[v] + yoff) for v in lvs]
     end
 
     leaf_names_obs = Makie.lift(tree_obs, leaf_vertices_obs) do tree, lvs
@@ -366,6 +372,7 @@ function Makie.plot!(p::TaxonTreePlot{<:Tuple{TaxonTree}})
             glyph_size = p[:phylopic_glyph_size][],
             do_align = p[:phylopic_align][],
             phylopic_xoffset = p[:phylopic_xoffset][],
+            phylopic_yoffset = p[:phylopic_yoffset][],
             tip_xoffset = p[:tip_xoffset][],
             on_missing = p[:phylopic_on_missing][],
             aspect = p[:phylopic_aspect][],
@@ -513,4 +520,64 @@ function taxontreeplot(
     p = taxontreeplot!(ax, tree; kwargs...)
     show_rank_ticks && set_rank_axis_ticks!(ax, tree)
     return (fig, ax, p)
+end
+
+# ---------------------------------------------------------------------------
+# String dispatch: taxontreeplot(taxon_name; ...)
+# ---------------------------------------------------------------------------
+
+"""
+    taxontreeplot(
+        taxon_name::AbstractString;
+        leaf_rank::Union{AbstractString, Nothing} = nothing,
+        strict_leaf_rank::Bool = true,
+        show_rank_ticks::Bool = true,
+        figure_kwargs::NamedTuple = (;),
+        axis_kwargs::NamedTuple = (;),
+        kwargs...,
+    ) -> Tuple{Makie.Figure, Makie.Axis, TaxonTreePlot}
+
+Convenience method: look up `taxon_name` in the PBDB, build its subtree, and
+render it as a dendrogram in a standalone figure.
+
+Calls [`taxon_subtree`](@ref) with `leaf_rank` and `strict_leaf_rank`, then
+delegates to [`taxontreeplot(::TaxonTree; ...)`](@ref).  All remaining keyword
+arguments (recipe attributes such as `ladderize`, `showtips`, `row_spacing`,
+`show_phylopic`, etc.) are forwarded unchanged.  See `TaxonTreePlot` for the
+full attribute reference.
+
+## Arguments
+
+- `taxon_name`: PBDB taxon name (e.g. `"Carnivora"`, `"Canidae"`).
+- `leaf_rank`: prune the subtree at this rank (e.g. `"family"`, `"genus"`).
+  `nothing` (default) keeps all descendants.
+- `strict_leaf_rank`: when `true` (default), only taxa whose rank exactly
+  matches `leaf_rank` become leaves; pass `false` to also include shallower
+  terminals.
+- `show_rank_ticks`, `figure_kwargs`, `axis_kwargs`: forwarded to
+  [`taxontreeplot(::TaxonTree; ...)`](@ref).
+
+## Examples
+
+```julia
+using PaleobiologyDB, CairoMakie
+using PaleobiologyDB.Taxonomy.TaxonTreeMakie
+
+fig, ax, p = taxontreeplot("Carnivora"; leaf_rank = "family")
+save("carnivora.png", fig)
+
+fig2, _, _ = taxontreeplot("Canidae"; leaf_rank = "genus", ladderize = true, row_spacing = 1.5)
+```
+"""
+function taxontreeplot(
+        taxon_name::AbstractString;
+        leaf_rank::Union{AbstractString, Nothing} = nothing,
+        strict_leaf_rank::Bool = true,
+        show_rank_ticks::Bool = true,
+        figure_kwargs::NamedTuple = (;),
+        axis_kwargs::NamedTuple = (;),
+        kwargs...,
+    )::Tuple{Makie.Figure, Makie.Axis, TaxonTreePlot}
+    tree = taxon_subtree(taxon_name; leaf_rank, strict_leaf_rank)
+    return taxontreeplot(tree; show_rank_ticks, figure_kwargs, axis_kwargs, kwargs...)
 end

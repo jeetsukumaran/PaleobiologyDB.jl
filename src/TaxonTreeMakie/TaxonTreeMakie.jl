@@ -49,7 +49,7 @@ using PhyloPicMakie.Makie: @recipe, Attributes
 import Graphs
 
 using PaleobiologyDB
-using PaleobiologyDB.Taxonomy: TaxonTree, TaxonNode
+using PaleobiologyDB.Taxonomy: TaxonTree, TaxonNode, taxon_subtree
 
 export TaxonTreePlot, taxontreeplot, taxontreeplot!, set_rank_axis_ticks!
 export tip_positions, augment_tip_phylopic!

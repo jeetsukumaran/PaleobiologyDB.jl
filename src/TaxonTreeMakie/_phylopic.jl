@@ -111,6 +111,7 @@ end
         glyph_size::Real,
         do_align::Bool,
         phylopic_xoffset::Real,
+        phylopic_yoffset::Real,
         tip_xoffset::Real,
         on_missing::Symbol,
         aspect::Symbol,
@@ -142,6 +143,9 @@ proportions after auto-limits or window resize events.
   is placed at `xs[leaf] + tip_xoffset + phylopic_xoffset`.
 - `phylopic_xoffset`: additional rightward gap in data units beyond the
   tip-label start x.
+- `phylopic_yoffset`: vertical offset for each silhouette centre in data units
+  (positive = upward from `ys[leaf]`); independent of the tip-label y offset,
+  which is applied upstream in `leaf_pts_obs`.
 - `tip_xoffset`: the recipe's `tip_xoffset` attribute (where text labels
   start, in data units).
 - `on_missing`: policy when no image is available.
@@ -165,6 +169,7 @@ function _render_tip_phylopic!(
         glyph_size::Real,
         do_align::Bool,
         phylopic_xoffset::Real,
+        phylopic_yoffset::Real,
         tip_xoffset::Real,
         on_missing::Symbol,
         aspect::Symbol,
@@ -204,7 +209,7 @@ function _render_tip_phylopic!(
         # x anchor: either per-leaf or uniform column.
         x_anchor = do_align ? x_align : Float64(xs[v]) + Float64(tip_xoffset) +
             Float64(phylopic_xoffset)
-        y_anchor = Float64(ys[v])
+        y_anchor = Float64(ys[v]) + Float64(phylopic_yoffset)
 
         if isnothing(img)
             if on_missing === :error
