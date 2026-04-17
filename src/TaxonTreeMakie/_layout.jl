@@ -183,9 +183,11 @@ dendrogram layout.
 - `ladderize`: when `true`, children of each node are sorted by ascending
   subtree leaf count before the DFS.  This spreads the tree asymmetrically,
   placing dense subtrees at the bottom and sparse subtrees at the top.
-- `row_spacing`: vertical gap between consecutive leaf rows in data units.
-  Default `1.0` preserves the current unit spacing.  Values greater than `1.0`
-  spread rows apart; values less than `1.0` compress them.
+- `row_spacing`: number of glyph-sized row slots between consecutive leaf
+  centres.  `1.0` (default) places leaves one slot apart, leaving exactly
+  enough room for a silhouette of the same size (`phylopic_glyph_size = 1.0`
+  fills the slot).  The internal y-increment per leaf is `2 × row_spacing`
+  data units so that one slot equals one silhouette diameter.
 
 ## Returns
 
@@ -202,7 +204,7 @@ tree = taxon_subtree("Carnivora"; leaf_rank = "family")
 
 # Access the extension layout function after loading Makie:
 xs, ys = PaleobiologyDB.TaxonTreeMakie._compute_dendrogram_layout(tree)
-xs, ys = PaleobiologyDB.TaxonTreeMakie._compute_dendrogram_layout(tree; row_spacing = 2.0)
+xs, ys = PaleobiologyDB.TaxonTreeMakie._compute_dendrogram_layout(tree; row_spacing = 1.5)
 ```
 """
 function _compute_dendrogram_layout(
@@ -253,7 +255,7 @@ function _compute_dendrogram_layout(
     for v in postorder
         children = Graphs.outneighbors(g, v)
         if isempty(children)
-            leaf_y += Float64(row_spacing)
+            leaf_y += 2.0 * Float64(row_spacing)
             y[v] = leaf_y
         else
             y_min = minimum(y[c] for c in children)

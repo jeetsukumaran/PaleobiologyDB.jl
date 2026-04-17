@@ -109,7 +109,6 @@ end
         xs::AbstractVector{<:Real},
         ys::AbstractVector{<:Real};
         glyph_size::Real,
-        row_spacing::Real,
         do_align::Bool,
         phylopic_xoffset::Real,
         phylopic_yoffset::Real,
@@ -138,11 +137,7 @@ proportions after auto-limits or window resize events.
 - `tree`: the `TaxonTree` being rendered.
 - `xs`, `ys`: dendrogram layout coordinates, one per vertex (from
   `_compute_dendrogram_layout`).
-- `glyph_size`: fraction of the row height each silhouette should occupy
-  (`1.0` fills the row; `0.8` uses 80% of it).  The actual data-unit
-  half-height is derived as `glyph_size × row_spacing / 2`.
-- `row_spacing`: vertical gap between consecutive leaf rows in data units
-  (the `row_spacing` recipe attribute, forwarded from `Makie.plot!`).
+- `glyph_size`: half-height of each rendered silhouette in data units.
 - `do_align`: when `true`, all images are placed at the same x position
   (`max(leaf x) + tip_xoffset + phylopic_xoffset`); when `false`, each image
   is placed at `xs[leaf] + tip_xoffset + phylopic_xoffset`.
@@ -172,7 +167,6 @@ function _render_tip_phylopic!(
         xs::AbstractVector{<:Real},
         ys::AbstractVector{<:Real};
         glyph_size::Real,
-        row_spacing::Real,
         do_align::Bool,
         phylopic_xoffset::Real,
         phylopic_yoffset::Real,
@@ -193,10 +187,6 @@ function _render_tip_phylopic!(
                 "Valid values: $(join(string.(':', PhyloPicDB.PHYLOPIC_IMAGE_RENDERINGS), ", "))."
         )
     )
-
-    # Convert the fractional glyph_size (fraction of row height) to an absolute
-    # data-unit half-height.  Total height = glyph_size × row_spacing.
-    actual_glyph_size = Float64(glyph_size) * Float64(row_spacing) / 2.0
 
     g = tree.graph
     leaf_vertices = [v for v in Graphs.vertices(g) if isempty(Graphs.outneighbors(g, v))]
@@ -232,9 +222,9 @@ function _render_tip_phylopic!(
             elseif on_missing === :placeholder
                 # Draw a grey rectangle as a stand-in glyph.
                 x_lo = x_anchor
-                x_hi = x_anchor + 2 * actual_glyph_size
-                y_lo = y_anchor - actual_glyph_size
-                y_hi = y_anchor + actual_glyph_size
+                x_hi = x_anchor + 2 * Float64(glyph_size)
+                y_lo = y_anchor - Float64(glyph_size)
+                y_hi = y_anchor + Float64(glyph_size)
                 Makie.poly!(
                     p,
                     Makie.Rect2f(x_lo, y_lo, x_hi - x_lo, y_hi - y_lo);
@@ -255,7 +245,7 @@ function _render_tip_phylopic!(
         # Static y-range: actual_glyph_size governs y extent; independent of scale.
         _, _, y_lo, y_hi = PhyloPicMakie._compute_image_bbox(
             x_anchor, y_anchor, w_px, h_px;
-            glyph_size = actual_glyph_size,
+            glyph_size = glyph_size,
             aspect = aspect,
             placement = :left,
             xoffset = 0.0,
@@ -269,7 +259,7 @@ function _render_tip_phylopic!(
             Makie.lift(scale_corr_obs) do sc
                 x_lo, x_hi, _, _ = PhyloPicMakie._compute_image_bbox(
                     x_anchor, y_anchor, w_px, h_px;
-                    glyph_size = actual_glyph_size,
+                    glyph_size = glyph_size,
                     aspect = :preserve,
                     placement = :left,
                     xoffset = 0.0,
@@ -282,7 +272,7 @@ function _render_tip_phylopic!(
             # :stretch — equal data-unit width and height; no anisotropy correction.
             x_lo, x_hi, _, _ = PhyloPicMakie._compute_image_bbox(
                 x_anchor, y_anchor, w_px, h_px;
-                glyph_size = actual_glyph_size,
+                glyph_size = glyph_size,
                 aspect = :stretch,
                 placement = :left,
                 xoffset = 0.0,

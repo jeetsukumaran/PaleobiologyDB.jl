@@ -166,14 +166,14 @@ dendrogram.  Produced by [`taxontreeplot`](@ref) (standalone figure) or
 | `showtips` | `true` | Show leaf taxon-name labels |
 | `tip_fontsize` | `9` | Leaf label font size in points |
 | `tip_color` | `:black` | Leaf label colour |
-| `row_spacing` | `1.0` | Vertical gap between consecutive leaf rows in data units; `1.0` gives integer positions, `2.0` doubles the spacing |
+| `row_spacing` | `1.0` | Number of glyph-height slots between consecutive leaf centres; `1.0` (default) gives exactly enough room for a full-height silhouette (`phylopic_glyph_size = 1.0`). The internal y-increment is `2 × row_spacing` data units. |
 | `tip_xoffset` | `0.1` | Rightward offset for leaf labels in data units |
 | `tip_yoffset` | `0.0` | Vertical offset for leaf labels in data units (positive = upward) |
 | `showinternal` | `false` | Show internal node name labels |
 | `internal_fontsize` | `7` | Internal label font size in points |
 | `internal_color` | `:gray40` | Internal label colour |
 | `show_phylopic` | `true` | Draw a PhyloPic silhouette to the right of each leaf tip label|
-| `phylopic_glyph_size` | `1.0` | Fraction of the row height each silhouette occupies (`1.0` fills the row; `0.8` uses 80% of it). Absolute data-unit half-height = `phylopic_glyph_size × row_spacing / 2` |
+| `phylopic_glyph_size` | `1.0` | Half-height of each silhouette glyph in data units (total height = `2 × phylopic_glyph_size`). At the default `row_spacing = 1.0`, a value of `1.0` fills the row exactly. |
 | `phylopic_align` | `false` | When `true`, all silhouettes are placed at a single right-hand column; when `false`, each appears immediately right of its label |
 | `phylopic_xoffset` | `0.9` | Additional rightward gap in data units beyond the tip-label start position |
 | `phylopic_yoffset` | `0.0` | Vertical offset for PhyloPic silhouettes in data units (positive = upward); applied independently of `tip_yoffset` |
@@ -370,7 +370,6 @@ function Makie.plot!(p::TaxonTreePlot{<:Tuple{TaxonTree}})
         _render_tip_phylopic!(
             p, tree_obs[], layout_obs[]...;
             glyph_size = p[:phylopic_glyph_size][],
-            row_spacing = p[:row_spacing][],
             do_align = p[:phylopic_align][],
             phylopic_xoffset = p[:phylopic_xoffset][],
             phylopic_yoffset = p[:phylopic_yoffset][],
