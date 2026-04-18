@@ -32,7 +32,6 @@ const _EXT_AVAILABLE = _CAIRO_AVAILABLE
 
 if _EXT_AVAILABLE
     @eval using CairoMakie
-    @eval using PaleobiologyDB.PhyloPicPBDB
     # PhyloPicMakie is a hard dep of PaleobiologyDB; import for unit-test helpers.
     @eval import PhyloPicMakie
 end
@@ -51,15 +50,15 @@ else
 using Makie: RGBA, N0f8, Image
 
 @testset "PhyloPicPBDB — submodule loaded" begin
-    # PhyloPicPBDB is a top-level submodule of PaleobiologyDB.
-    @test isdefined(PaleobiologyDB, :PhyloPicPBDB)
-    @test PaleobiologyDB.PhyloPicPBDB isa Module
-    @test :augment_phylopic!        ∈ names(PaleobiologyDB.PhyloPicPBDB)
-    @test :augment_phylopic         ∈ names(PaleobiologyDB.PhyloPicPBDB)
-    @test :augment_phylopic_ranges! ∈ names(PaleobiologyDB.PhyloPicPBDB)
-    @test :augment_phylopic_ranges  ∈ names(PaleobiologyDB.PhyloPicPBDB)
-    @test :phylopic_thumbnail_grid! ∈ names(PaleobiologyDB.PhyloPicPBDB)
-    @test :phylopic_thumbnail_grid  ∈ names(PaleobiologyDB.PhyloPicPBDB)
+    # PhyloPicPBDB is a submodule of the TaxonomyMakie extension.
+    @test isdefined(PaleobiologyDB.TaxonomyMakie, :PhyloPicPBDB)
+    @test PaleobiologyDB.TaxonomyMakie.PhyloPicPBDB isa Module
+    @test :augment_phylopic!        ∈ names(PaleobiologyDB.TaxonomyMakie.PhyloPicPBDB)
+    @test :augment_phylopic         ∈ names(PaleobiologyDB.TaxonomyMakie.PhyloPicPBDB)
+    @test :augment_phylopic_ranges! ∈ names(PaleobiologyDB.TaxonomyMakie.PhyloPicPBDB)
+    @test :augment_phylopic_ranges  ∈ names(PaleobiologyDB.TaxonomyMakie.PhyloPicPBDB)
+    @test :phylopic_thumbnail_grid! ∈ names(PaleobiologyDB.TaxonomyMakie.PhyloPicPBDB)
+    @test :phylopic_thumbnail_grid  ∈ names(PaleobiologyDB.TaxonomyMakie.PhyloPicPBDB)
 
     # PhyloPicMakie is a hard dep of PaleobiologyDB — always available.
     @test PhyloPicMakie isa Module
@@ -251,23 +250,6 @@ end  # range table API
         @test_nowarn phylopic_thumbnail_grid!(ax, [""]; on_missing = :error)
     end
 
-    @testset "invalid glyph fraction throws ArgumentError" begin
-        fig = Figure(); ax = Axis(fig[1, 1])
-        @test_throws ArgumentError phylopic_thumbnail_grid!(ax, ["Tyrannosaurus"]; glyph_fraction = 1.0)
-    end
-
-    @testset "invalid image_filter throws ArgumentError" begin
-        fig = Figure(); ax = Axis(fig[1, 1])
-        @test_throws ArgumentError phylopic_thumbnail_grid!(
-            ax, ["Tyrannosaurus"]; image_filter = :universe)
-    end
-
-    @testset "invalid image_layout throws ArgumentError" begin
-        fig = Figure(); ax = Axis(fig[1, 1])
-        @test_throws ArgumentError phylopic_thumbnail_grid!(
-            ax, ["Tyrannosaurus"]; image_layout = :diagonal)
-    end
-
     @testset "image_filter = :clade, empty names → no cells" begin
         fig = Figure(); ax = Axis(fig[1, 1])
         n0 = length(ax.scene.plots)
@@ -291,12 +273,6 @@ end  # range table API
         phylopic_thumbnail_grid!(ax, ["", " "]; image_filter = :node, image_layout = :rows)
         @test _count_images(ax) == 0
         @test length(ax.scene.plots) == n0
-    end
-
-    @testset "image_layout = :grouped now throws ArgumentError (renamed to :blocks)" begin
-        fig = Figure(); ax = Axis(fig[1, 1])
-        @test_throws ArgumentError phylopic_thumbnail_grid!(
-            ax, ["Tyrannosaurus"]; image_layout = :grouped)
     end
 
     @testset "image_label = :attribution, empty names → no crash" begin
@@ -376,6 +352,29 @@ end  # range table API
     if !LIVE
         @info "Live thumbnail grid tests skipped. Set ENV[\"PBDB_LIVE\"]=\"1\" to enable."
     else
+        @testset "invalid glyph fraction throws ArgumentError" begin
+            fig = Figure(); ax = Axis(fig[1, 1])
+            @test_throws ArgumentError phylopic_thumbnail_grid!(ax, ["Tyrannosaurus"]; glyph_fraction = 1.0)
+        end
+
+        @testset "invalid image_filter throws ArgumentError" begin
+            fig = Figure(); ax = Axis(fig[1, 1])
+            @test_throws ArgumentError phylopic_thumbnail_grid!(
+                ax, ["Tyrannosaurus"]; image_filter = :universe)
+        end
+
+        @testset "invalid image_layout throws ArgumentError" begin
+            fig = Figure(); ax = Axis(fig[1, 1])
+            @test_throws ArgumentError phylopic_thumbnail_grid!(
+                ax, ["Tyrannosaurus"]; image_layout = :diagonal)
+        end
+
+        @testset "image_layout = :grouped now throws ArgumentError (renamed to :blocks)" begin
+            fig = Figure(); ax = Axis(fig[1, 1])
+            @test_throws ArgumentError phylopic_thumbnail_grid!(
+                ax, ["Tyrannosaurus"]; image_layout = :grouped)
+        end
+
         @testset "primary filter — one image per taxon" begin
             taxa = ["Tyrannosaurus", "Triceratops", "Ankylosaurus", "Edmontosaurus"]
             fig = Figure(); ax = Axis(fig[1, 1])

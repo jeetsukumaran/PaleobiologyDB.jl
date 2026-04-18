@@ -204,7 +204,7 @@ function augment_tip_phylopic!(
         fill!(x_anchors, xcol)
     end
 
-    PaleobiologyDB.PhyloPicPBDB.augment_phylopic!(
+    PhyloPicPBDB.augment_phylopic!(
         ax, x_anchors, tips.y;
         taxon = tips.names,
         placement = placement,

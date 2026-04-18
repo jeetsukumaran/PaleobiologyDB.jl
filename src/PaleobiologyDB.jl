@@ -54,15 +54,9 @@ module PaleobiologyDB
 using DataCaches
 export DataCaches
 
-# include("../deps/PhyloPicMakie.jl/src/PhyloPicMakie.jl")
-# import .PhyloPicMakie
-import PhyloPicMakie
-
 include("dbapi.jl")
 include("pbdbdocs.jl")
 
-include("PhyloPicPBDB/PhyloPicPBDB.jl")
 include("pbdbtools/pbdbtools.jl")
-include("TaxonomyTreeMakie/TaxonomyTreeMakie.jl")
 
 end # module

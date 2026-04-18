@@ -31,11 +31,10 @@ wrappers.
 """
 module PhyloPicPBDB
 
-import PhyloPicMakie
-# Access PhyloPicDB and Makie through PhyloPicMakie.
-# Makie is in PaleobiologyDB's [weakdeps] (for TaxonomyTreeMakie), not [deps],
-# so it cannot be imported directly here.  PhyloPicMakie carries Makie as a
-# hard dep, so we alias it the same way we alias PhyloPicDB.
+import ..PhyloPicMakie
+# Access PhyloPicDB and Makie through the parent extension's PhyloPicMakie binding.
+# PhyloPicMakie is a weakdep trigger imported by TaxonomyMakie (the parent extension),
+# so we reference it via the parent scope rather than importing it afresh.
 const PhyloPicDB = PhyloPicMakie.PhyloPicDB
 const Makie = PhyloPicMakie.Makie
 const RGBA = Makie.RGBA

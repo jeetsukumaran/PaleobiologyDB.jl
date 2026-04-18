@@ -18,9 +18,8 @@
 # consistently.
 # ---------------------------------------------------------------------------
 
-# import PhyloPicMakie
 const PhyloPicDB = PhyloPicMakie.PhyloPicDB
-using PaleobiologyDB.PhyloPicPBDB: acquire_phylopic
+using .PhyloPicPBDB: acquire_phylopic
 
 # ---------------------------------------------------------------------------
 # Image loading

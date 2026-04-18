@@ -7,8 +7,6 @@ import HTTP
 # Helper to access internals without export
 const _build_url = PaleobiologyDB._build_url
 const _joinvals  = PaleobiologyDB._joinvals
-# PhyloPicDB is accessed through PhyloPicMakie (a hard dep of PaleobiologyDB).
-const PhyloPicDB = PaleobiologyDB.PhyloPicMakie.PhyloPicDB
 
 # Live tests hit the real API and are disabled by default.
 # Enable by running with:  ENV["PBDB_LIVE"]="1"  (e.g., `PBDB_LIVE=1 julia --project -e 'using Pkg; Pkg.test()'`)
@@ -19,6 +17,13 @@ include("taxonomy_namevalidation.jl")
 include("taxonomy_queries_basic.jl")
 include("taxonomy_queries_hierarchy.jl")
 include("taxonomy_graphs.jl")
+
+# Load PhyloPicMakie to trigger the TaxonomyMakie extension, then bring its
+# symbols into scope.  PhyloPicDB is accessed directly from PhyloPicMakie.
+import PhyloPicMakie
+using PaleobiologyDB.TaxonomyMakie
+const PhyloPicDB = PhyloPicMakie.PhyloPicDB
+
 include("taxonomy_phylopic_acquire.jl")
 include("taxonomy_phylopic_images.jl")
 include("phylopic_makie.jl")

@@ -25,7 +25,6 @@ const _CAIRO_TTM_AVAILABLE = !isnothing(Base.find_package("CairoMakie"))
 
 if _CAIRO_TTM_AVAILABLE
     @eval using CairoMakie
-    @eval using PaleobiologyDB.TaxonomyTreeMakie
 end
 
 # ---------------------------------------------------------------------------
@@ -71,9 +70,9 @@ end
 
 if _CAIRO_TTM_AVAILABLE
     # Access internals through the extension module
-    const _rd_fn   = PaleobiologyDB.TaxonomyTreeMakie._rank_depth
-    const _layout  = PaleobiologyDB.TaxonomyTreeMakie._compute_dendrogram_layout
-    const _segpairs = PaleobiologyDB.TaxonomyTreeMakie._dendrogram_segment_pairs
+    const _rd_fn   = PaleobiologyDB.TaxonomyMakie._rank_depth
+    const _layout  = PaleobiologyDB.TaxonomyMakie._compute_dendrogram_layout
+    const _segpairs = PaleobiologyDB.TaxonomyMakie._dendrogram_segment_pairs
 
     @testset "TaxonomyTreeMakie — _rank_depth" begin
 

@@ -8,11 +8,11 @@
 
 using DataCaches
 
-const _phylopic_acquire   = PaleobiologyDB.PhyloPicPBDB.acquire_phylopic
-const _phylopic_augment   = PaleobiologyDB.PhyloPicPBDB.augment_phylopic
-const _PHYLOPIC_BASE_COLS = PaleobiologyDB.PhyloPicPBDB._PHYLOPIC_BASE_COLUMNS
-const _phylopic_null_rec  = PaleobiologyDB.PhyloPicPBDB._phylopic_null_record
-const _apply_prefix       = PaleobiologyDB.PhyloPicPBDB._apply_fieldname_prefix
+const _phylopic_acquire   = PaleobiologyDB.TaxonomyMakie.PhyloPicPBDB.acquire_phylopic
+const _phylopic_augment   = PaleobiologyDB.TaxonomyMakie.PhyloPicPBDB.augment_phylopic
+const _PHYLOPIC_BASE_COLS = PaleobiologyDB.TaxonomyMakie.PhyloPicPBDB._PHYLOPIC_BASE_COLUMNS
+const _phylopic_null_rec  = PaleobiologyDB.TaxonomyMakie.PhyloPicPBDB._phylopic_null_record
+const _apply_prefix       = PaleobiologyDB.TaxonomyMakie.PhyloPicPBDB._apply_fieldname_prefix
 
 # ---------------------------------------------------------------------------
 # Offline unit tests
