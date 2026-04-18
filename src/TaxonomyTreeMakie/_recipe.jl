@@ -1,19 +1,19 @@
 # ---------------------------------------------------------------------------
-# TaxonTreeMakie — @recipe definition, Makie.plot! implementation, and
+# TaxonomyTreeMakie — @recipe definition, Makie.plot! implementation, and
 # convenience wrappers.
 #
 # Call graph:
 #
-#   taxontreeplot(tree; ...)               (standalone, creates Figure + Axis)
-#       └─► taxontreeplot!(ax, tree; ...)  (recipe-generated, adds to axis)
-#               └─► Makie.plot!(p::TaxonTreePlot)
+#   taxonomytreeplot(tree; ...)               (standalone, creates Figure + Axis)
+#       └─► taxonomytreeplot!(ax, tree; ...)  (recipe-generated, adds to axis)
+#               └─► Makie.plot!(p::TaxonomyTreePlot)
 #                       ├─ _compute_dendrogram_layout  from _layout.jl
 #                       ├─ _dendrogram_segment_pairs   from _layout.jl
 #                       ├─ Makie.linesegments!
 #                       ├─ Makie.scatter!
 #                       └─ Makie.text!
 #
-#   set_rank_axis_ticks!(ax, tree)         (axis helper — call after taxontreeplot!)
+#   set_rank_axis_ticks!(ax, tree)         (axis helper — call after taxonomytreeplot!)
 # ---------------------------------------------------------------------------
 
 # ---------------------------------------------------------------------------
@@ -34,7 +34,7 @@ const _RANK_COLORS = [
 
 """
     _build_rank_color_map(
-        tree::TaxonTree,
+        tree::TaxonomyTree,
         rank_palette::Union{AbstractDict, Nothing},
     ) -> Dict{String, Makie.RGBAf}
 
@@ -48,7 +48,7 @@ Ranks are sorted by their dendrogram depth (coarser first) before colours are
 assigned, so the same rank always receives the same colour for a given tree.
 """
 function _build_rank_color_map(
-        tree::TaxonTree,
+        tree::TaxonomyTree,
         rank_palette::Union{AbstractDict, Nothing},
     )::Dict{String, Makie.RGBAf}
     ranks = sort(
@@ -69,7 +69,7 @@ end
 
 """
     _segment_colors_vec(
-        tree::TaxonTree,
+        tree::TaxonomyTree,
         segs::AbstractVector{<:NTuple{4}},
         rank_palette::Union{AbstractDict, Nothing},
         default_color,
@@ -85,7 +85,7 @@ own rank), then one horizontal branch per child (coloured by the child's rank).
 When `rank_palette` is `nothing`, the built-in cycle is used.
 """
 function _segment_colors_vec(
-        tree::TaxonTree,
+        tree::TaxonomyTree,
         segs::AbstractVector,
         rank_palette::Union{AbstractDict, Nothing},
         default_color,
@@ -115,7 +115,7 @@ end
 
 """
     _node_colors_vec(
-        tree::TaxonTree,
+        tree::TaxonomyTree,
         rank_palette::Union{AbstractDict, Nothing},
         default_color,
         vertices::AbstractVector{<:Integer} = collect(Graphs.vertices(tree.graph)),
@@ -129,7 +129,7 @@ vertex-index order.  Pass a filtered list to colour only a subset of nodes (e.g.
 when unifurcation nodes are hidden via `show_unifurcation_nodes = false`).
 """
 function _node_colors_vec(
-        tree::TaxonTree,
+        tree::TaxonomyTree,
         rank_palette::Union{AbstractDict, Nothing},
         default_color,
         vertices::AbstractVector{<:Integer} = collect(Graphs.vertices(tree.graph)),
@@ -144,11 +144,11 @@ end
 # ---------------------------------------------------------------------------
 
 """
-    TaxonTreePlot
+    TaxonomyTreePlot
 
-Makie plot type for rendering a [`TaxonTree`](@ref) as a rectangular
-dendrogram.  Produced by [`taxontreeplot`](@ref) (standalone figure) or
-`taxontreeplot!` (existing axis).
+Makie plot type for rendering a [`TaxonomyTree`](@ref) as a rectangular
+dendrogram.  Produced by [`taxonomytreeplot`](@ref) (standalone figure) or
+`taxonomytreeplot!` (existing axis).
 
 ## Attributes
 
@@ -186,22 +186,22 @@ dendrogram.  Produced by [`taxontreeplot`](@ref) (standalone figure) or
 ```julia
 using PaleobiologyDB, PaleobiologyDB.Taxonomy
 using CairoMakie
-using PaleobiologyDB.TaxonTreeMakie
+using PaleobiologyDB.TaxonomyTreeMakie
 
 tree = taxon_subtree("Carnivora"; leaf_rank = "family")
 
 # Add to an existing Makie axis
 fig = Figure(size = (900, 600))
 ax  = Axis(fig[1, 1])
-taxontreeplot!(ax, tree; showtips = true, color_by_rank = true)
+taxonomytreeplot!(ax, tree; showtips = true, color_by_rank = true)
 set_rank_axis_ticks!(ax, tree)
 display(fig)
 ```
 
-See also [`taxontreeplot`](@ref), `taxontreeplot!`,
+See also [`taxonomytreeplot`](@ref), `taxonomytreeplot!`,
 [`set_rank_axis_ticks!`](@ref).
 """
-@recipe(TaxonTreePlot, taxontree) do scene
+@recipe(TaxonomyTreePlot, taxonomytree) do scene
     Attributes(
         # Layout
         ladderize = false,
@@ -243,8 +243,8 @@ end
 # plot! implementation
 # ---------------------------------------------------------------------------
 
-function Makie.plot!(p::TaxonTreePlot{<:Tuple{TaxonTree}})
-    tree_obs = p[:taxontree]
+function Makie.plot!(p::TaxonomyTreePlot{<:Tuple{TaxonomyTree}})
+    tree_obs = p[:taxonomytree]
 
     # ── Layout (reactive to tree and ladderize) ───────────────────────────
     layout_obs = Makie.lift(tree_obs, p[:ladderize], p[:row_spacing]) do tree, lad, rsp
@@ -388,7 +388,7 @@ end
 # ---------------------------------------------------------------------------
 
 """
-    set_rank_axis_ticks!(ax::Makie.Axis, tree::TaxonTree) -> Nothing
+    set_rank_axis_ticks!(ax::Makie.Axis, tree::TaxonomyTree) -> Nothing
 
 Configure the x-axis tick labels on `ax` to display rank names at their
 dendrogram x-depth positions.
@@ -397,22 +397,22 @@ Only ranks that are present in `tree` and whose depth is known (i.e. present
 in `_RANK_DEPTH`) are labelled.  Tick labels are rotated 45° to prevent
 overlap.
 
-Typically called immediately after `taxontreeplot!`:
+Typically called immediately after `taxonomytreeplot!`:
 
 ```julia
-p = taxontreeplot!(ax, tree; showtips = true)
+p = taxonomytreeplot!(ax, tree; showtips = true)
 set_rank_axis_ticks!(ax, tree)
 ```
 
-[`taxontreeplot`](@ref) (standalone) calls this automatically when
+[`taxonomytreeplot`](@ref) (standalone) calls this automatically when
 `show_rank_ticks = true` (the default).
 
 ## Arguments
 
 - `ax`: the `Makie.Axis` on which to set ticks.
-- `tree`: the [`TaxonTree`](@ref) whose ranks determine the tick positions.
+- `tree`: the [`TaxonomyTree`](@ref) whose ranks determine the tick positions.
 """
-function set_rank_axis_ticks!(ax::Makie.Axis, tree::TaxonTree)::Nothing
+function set_rank_axis_ticks!(ax::Makie.Axis, tree::TaxonomyTree)::Nothing
     depths_and_ranks = sort(
         [
             (_rank_depth(r), r)
@@ -430,75 +430,75 @@ function set_rank_axis_ticks!(ax::Makie.Axis, tree::TaxonTree)::Nothing
 end
 
 # ---------------------------------------------------------------------------
-# Standalone wrapper: taxontreeplot
+# Standalone wrapper: taxonomytreeplot
 # ---------------------------------------------------------------------------
 
 """
-    taxontreeplot(
-        tree::TaxonTree;
+    taxonomytreeplot(
+        tree::TaxonomyTree;
         show_rank_ticks::Bool = true,
         figure_kwargs::NamedTuple = (;),
         axis_kwargs::NamedTuple = (;),
         kwargs...,
-    ) -> Tuple{Makie.Figure, Makie.Axis, TaxonTreePlot}
+    ) -> Tuple{Makie.Figure, Makie.Axis, TaxonomyTreePlot}
 
 Create a standalone Makie figure containing a dendrogram of `tree`.
 
 Returns `(fig, ax, plot_object)`, which can be destructured:
 
 ```julia
-fig, ax, p = taxontreeplot(tree; showtips = true)
+fig, ax, p = taxonomytreeplot(tree; showtips = true)
 display(fig)
 save("tree.png", fig)
 ```
 
 ## Arguments
 
-- `tree`: the [`TaxonTree`](@ref) to visualise.
+- `tree`: the [`TaxonomyTree`](@ref) to visualise.
 - `show_rank_ticks` (default `true`): when `true`, calls
   [`set_rank_axis_ticks!`](@ref) to label the x-axis with rank names.
 - `figure_kwargs`: keyword arguments forwarded to `Makie.Figure(; ...)`.
 - `axis_kwargs`: keyword arguments forwarded to `Makie.Axis(; ...)`.
-- All remaining keyword arguments are forwarded to `TaxonTreePlot`
-  attributes (see `taxontreeplot!`).
+- All remaining keyword arguments are forwarded to `TaxonomyTreePlot`
+  attributes (see `taxonomytreeplot!`).
 
 ## Examples
 
 ```julia
 using PaleobiologyDB, PaleobiologyDB.Taxonomy
 using CairoMakie
-using PaleobiologyDB.TaxonTreeMakie
+using PaleobiologyDB.TaxonomyTreeMakie
 
 tree = taxon_subtree("Carnivora"; leaf_rank = "family")
 
 # Basic dendrogram with tip labels
-fig, ax, p = taxontreeplot(tree; showtips = true)
+fig, ax, p = taxonomytreeplot(tree; showtips = true)
 save("carnivora_families.png", fig)
 
 # Coloured by rank, ladderized
-fig2, ax2, p2 = taxontreeplot(tree;
+fig2, ax2, p2 = taxonomytreeplot(tree;
     color_by_rank = true,
     ladderize     = true,
     showtips      = true,
 )
 
 # Custom figure and axis sizes
-fig3, ax3, p3 = taxontreeplot(tree;
+fig3, ax3, p3 = taxonomytreeplot(tree;
     figure_kwargs = (; size = (1200, 800)),
     axis_kwargs   = (; title = "Carnivora families", yreversed = false),
 )
 ```
 
-See also `taxontreeplot!`, `TaxonTreePlot`,
+See also `taxonomytreeplot!`, `TaxonomyTreePlot`,
 [`set_rank_axis_ticks!`](@ref).
 """
-function taxontreeplot(
-        tree::TaxonTree;
+function taxonomytreeplot(
+        tree::TaxonomyTree;
         show_rank_ticks::Bool = true,
         figure_kwargs::NamedTuple = (;),
         axis_kwargs::NamedTuple = (;),
         kwargs...,
-    )::Tuple{Makie.Figure, Makie.Axis, TaxonTreePlot}
+    )::Tuple{Makie.Figure, Makie.Axis, TaxonomyTreePlot}
     # Auto-size the figure based on the number of leaves so that dense trees
     # are not cramped.  User-supplied figure_kwargs / axis_kwargs take
     # precedence via merge (last-writer wins in NamedTuple merge).
@@ -517,17 +517,17 @@ function taxontreeplot(
 
     fig = Makie.Figure(; effective_figure_kwargs...)
     ax = Makie.Axis(fig[1, 1]; effective_axis_kwargs...)
-    p = taxontreeplot!(ax, tree; kwargs...)
+    p = taxonomytreeplot!(ax, tree; kwargs...)
     show_rank_ticks && set_rank_axis_ticks!(ax, tree)
     return (fig, ax, p)
 end
 
 # ---------------------------------------------------------------------------
-# String dispatch: taxontreeplot(taxon_name; ...)
+# String dispatch: taxonomytreeplot(taxon_name; ...)
 # ---------------------------------------------------------------------------
 
 """
-    taxontreeplot(
+    taxonomytreeplot(
         taxon_name::AbstractString;
         leaf_rank::Union{AbstractString, Nothing} = nothing,
         strict_leaf_rank::Bool = true,
@@ -535,15 +535,15 @@ end
         figure_kwargs::NamedTuple = (;),
         axis_kwargs::NamedTuple = (;),
         kwargs...,
-    ) -> Tuple{Makie.Figure, Makie.Axis, TaxonTreePlot}
+    ) -> Tuple{Makie.Figure, Makie.Axis, TaxonomyTreePlot}
 
 Convenience method: look up `taxon_name` in the PBDB, build its subtree, and
 render it as a dendrogram in a standalone figure.
 
 Calls [`taxon_subtree`](@ref) with `leaf_rank` and `strict_leaf_rank`, then
-delegates to [`taxontreeplot(::TaxonTree; ...)`](@ref).  All remaining keyword
+delegates to [`taxonomytreeplot(::TaxonomyTree; ...)`](@ref).  All remaining keyword
 arguments (recipe attributes such as `ladderize`, `showtips`, `row_spacing`,
-`show_phylopic`, etc.) are forwarded unchanged.  See `TaxonTreePlot` for the
+`show_phylopic`, etc.) are forwarded unchanged.  See `TaxonomyTreePlot` for the
 full attribute reference.
 
 ## Arguments
@@ -555,21 +555,21 @@ full attribute reference.
   matches `leaf_rank` become leaves; pass `false` to also include shallower
   terminals.
 - `show_rank_ticks`, `figure_kwargs`, `axis_kwargs`: forwarded to
-  [`taxontreeplot(::TaxonTree; ...)`](@ref).
+  [`taxonomytreeplot(::TaxonomyTree; ...)`](@ref).
 
 ## Examples
 
 ```julia
 using PaleobiologyDB, CairoMakie
-using PaleobiologyDB.Taxonomy.TaxonTreeMakie
+using PaleobiologyDB.Taxonomy.TaxonomyTreeMakie
 
-fig, ax, p = taxontreeplot("Carnivora"; leaf_rank = "family")
+fig, ax, p = taxonomytreeplot("Carnivora"; leaf_rank = "family")
 save("carnivora.png", fig)
 
-fig2, _, _ = taxontreeplot("Canidae"; leaf_rank = "genus", ladderize = true, row_spacing = 1.5)
+fig2, _, _ = taxonomytreeplot("Canidae"; leaf_rank = "genus", ladderize = true, row_spacing = 1.5)
 ```
 """
-function taxontreeplot(
+function taxonomytreeplot(
         taxon_name::AbstractString;
         leaf_rank::Union{AbstractString, Nothing} = nothing,
         strict_leaf_rank::Bool = true,
@@ -577,7 +577,7 @@ function taxontreeplot(
         figure_kwargs::NamedTuple = (;),
         axis_kwargs::NamedTuple = (;),
         kwargs...,
-    )::Tuple{Makie.Figure, Makie.Axis, TaxonTreePlot}
+    )::Tuple{Makie.Figure, Makie.Axis, TaxonomyTreePlot}
     tree = taxon_subtree(taxon_name; leaf_rank, strict_leaf_rank)
-    return taxontreeplot(tree; show_rank_ticks, figure_kwargs, axis_kwargs, kwargs...)
+    return taxonomytreeplot(tree; show_rank_ticks, figure_kwargs, axis_kwargs, kwargs...)
 end

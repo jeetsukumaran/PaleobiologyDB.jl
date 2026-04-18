@@ -33,7 +33,7 @@ module PhyloPicPBDB
 
 import PhyloPicMakie
 # Access PhyloPicDB and Makie through PhyloPicMakie.
-# Makie is in PaleobiologyDB's [weakdeps] (for TaxonTreeMakie), not [deps],
+# Makie is in PaleobiologyDB's [weakdeps] (for TaxonomyTreeMakie), not [deps],
 # so it cannot be imported directly here.  PhyloPicMakie carries Makie as a
 # hard dep, so we alias it the same way we alias PhyloPicDB.
 const PhyloPicDB = PhyloPicMakie.PhyloPicDB

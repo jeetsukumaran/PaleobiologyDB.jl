@@ -7,7 +7,7 @@ CurrentModule = PaleobiologyDB.Taxonomy
 ## Taxonomy tree graphs
 
 `taxon_subtree` materialises a rooted taxonomic subtree as an explicit directed
-graph — a [`TaxonTree`](@ref) wrapping a
+graph — a [`TaxonomyTree`](@ref) wrapping a
 [Graphs.jl](https://juliagraphs.org/Graphs.jl/) `SimpleDiGraph`.  Where
 [`child_taxa`](@ref) and [`parent_taxa`](@ref) return flat name lists,
 `taxon_subtree` preserves the full parent–child structure and enables graph
@@ -159,7 +159,7 @@ println("$(length(sampled)) of $(length(leaf_taxa(tree))) families sampled in th
 
 ```@docs
 TaxonNode
-TaxonTree
+TaxonomyTree
 taxon_subtree
 root_taxon
 leaf_taxa

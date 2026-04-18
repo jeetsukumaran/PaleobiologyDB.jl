@@ -1,11 +1,11 @@
-# test/taxontree_makie.jl
-# Tests for PaleobiologyDB.TaxonTreeMakie extension.
+# test/taxonomytree_makie.jl
+# Tests for PaleobiologyDB.TaxonomyTreeMakie extension.
 #
 # Structure:
 #   1. Mock tree construction (shared fixture)
 #   2. Offline / pure-function tests — layout logic (extension must be loaded
 #      to access internals, but no rendering is performed)
-#   3. Recipe smoke tests — exercise taxontreeplot and taxontreeplot!
+#   3. Recipe smoke tests — exercise taxonomytreeplot and taxonomytreeplot!
 #      (gated on CairoMakie availability)
 #
 # CairoMakie is in test/Project.toml and is available in the standard test
@@ -14,7 +14,7 @@
 
 using Test
 using PaleobiologyDB
-using PaleobiologyDB.Taxonomy: TaxonTree, TaxonNode
+using PaleobiologyDB.Taxonomy: TaxonomyTree, TaxonNode
 import Graphs
 
 # ---------------------------------------------------------------------------
@@ -25,7 +25,7 @@ const _CAIRO_TTM_AVAILABLE = !isnothing(Base.find_package("CairoMakie"))
 
 if _CAIRO_TTM_AVAILABLE
     @eval using CairoMakie
-    @eval using PaleobiologyDB.TaxonTreeMakie
+    @eval using PaleobiologyDB.TaxonomyTreeMakie
 end
 
 # ---------------------------------------------------------------------------
@@ -55,14 +55,14 @@ function _mock_carnivora_tree()
         TaxonNode("Felis",     "genus",  6, 6, 5),
     ]
     vertex_of = Dict(1 => 1, 2 => 2, 3 => 3, 4 => 4, 5 => 5, 6 => 6)
-    TaxonTree(g, taxa, vertex_of, 1)
+    TaxonomyTree(g, taxa, vertex_of, 1)
 end
 
 # Single-node placeholder tree (mimics taxon_subtree("INVALID"))
 function _mock_single_node_tree()
     g = Graphs.SimpleDiGraph(1)
     taxa = [TaxonNode("INVALID", "", 0, missing, missing)]
-    TaxonTree(g, taxa, Dict(0 => 1), 1)
+    TaxonomyTree(g, taxa, Dict(0 => 1), 1)
 end
 
 # ---------------------------------------------------------------------------
@@ -71,11 +71,11 @@ end
 
 if _CAIRO_TTM_AVAILABLE
     # Access internals through the extension module
-    const _rd_fn   = PaleobiologyDB.TaxonTreeMakie._rank_depth
-    const _layout  = PaleobiologyDB.TaxonTreeMakie._compute_dendrogram_layout
-    const _segpairs = PaleobiologyDB.TaxonTreeMakie._dendrogram_segment_pairs
+    const _rd_fn   = PaleobiologyDB.TaxonomyTreeMakie._rank_depth
+    const _layout  = PaleobiologyDB.TaxonomyTreeMakie._compute_dendrogram_layout
+    const _segpairs = PaleobiologyDB.TaxonomyTreeMakie._dendrogram_segment_pairs
 
-    @testset "TaxonTreeMakie — _rank_depth" begin
+    @testset "TaxonomyTreeMakie — _rank_depth" begin
 
         @testset "known ranks" begin
             @test _rd_fn("kingdom")    == 0
@@ -101,7 +101,7 @@ if _CAIRO_TTM_AVAILABLE
         end
     end
 
-    @testset "TaxonTreeMakie — _compute_dendrogram_layout" begin
+    @testset "TaxonomyTreeMakie — _compute_dendrogram_layout" begin
         tree = _mock_carnivora_tree()
         xs, ys = _layout(tree)
 
@@ -138,7 +138,7 @@ if _CAIRO_TTM_AVAILABLE
         end
     end
 
-    @testset "TaxonTreeMakie — _compute_dendrogram_layout ladderize" begin
+    @testset "TaxonomyTreeMakie — _compute_dendrogram_layout ladderize" begin
         # Build a tree with one large subtree (2 leaves) and one small (1 leaf)
         # so ladderize ordering is deterministic.
         tree = _mock_carnivora_tree()
@@ -164,7 +164,7 @@ if _CAIRO_TTM_AVAILABLE
         end
     end
 
-    @testset "TaxonTreeMakie — _compute_dendrogram_layout single-node tree" begin
+    @testset "TaxonomyTreeMakie — _compute_dendrogram_layout single-node tree" begin
         tree = _mock_single_node_tree()
         xs, ys = _layout(tree)
 
@@ -174,7 +174,7 @@ if _CAIRO_TTM_AVAILABLE
         @test ys[1] == 1.0    # single leaf → y = 1
     end
 
-    @testset "TaxonTreeMakie — _dendrogram_segment_pairs" begin
+    @testset "TaxonomyTreeMakie — _dendrogram_segment_pairs" begin
         tree = _mock_carnivora_tree()
         xs, ys = _layout(tree)
         segs = _segpairs(tree, xs, ys)
@@ -205,7 +205,7 @@ if _CAIRO_TTM_AVAILABLE
     end
 
 else
-    @info "CairoMakie not available — skipping TaxonTreeMakie offline layout tests"
+    @info "CairoMakie not available — skipping TaxonomyTreeMakie offline layout tests"
 end
 
 # ---------------------------------------------------------------------------
@@ -213,67 +213,67 @@ end
 # ---------------------------------------------------------------------------
 
 if _CAIRO_TTM_AVAILABLE
-    @testset "TaxonTreeMakie — taxontreeplot smoke" begin
+    @testset "TaxonomyTreeMakie — taxonomytreeplot smoke" begin
         tree = _mock_carnivora_tree()
 
-        @testset "taxontreeplot returns (Figure, Axis, TaxonTreePlot)" begin
-            fig, ax, p = taxontreeplot(tree)
+        @testset "taxonomytreeplot returns (Figure, Axis, TaxonomyTreePlot)" begin
+            fig, ax, p = taxonomytreeplot(tree)
             @test fig isa CairoMakie.Figure
             @test ax  isa CairoMakie.Axis
-            @test p   isa TaxonTreePlot
+            @test p   isa TaxonomyTreePlot
         end
 
         @testset "showtips = false does not error" begin
-            @test_nowarn taxontreeplot(tree; showtips = false)
+            @test_nowarn taxonomytreeplot(tree; showtips = false)
         end
 
         @testset "color_by_rank = true does not error" begin
-            @test_nowarn taxontreeplot(tree; color_by_rank = true)
+            @test_nowarn taxonomytreeplot(tree; color_by_rank = true)
         end
 
         @testset "ladderize = true does not error" begin
-            @test_nowarn taxontreeplot(tree; ladderize = true)
+            @test_nowarn taxonomytreeplot(tree; ladderize = true)
         end
 
         @testset "showinternal = true does not error" begin
-            @test_nowarn taxontreeplot(tree; showinternal = true)
+            @test_nowarn taxonomytreeplot(tree; showinternal = true)
         end
 
         @testset "show_rank_ticks = false skips axis tick setup" begin
-            @test_nowarn taxontreeplot(tree; show_rank_ticks = false)
+            @test_nowarn taxonomytreeplot(tree; show_rank_ticks = false)
         end
 
         @testset "color_by_rank with rank_palette does not error" begin
             palette = Dict("order" => :red, "family" => :blue, "genus" => :green)
-            @test_nowarn taxontreeplot(tree; color_by_rank = true, rank_palette = palette)
+            @test_nowarn taxonomytreeplot(tree; color_by_rank = true, rank_palette = palette)
         end
 
         @testset "show_unifurcation_nodes = false does not error" begin
-            @test_nowarn taxontreeplot(tree; show_unifurcation_nodes = false)
+            @test_nowarn taxonomytreeplot(tree; show_unifurcation_nodes = false)
         end
 
         @testset "auto-sized figure height respects leaf-count floor" begin
             # Mock tree has 3 leaves; max(400, 3*18) = 400 → height ≥ 400.
-            fig, _, _ = taxontreeplot(tree)
+            fig, _, _ = taxonomytreeplot(tree)
             @test fig.scene.viewport[].widths[2] >= 400
         end
     end
 
-    @testset "TaxonTreeMakie — taxontreeplot! into existing axis" begin
+    @testset "TaxonomyTreeMakie — taxonomytreeplot! into existing axis" begin
         tree = _mock_carnivora_tree()
         fig  = CairoMakie.Figure()
         ax   = CairoMakie.Axis(fig[1, 1])
 
-        p = taxontreeplot!(ax, tree; showtips = true, ladderize = true)
-        @test p isa TaxonTreePlot
+        p = taxonomytreeplot!(ax, tree; showtips = true, ladderize = true)
+        @test p isa TaxonomyTreePlot
 
         # set_rank_axis_ticks! must run without error
         @test_nowarn set_rank_axis_ticks!(ax, tree)
     end
 
-    @testset "TaxonTreeMakie — single-node tree (placeholder)" begin
+    @testset "TaxonomyTreeMakie — single-node tree (placeholder)" begin
         tree = _mock_single_node_tree()
-        @test_nowarn taxontreeplot(tree)
+        @test_nowarn taxonomytreeplot(tree)
     end
 
     # ── PhyloPic silhouette attribute tests (offline — no network) ───────────
@@ -283,17 +283,17 @@ if _CAIRO_TTM_AVAILABLE
     # attribute-registration check below runs unconditionally; all rendering
     # tests are gated on LIVE (see the @testset block below).
 
-    @testset "TaxonTreeMakie — PhyloPic silhouette attributes (offline)" begin
+    @testset "TaxonomyTreeMakie — PhyloPic silhouette attributes (offline)" begin
         tree = _mock_carnivora_tree()
 
         @testset "show_phylopic = false (default) does not trigger network or error" begin
-            @test_nowarn taxontreeplot(tree; show_phylopic = false)
+            @test_nowarn taxonomytreeplot(tree; show_phylopic = false)
         end
 
         @testset "PhyloPic attributes are registered on the recipe" begin
             # Render with show_phylopic = false so no network calls are made,
             # then confirm the attribute observables exist and carry their defaults.
-            fig, ax, p = taxontreeplot(tree; show_phylopic = false)
+            fig, ax, p = taxonomytreeplot(tree; show_phylopic = false)
             @test p[:show_phylopic][]       == false
             @test p[:phylopic_glyph_size][] ≈ 1.0
             @test p[:phylopic_align][]      == false
@@ -311,14 +311,14 @@ if _CAIRO_TTM_AVAILABLE
     # PhyloPic APIs.  They are disabled by default to avoid network stalls
     # in CI.  Run with: PBDB_LIVE=1 julia --project=test test/runtests.jl
 
-    @testset "TaxonTreeMakie — PhyloPic silhouettes (live)" begin
+    @testset "TaxonomyTreeMakie — PhyloPic silhouettes (live)" begin
         if !LIVE
             @info "Live PhyloPic-in-tree tests disabled. Set ENV[\"PBDB_LIVE\"]=\"1\" to enable."
         else
             tree = _mock_carnivora_tree()
 
             @testset "show_phylopic = true, on_missing = :skip does not error" begin
-                @test_nowarn taxontreeplot(
+                @test_nowarn taxonomytreeplot(
                     tree;
                     show_phylopic       = true,
                     phylopic_on_missing = :skip,
@@ -326,7 +326,7 @@ if _CAIRO_TTM_AVAILABLE
             end
 
             @testset "show_phylopic = true, phylopic_align = true does not error" begin
-                @test_nowarn taxontreeplot(
+                @test_nowarn taxonomytreeplot(
                     tree;
                     show_phylopic       = true,
                     phylopic_align      = true,
@@ -336,7 +336,7 @@ if _CAIRO_TTM_AVAILABLE
             end
 
             @testset "show_phylopic = true, on_missing = :placeholder does not error" begin
-                @test_nowarn taxontreeplot(
+                @test_nowarn taxonomytreeplot(
                     tree;
                     show_phylopic       = true,
                     phylopic_on_missing = :placeholder,
@@ -347,15 +347,15 @@ if _CAIRO_TTM_AVAILABLE
                 # "INVALID" cannot resolve through PBDB / PhyloPic;
                 # _load_tip_phylopic_image returns nothing → :error fires.
                 tree_unresolvable = _mock_single_node_tree()
-                @test_throws ErrorException taxontreeplot(
+                @test_throws ErrorException taxonomytreeplot(
                     tree_unresolvable;
                     show_phylopic       = true,
                     phylopic_on_missing = :error,
                 )
             end
 
-            @testset "taxontreeplot right margin widens with show_phylopic = true" begin
-                fig, ax, _ = taxontreeplot(
+            @testset "taxonomytreeplot right margin widens with show_phylopic = true" begin
+                fig, ax, _ = taxonomytreeplot(
                     tree;
                     show_phylopic       = true,
                     phylopic_on_missing = :skip,
@@ -366,7 +366,7 @@ if _CAIRO_TTM_AVAILABLE
 
             @testset "single-node tree with show_phylopic = true does not error" begin
                 tree_single = _mock_single_node_tree()
-                @test_nowarn taxontreeplot(
+                @test_nowarn taxonomytreeplot(
                     tree_single;
                     show_phylopic       = true,
                     phylopic_on_missing = :skip,
@@ -375,9 +375,9 @@ if _CAIRO_TTM_AVAILABLE
         end
     end
 
-    @testset "TaxonTreeMakie — set_rank_axis_ticks!" begin
+    @testset "TaxonomyTreeMakie — set_rank_axis_ticks!" begin
         tree = _mock_carnivora_tree()
-        fig, ax, _p = taxontreeplot(tree; show_rank_ticks = false)
+        fig, ax, _p = taxonomytreeplot(tree; show_rank_ticks = false)
         set_rank_axis_ticks!(ax, tree)
         # Axis ticks should now reflect the three ranks present (order, family, genus)
         tick_positions, tick_labels = ax.xticks[]
@@ -387,5 +387,5 @@ if _CAIRO_TTM_AVAILABLE
     end
 
 else
-    @info "CairoMakie not available — skipping TaxonTreeMakie recipe smoke tests"
+    @info "CairoMakie not available — skipping TaxonomyTreeMakie recipe smoke tests"
 end

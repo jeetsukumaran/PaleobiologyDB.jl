@@ -1,7 +1,7 @@
-# TaxonTreeMakie — Makie tree visualization
+# TaxonomyTreeMakie — Makie tree visualization
 
-`PaleobiologyDB.TaxonTreeMakie` is a submodule that renders
-[`TaxonTree`](@ref) objects as rectangular dendrograms in Makie figures.
+`PaleobiologyDB.TaxonomyTreeMakie` is a submodule that renders
+[`TaxonomyTree`](@ref) objects as rectangular dendrograms in Makie figures.
 
 ## Installation
 
@@ -16,25 +16,25 @@ pkg> add CairoMakie
 ```julia
 using PaleobiologyDB
 using CairoMakie   # or GLMakie, WGLMakie, …
-using PaleobiologyDB.TaxonTreeMakie
+using PaleobiologyDB.TaxonomyTreeMakie
 ```
 
 ## Quick start — basic dendrogram
 
-Build a subtree with [`taxon_subtree`](@ref) then pass it to `taxontreeplot`:
+Build a subtree with [`taxon_subtree`](@ref) then pass it to `taxonomytreeplot`:
 
 ```julia
 using PaleobiologyDB, PaleobiologyDB.Taxonomy
 using CairoMakie
-using PaleobiologyDB.TaxonTreeMakie
+using PaleobiologyDB.TaxonomyTreeMakie
 
 tree = taxon_subtree("Carnivora"; leaf_rank = "family")
 
-fig, ax, p = taxontreeplot(tree; showtips = true)
+fig, ax, p = taxonomytreeplot(tree; showtips = true)
 display(fig)
 ```
 
-`taxontreeplot` returns a 3-tuple `(fig, ax, plot_object)`.  The x-axis is
+`taxonomytreeplot` returns a 3-tuple `(fig, ax, plot_object)`.  The x-axis is
 automatically labelled with rank names at their dendrogram depth positions.
 
 ## Coloring by rank
@@ -43,7 +43,7 @@ Set `color_by_rank = true` to assign each branch and node a colour based on
 its taxonomic rank:
 
 ```julia
-fig, ax, p = taxontreeplot(tree;
+fig, ax, p = taxonomytreeplot(tree;
     color_by_rank = true,
     showtips      = true,
 )
@@ -60,7 +60,7 @@ palette = Dict(
     "genus"  => :seagreen,
 )
 
-fig, ax, p = taxontreeplot(tree;
+fig, ax, p = taxonomytreeplot(tree;
     color_by_rank = true,
     rank_palette  = palette,
     showtips      = true,
@@ -75,7 +75,7 @@ plot, giving a cleaner, more asymmetric appearance for trees with unequal
 branching:
 
 ```julia
-fig, ax, p = taxontreeplot(tree;
+fig, ax, p = taxonomytreeplot(tree;
     ladderize = true,
     showtips  = true,
 )
@@ -86,7 +86,7 @@ fig, ax, p = taxontreeplot(tree;
 Internal nodes (non-leaf taxa) can be labelled with their taxon names:
 
 ```julia
-fig, ax, p = taxontreeplot(tree;
+fig, ax, p = taxonomytreeplot(tree;
     showinternal      = true,
     internal_fontsize = 7,
     internal_color    = :gray50,
@@ -96,27 +96,27 @@ fig, ax, p = taxontreeplot(tree;
 
 ## Adding to an existing Makie axis
 
-`taxontreeplot!` adds a dendrogram to an axis you have already created,
+`taxonomytreeplot!` adds a dendrogram to an axis you have already created,
 allowing composition with other Makie plots or multi-panel figures:
 
 ```julia
 using PaleobiologyDB, PaleobiologyDB.Taxonomy
 using CairoMakie
-using PaleobiologyDB.TaxonTreeMakie
+using PaleobiologyDB.TaxonomyTreeMakie
 
 tree = taxon_subtree("Canidae"; leaf_rank = "genus")
 
 fig = Figure(size = (1000, 700))
 ax  = Axis(fig[1, 1]; title = "Canidae genera")
 
-taxontreeplot!(ax, tree; showtips = true, ladderize = true)
+taxonomytreeplot!(ax, tree; showtips = true, ladderize = true)
 set_rank_axis_ticks!(ax, tree)
 
 display(fig)
 ```
 
 `set_rank_axis_ticks!` configures the x-axis ticks with rank names.  When
-using the standalone `taxontreeplot`, this is called automatically unless
+using the standalone `taxonomytreeplot`, this is called automatically unless
 `show_rank_ticks = false` is passed.
 
 ## Multi-panel figure combining trees
@@ -124,7 +124,7 @@ using the standalone `taxontreeplot`, this is called automatically unless
 ```julia
 using PaleobiologyDB, PaleobiologyDB.Taxonomy
 using CairoMakie
-using PaleobiologyDB.TaxonTreeMakie
+using PaleobiologyDB.TaxonomyTreeMakie
 
 t_fam = taxon_subtree("Carnivora"; leaf_rank = "family")
 t_gen = taxon_subtree("Canidae";   leaf_rank = "genus")
@@ -132,11 +132,11 @@ t_gen = taxon_subtree("Canidae";   leaf_rank = "genus")
 fig = Figure(size = (1400, 600))
 
 ax1 = Axis(fig[1, 1]; title = "Carnivora — families")
-taxontreeplot!(ax1, t_fam; showtips = true, color_by_rank = true)
+taxonomytreeplot!(ax1, t_fam; showtips = true, color_by_rank = true)
 set_rank_axis_ticks!(ax1, t_fam)
 
 ax2 = Axis(fig[1, 2]; title = "Canidae — genera")
-taxontreeplot!(ax2, t_gen; showtips = true, ladderize = true)
+taxonomytreeplot!(ax2, t_gen; showtips = true, ladderize = true)
 set_rank_axis_ticks!(ax2, t_gen)
 
 display(fig)
@@ -144,7 +144,7 @@ display(fig)
 
 ## PhyloPic silhouettes at leaf tips
 
-`taxontreeplot` can overlay [PhyloPic](https://www.phylopic.org/) silhouette
+`taxonomytreeplot` can overlay [PhyloPic](https://www.phylopic.org/) silhouette
 images to the right of each leaf-tip label.  This requires `FileIO` to be
 loaded in the same session (which also activates `PhyloPicMakie`):
 
@@ -152,7 +152,7 @@ loaded in the same session (which also activates `PhyloPicMakie`):
 using PaleobiologyDB
 using CairoMakie
 using FileIO   # enables PhyloPic image decoding
-using PaleobiologyDB.TaxonTreeMakie
+using PaleobiologyDB.TaxonomyTreeMakie
 ```
 
 ### Inline mode (default)
@@ -163,7 +163,7 @@ The horizontal gap is controlled by `phylopic_xoffset` (in data units):
 ```julia
 tree = taxon_subtree("Carnivora"; leaf_rank = "family")
 
-fig, ax, p = taxontreeplot(tree;
+fig, ax, p = taxonomytreeplot(tree;
     showtips         = true,
     show_phylopic    = true,
     phylopic_xoffset = 0.5,
@@ -185,7 +185,7 @@ column, regardless of label length.  Increase `phylopic_xoffset` to control
 the column's distance from the deepest rank:
 
 ```julia
-fig, ax, p = taxontreeplot(tree;
+fig, ax, p = taxonomytreeplot(tree;
     showtips         = true,
     show_phylopic    = true,
     phylopic_align   = true,
@@ -211,7 +211,7 @@ trees where leaves are spaced 2 units apart (the default `row_spacing`).  Set
 original image proportions:
 
 ```julia
-fig, ax, p = taxontreeplot(tree;
+fig, ax, p = taxonomytreeplot(tree;
     showtips             = true,
     show_phylopic        = true,
     phylopic_glyph_size  = 0.35,
@@ -231,7 +231,7 @@ what happens:
 | `:error` | Throw an `ErrorException` |
 
 ```julia
-fig, ax, p = taxontreeplot(tree;
+fig, ax, p = taxonomytreeplot(tree;
     show_phylopic       = true,
     phylopic_on_missing = :placeholder,
 )
@@ -242,7 +242,7 @@ fig, ax, p = taxontreeplot(tree;
 PhyloPic images are loaded **once** when the plot is created.  Toggling
 `p[:show_phylopic][] = false` after creation hides/shows the existing images
 without re-downloading.  Changing `phylopic_glyph_size`, `phylopic_align`, or
-the tree itself requires recreating the plot with `taxontreeplot`.
+the tree itself requires recreating the plot with `taxonomytreeplot`.
 
 ### Note on FileIO
 
@@ -255,7 +255,7 @@ images and no error).
 Makie's standard `save` function works with any output format:
 
 ```julia
-fig, ax, p = taxontreeplot(tree; showtips = true)
+fig, ax, p = taxonomytreeplot(tree; showtips = true)
 
 save("carnivora_families.png", fig)
 save("carnivora_families.svg", fig)
@@ -268,7 +268,7 @@ Pass `figure_kwargs` and `axis_kwargs` (named tuples) to control the
 underlying `Figure` and `Axis`:
 
 ```julia
-fig, ax, p = taxontreeplot(tree;
+fig, ax, p = taxonomytreeplot(tree;
     figure_kwargs = (; size = (1200, 900), backgroundcolor = :white),
     axis_kwargs   = (;
         title           = "Carnivora — family-level tree",
@@ -283,8 +283,8 @@ fig, ax, p = taxontreeplot(tree;
 
 ## Attribute reference
 
-All attributes can be passed as keyword arguments to `taxontreeplot` or
-`taxontreeplot!`.
+All attributes can be passed as keyword arguments to `taxonomytreeplot` or
+`taxonomytreeplot!`.
 
 | Attribute | Default | Description |
 |---|---|---|
@@ -312,7 +312,7 @@ All attributes can be passed as keyword arguments to `taxontreeplot` or
 | `phylopic_on_missing` | `:skip` | Policy when no image is found: `:skip`, `:placeholder`, `:error` |
 | `phylopic_aspect` | `:preserve` | `:preserve` (original proportions) or `:stretch` (square) |
 
-The following keywords are consumed by `taxontreeplot` (standalone) and are
+The following keywords are consumed by `taxonomytreeplot` (standalone) and are
 **not** passed to the recipe:
 
 | Keyword | Default | Description |

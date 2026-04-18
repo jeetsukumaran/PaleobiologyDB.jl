@@ -1,5 +1,5 @@
 # ---------------------------------------------------------------------------
-# TaxonTreeMakie — tree-aware PhyloPic overlay API
+# TaxonomyTreeMakie — tree-aware PhyloPic overlay API
 #
 # Provides a composable overlay API that separates tree geometry extraction
 # from glyph rendering.  All rendering is delegated to
@@ -7,9 +7,9 @@
 # reactive axis-scale correction, and image caching are handled in one place.
 #
 # Public:
-#   tip_positions(p::TaxonTreePlot) → NamedTuple
+#   tip_positions(p::TaxonomyTreePlot) → NamedTuple
 #   augment_tip_phylopic!(ax, tree, xs, ys; ...) → Nothing
-#   augment_tip_phylopic!(ax, p::TaxonTreePlot; ...) → Nothing
+#   augment_tip_phylopic!(ax, p::TaxonomyTreePlot; ...) → Nothing
 # ---------------------------------------------------------------------------
 
 """
@@ -18,19 +18,19 @@ Valid `anchor` symbols for `augment_tip_phylopic!`.
 const VALID_TIP_ANCHORS = (:tip, :tip_label_origin)
 
 # ---------------------------------------------------------------------------
-# tip_positions — TaxonTreePlot convenience overload
+# tip_positions — TaxonomyTreePlot convenience overload
 # ---------------------------------------------------------------------------
 
 """
-    tip_positions(p::TaxonTreePlot) -> NamedTuple
+    tip_positions(p::TaxonomyTreePlot) -> NamedTuple
 
-Extract leaf-tip coordinates from a `TaxonTreePlot` object.
+Extract leaf-tip coordinates from a `TaxonomyTreePlot` object.
 
 Convenience overload of [`tip_positions`](@ref) that reads the
 tree and `ladderize` attribute from `p` and recomputes the dendrogram layout.
 
 Returns a `NamedTuple` with fields:
-- `vertices::Vector{Int}` — leaf vertex indices into `p[:taxontree][].graph`
+- `vertices::Vector{Int}` — leaf vertex indices into `p[:taxonomytree][].graph`
 - `names::Vector{String}` — accepted taxon name for each leaf
 - `x::Vector{Float64}` — x coordinate in data units for each leaf
 - `y::Vector{Float64}` — y coordinate in data units for each leaf
@@ -39,9 +39,9 @@ Returns a `NamedTuple` with fields:
 
 ```julia
 using PaleobiologyDB, PaleobiologyDB.Taxonomy, CairoMakie
-using PaleobiologyDB.TaxonTreeMakie
+using PaleobiologyDB.TaxonomyTreeMakie
 
-fig, ax, p = taxontreeplot(taxon_subtree("Panthera"))
+fig, ax, p = taxonomytreeplot(taxon_subtree("Panthera"))
 tips = tip_positions(p)
 # tips.names  — Vector{String} of leaf taxon names
 # tips.x      — x positions in data space
@@ -50,8 +50,8 @@ tips = tip_positions(p)
 
 See also [`tip_positions`](@ref), [`augment_tip_phylopic!`](@ref).
 """
-function tip_positions(p::TaxonTreePlot)::NamedTuple
-    tree = p[:taxontree][]
+function tip_positions(p::TaxonomyTreePlot)::NamedTuple
+    tree = p[:taxonomytree][]
     xs, ys = _compute_dendrogram_layout(tree; ladderize = p[:ladderize][])
     return tip_positions(tree, xs, ys)
 end
@@ -63,7 +63,7 @@ end
 """
     augment_tip_phylopic!(
         ax::Makie.Axis,
-        tree::TaxonTree,
+        tree::TaxonomyTree,
         xs::AbstractVector{<:Real},
         ys::AbstractVector{<:Real};
         anchor::Symbol                 = :tip,
@@ -88,12 +88,12 @@ from the dendrogram layout and delegates all rendering to
 [`PaleobiologyDB.PhyloPicPBDB.augment_phylopic!`](@ref).
 
 See also the convenience overload [`augment_tip_phylopic!`](@ref)
-which reads tree and layout directly from a `TaxonTreePlot`.
+which reads tree and layout directly from a `TaxonomyTreePlot`.
 
 ## Arguments
 
 - `ax`: the `Makie.Axis` to annotate.
-- `tree`: source [`TaxonTree`](@ref).
+- `tree`: source [`TaxonomyTree`](@ref).
 - `xs`, `ys`: layout vectors from `_compute_dendrogram_layout`, one
   value per vertex in `tree.graph`.
 
@@ -106,7 +106,7 @@ which reads tree and layout directly from a `TaxonTreePlot`.
   - `:tip_label_origin` — `xs[v] + tip_xoffset`
 - `tip_xoffset` (default `0.0`) — label-start offset used when
   `anchor = :tip_label_origin`.  Set to match the `tip_xoffset` attribute of
-  the corresponding `TaxonTreePlot` (recipe default `0.2`).
+  the corresponding `TaxonomyTreePlot` (recipe default `0.2`).
 
 ### Alignment
 
@@ -144,10 +144,10 @@ which reads tree and layout directly from a `TaxonTreePlot`.
 
 ```julia
 using PaleobiologyDB, PaleobiologyDB.Taxonomy, CairoMakie
-using PaleobiologyDB.TaxonTreeMakie
+using PaleobiologyDB.TaxonomyTreeMakie
 
 tree = taxon_subtree("Panthera")
-fig, ax, p = taxontreeplot(tree)
+fig, ax, p = taxonomytreeplot(tree)
 
 # Silhouettes 1.0 data unit right of each leaf tip
 augment_tip_phylopic!(ax, p; xoffset = 1.0)
@@ -163,11 +163,11 @@ augment_tip_phylopic!(ax, p;
 augment_tip_phylopic!(ax, p; align = true, xoffset = 0.2)
 ```
 
-See also [`tip_positions`](@ref), [`taxontreeplot`](@ref).
+See also [`tip_positions`](@ref), [`taxonomytreeplot`](@ref).
 """
 function augment_tip_phylopic!(
         ax::Makie.Axis,
-        tree::TaxonTree,
+        tree::TaxonomyTree,
         xs::AbstractVector{<:Real},
         ys::AbstractVector{<:Real};
         anchor::Symbol = :tip,
@@ -221,14 +221,14 @@ function augment_tip_phylopic!(
 end
 
 # ---------------------------------------------------------------------------
-# augment_tip_phylopic! — convenience overload (TaxonTreePlot)
+# augment_tip_phylopic! — convenience overload (TaxonomyTreePlot)
 # ---------------------------------------------------------------------------
 
 """
-    augment_tip_phylopic!(ax::Makie.Axis, p::TaxonTreePlot; kwargs...) -> Nothing
+    augment_tip_phylopic!(ax::Makie.Axis, p::TaxonomyTreePlot; kwargs...) -> Nothing
 
 Convenience overload of [`augment_tip_phylopic!`](@ref) that reads tree and
-layout from a `TaxonTreePlot`.
+layout from a `TaxonomyTreePlot`.
 
 All keyword arguments are forwarded unchanged to the primary method.  See
 [`augment_tip_phylopic!`](@ref) for full documentation.
@@ -236,16 +236,16 @@ All keyword arguments are forwarded unchanged to the primary method.  See
 ## Examples
 
 ```julia
-fig, ax, p = taxontreeplot(taxon_subtree("Panthera"))
+fig, ax, p = taxonomytreeplot(taxon_subtree("Panthera"))
 augment_tip_phylopic!(ax, p; xoffset = 1.0)
 ```
 """
 function augment_tip_phylopic!(
         ax::Makie.Axis,
-        p::TaxonTreePlot;
+        p::TaxonomyTreePlot;
         kwargs...,
     )::Nothing
-    tree = p[:taxontree][]
+    tree = p[:taxonomytree][]
     xs, ys = _compute_dendrogram_layout(tree; ladderize = p[:ladderize][])
     augment_tip_phylopic!(ax, tree, xs, ys; kwargs...)
     return nothing

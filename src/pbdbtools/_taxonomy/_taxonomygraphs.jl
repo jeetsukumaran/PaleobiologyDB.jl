@@ -1,7 +1,7 @@
 # ---------------------------------------------------------------------------
 # Taxonomy graph construction
 #
-# Provides TaxonNode, TaxonTree, and taxon_subtree for materialising a
+# Provides TaxonNode, TaxonomyTree, and taxon_subtree for materialising a
 # taxonomic subtree from the Scratch-cached PBDB taxa list snapshot as an
 # explicit directed graph (Graphs.jl SimpleDiGraph, edges parent → child).
 #
@@ -14,14 +14,14 @@
 # Public API:
 #   TaxonNode     — immutable node carrying name, rank, PBDB id, parent id,
 #                   and an optional metadata slot (type parameter M)
-#   TaxonTree     — wrapper around a SimpleDiGraph plus per-vertex TaxonNode vector
-#   taxon_subtree — build a TaxonTree rooted at a named taxon
+#   TaxonomyTree     — wrapper around a SimpleDiGraph plus per-vertex TaxonNode vector
+#   taxon_subtree — build a TaxonomyTree rooted at a named taxon
 #   root_taxon    — return the root TaxonNode
 #   leaf_taxa     — return all leaf TaxonNodes (vertices with no children)
 #   taxa_at_rank  — return all TaxonNodes at a given rank
 # ---------------------------------------------------------------------------
 
-export TaxonNode, TaxonTree, taxon_subtree, root_taxon, leaf_taxa, taxa_at_rank
+export TaxonNode, TaxonomyTree, taxon_subtree, root_taxon, leaf_taxa, taxa_at_rank
 
 # ---------------------------------------------------------------------------
 # TaxonNode
@@ -51,7 +51,7 @@ TaxonNode("Canis", "genus", 41045, 41045, 2)
 #          name     rank     pbdb_id accepted_id parent_id
 ```
 
-See also [`TaxonTree`](@ref), [`taxon_subtree`](@ref).
+See also [`TaxonomyTree`](@ref), [`taxon_subtree`](@ref).
 """
 struct TaxonNode
     name::String
@@ -62,11 +62,11 @@ struct TaxonNode
 end
 
 # ---------------------------------------------------------------------------
-# TaxonTree
+# TaxonomyTree
 # ---------------------------------------------------------------------------
 
 """
-    TaxonTree
+    TaxonomyTree
 
 A rooted, directed tree representing a taxonomic subtree extracted from
 the PBDB taxa list snapshot.
@@ -84,7 +84,7 @@ the PBDB taxa list snapshot.
 
 ## Working with Graphs.jl
 
-`TaxonTree` wraps a standard `Graphs.SimpleDiGraph`, so any function from
+`TaxonomyTree` wraps a standard `Graphs.SimpleDiGraph`, so any function from
 [Graphs.jl](https://juliagraphs.org/Graphs.jl/) that accepts an
 `AbstractGraph` works directly on `tree.graph`:
 
@@ -101,7 +101,7 @@ Graphs.is_tree(t.graph)                    # always true for a valid subtree
 
 See also [`taxon_subtree`](@ref), [`TaxonNode`](@ref).
 """
-struct TaxonTree
+struct TaxonomyTree
     graph::Graphs.SimpleDiGraph{Int}
     taxa::Vector{TaxonNode}
     vertex_of::Dict{Int, Int}
@@ -109,13 +109,13 @@ struct TaxonTree
 end
 
 # ---------------------------------------------------------------------------
-# Internal: build a TaxonTree from BFS-collected triples
+# Internal: build a TaxonomyTree from BFS-collected triples
 # ---------------------------------------------------------------------------
 
 # Each triple is (orig_no::Int, parent_orig_no::Union{Int,Missing}, info::_TaxonInfo)
-function _build_taxon_tree(
+function _build_taxonomy_tree(
         collected::Vector{Tuple{Int, Union{Int, Missing}, Any}},
-    )::TaxonTree
+    )::TaxonomyTree
     n = length(collected)
 
     # Vertex 1 = root (first element); rest follow BFS order
@@ -132,7 +132,7 @@ function _build_taxon_tree(
         end
     end
 
-    return TaxonTree(g, taxa, vertex_of, 1)
+    return TaxonomyTree(g, taxa, vertex_of, 1)
 end
 
 # ---------------------------------------------------------------------------
@@ -140,9 +140,9 @@ end
 # ---------------------------------------------------------------------------
 
 """
-    taxon_subtree(taxon_name; leaf_rank=nothing, strict_leaf_rank=true) -> TaxonTree
+    taxon_subtree(taxon_name; leaf_rank=nothing, strict_leaf_rank=true) -> TaxonomyTree
 
-Build and return a [`TaxonTree`](@ref) rooted at `taxon_name`, descending
+Build and return a [`TaxonomyTree`](@ref) rooted at `taxon_name`, descending
 through the taxonomic hierarchy down to (and including) `leaf_rank`.
 
 The tree is derived from the Scratch-cached PBDB taxa list snapshot; no
@@ -181,7 +181,7 @@ refreshed automatically when older than 30 days.
 
 ## Returns
 
-A [`TaxonTree`](@ref) rooted at the named taxon.  Returns a single-node
+A [`TaxonomyTree`](@ref) rooted at the named taxon.  Returns a single-node
 tree (root only, no edges) when `taxon_name` is not found in the snapshot.
 
 Throws `ArgumentError` if `leaf_rank` is not a valid PBDB rank string.
@@ -215,13 +215,13 @@ Graphs.nv(t5.graph)          # 1
 ```
 
 See also [`root_taxon`](@ref), [`leaf_taxa`](@ref), [`taxa_at_rank`](@ref),
-[`child_taxa`](@ref), [`TaxonTree`](@ref).
+[`child_taxa`](@ref), [`TaxonomyTree`](@ref).
 """
 function taxon_subtree(
         taxon_name::AbstractString;
         leaf_rank::Union{AbstractString, Nothing} = nothing,
         strict_leaf_rank::Bool = true,
-    )::TaxonTree
+    )::TaxonomyTree
     _ensure_children_index()
 
     name_to_no = _TAXA_HIERARCHY_NAME_INDEX[]
@@ -234,7 +234,7 @@ function taxon_subtree(
         # Unknown taxon — return a single-node placeholder tree
         placeholder = TaxonNode(string(taxon_name), "", 0, missing, missing)
         g = Graphs.SimpleDiGraph{Int}(1)
-        return TaxonTree(g, [placeholder], Dict{Int, Int}(0 => 1), 1)
+        return TaxonomyTree(g, [placeholder], Dict{Int, Int}(0 => 1), 1)
     end
 
     start_info = no_to_info[start_no]
@@ -274,7 +274,7 @@ function taxon_subtree(
                 # node: collect it so it gets a vertex index, then recurse so
                 # its descendants are also included.  Skipping collection but
                 # still recursing would leave dangling parent_no references in
-                # _build_taxon_tree (KeyError when any collected descendant's
+                # _build_taxonomy_tree (KeyError when any collected descendant's
                 # parent_no points to this uncollected node).
                 push!(collected, (child_no, cur_no, info))
                 push!(queue, (child_no, cur_no))
@@ -304,7 +304,7 @@ function taxon_subtree(
         end
     end
 
-    return _build_taxon_tree(collected)
+    return _build_taxonomy_tree(collected)
 end
 
 # ---------------------------------------------------------------------------
@@ -312,7 +312,7 @@ end
 # ---------------------------------------------------------------------------
 
 """
-    root_taxon(tree::TaxonTree) -> TaxonNode
+    root_taxon(tree::TaxonomyTree) -> TaxonNode
 
 Return the root [`TaxonNode`](@ref) of `tree`.
 
@@ -326,12 +326,12 @@ root_taxon(t).rank    # "order"
 
 See also [`leaf_taxa`](@ref), [`taxa_at_rank`](@ref).
 """
-function root_taxon(tree::TaxonTree)::TaxonNode
+function root_taxon(tree::TaxonomyTree)::TaxonNode
     return tree.taxa[tree.root]
 end
 
 """
-    leaf_taxa(tree::TaxonTree) -> Vector{TaxonNode}
+    leaf_taxa(tree::TaxonomyTree) -> Vector{TaxonNode}
 
 Return all leaf nodes of `tree` — vertices with no outgoing edges (no
 children in the subtree) — sorted by name.
@@ -351,14 +351,14 @@ leaf_taxa(t) .|> (n -> n.name)   # ["Ailuridae", "Canidae", …]
 
 See also [`root_taxon`](@ref), [`taxa_at_rank`](@ref).
 """
-function leaf_taxa(tree::TaxonTree)::Vector{TaxonNode}
+function leaf_taxa(tree::TaxonomyTree)::Vector{TaxonNode}
     g = tree.graph
     nodes = [tree.taxa[v] for v in Graphs.vertices(g) if isempty(Graphs.outneighbors(g, v))]
     return sort!(nodes; by = n -> n.name)
 end
 
 """
-    taxa_at_rank(tree::TaxonTree, rank::AbstractString) -> Vector{TaxonNode}
+    taxa_at_rank(tree::TaxonomyTree, rank::AbstractString) -> Vector{TaxonNode}
 
 Return all nodes in `tree` whose `rank` field equals `rank`, sorted by name.
 
@@ -377,7 +377,7 @@ taxa_at_rank(t, "genus")  |> length          # number of genera in Carnivora
 See also [`root_taxon`](@ref), [`leaf_taxa`](@ref).
 """
 function taxa_at_rank(
-        tree::TaxonTree,
+        tree::TaxonomyTree,
         rank::AbstractString,
     )::Vector{TaxonNode}
     _pbdb_rank_index(rank)   # throws ArgumentError for unknown ranks

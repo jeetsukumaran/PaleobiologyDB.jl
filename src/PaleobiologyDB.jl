@@ -63,6 +63,6 @@ include("pbdbdocs.jl")
 
 include("PhyloPicPBDB/PhyloPicPBDB.jl")
 include("pbdbtools/pbdbtools.jl")
-include("TaxonTreeMakie/TaxonTreeMakie.jl")
+include("TaxonomyTreeMakie/TaxonomyTreeMakie.jl")
 
 end # module

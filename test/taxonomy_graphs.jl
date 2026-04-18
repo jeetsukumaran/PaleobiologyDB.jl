@@ -1,7 +1,7 @@
 # test/taxonomy_graphs.jl
 # Tests for PaleobiologyDB.Taxonomy graph construction functions:
 #   taxon_subtree, root_taxon, leaf_taxa, taxa_at_rank,
-#   and the TaxonNode / TaxonTree structs.
+#   and the TaxonNode / TaxonomyTree structs.
 #
 # Offline tests inject the same small mock Carnivora hierarchy used by
 # taxonomy_queries.jl (indices accessed via the shared module-level Refs).
@@ -26,7 +26,7 @@ using Test
 import Graphs
 using PaleobiologyDB
 using PaleobiologyDB.Taxonomy: taxon_subtree, root_taxon, leaf_taxa, taxa_at_rank,
-    TaxonNode, TaxonTree
+    TaxonNode, TaxonomyTree
 
 # ---------------------------------------------------------------------------
 # Re-use the same mock injection helpers from taxonomy_queries.jl
@@ -34,7 +34,7 @@ using PaleobiologyDB.Taxonomy: taxon_subtree, root_taxon, leaf_taxa, taxa_at_ran
 # at module scope in that file — reuse them here)
 # ---------------------------------------------------------------------------
 
-@testset "TaxonNode and TaxonTree structs" begin
+@testset "TaxonNode and TaxonomyTree structs" begin
     @testset "TaxonNode constructor" begin
         n = TaxonNode("Canis", "genus", 41045, 41045, 2)
         @test n.name        == "Canis"
@@ -62,7 +62,7 @@ end
     @testset "full subtree (no leaf_rank)" begin
         t = taxon_subtree("Carnivora")
 
-        @test t isa TaxonTree
+        @test t isa TaxonomyTree
         @test Graphs.nv(t.graph) == 12
         @test Graphs.ne(t.graph) == 11
         @test t.root == 1
@@ -161,7 +161,7 @@ end
     @testset "unknown taxon → single-node placeholder tree" begin
         t = taxon_subtree("INVALID_TAXON_XYZ")
 
-        @test t isa TaxonTree
+        @test t isa TaxonomyTree
         @test Graphs.nv(t.graph) == 1
         @test Graphs.ne(t.graph) == 0
         @test length(t.taxa) == 1

@@ -1,5 +1,5 @@
 # ---------------------------------------------------------------------------
-# TaxonTreeMakie — pure dendrogram layout
+# TaxonomyTreeMakie — pure dendrogram layout
 #
 # All functions here are pure: they depend only on their arguments and produce
 # no side effects.  They can be tested without loading Makie.
@@ -75,7 +75,7 @@ the tree appear more balanced.
 
 ## Arguments
 
-- `graph`: a directed graph with parent→child edges (as in `TaxonTree.graph`).
+- `graph`: a directed graph with parent→child edges (as in `TaxonomyTree.graph`).
 - `v`: source vertex.
 """
 function _subtree_leaf_count(
@@ -155,7 +155,7 @@ end
 
 """
     _compute_dendrogram_layout(
-        tree::TaxonTree;
+        tree::TaxonomyTree;
         ladderize::Bool = false,
         row_spacing::Real = 1.0,
     ) -> Tuple{Vector{Float64}, Vector{Float64}}
@@ -179,7 +179,7 @@ dendrogram layout.
 
 ## Arguments
 
-- `tree`: the [`TaxonTree`](@ref) to lay out.
+- `tree`: the [`TaxonomyTree`](@ref) to lay out.
 - `ladderize`: when `true`, children of each node are sorted by ascending
   subtree leaf count before the DFS.  This spreads the tree asymmetrically,
   placing dense subtrees at the bottom and sparse subtrees at the top.
@@ -201,12 +201,12 @@ import Graphs
 tree = taxon_subtree("Carnivora"; leaf_rank = "family")
 
 # Access the extension layout function after loading Makie:
-xs, ys = PaleobiologyDB.TaxonTreeMakie._compute_dendrogram_layout(tree)
-xs, ys = PaleobiologyDB.TaxonTreeMakie._compute_dendrogram_layout(tree; row_spacing = 2.0)
+xs, ys = PaleobiologyDB.TaxonomyTreeMakie._compute_dendrogram_layout(tree)
+xs, ys = PaleobiologyDB.TaxonomyTreeMakie._compute_dendrogram_layout(tree; row_spacing = 2.0)
 ```
 """
 function _compute_dendrogram_layout(
-        tree::TaxonTree;
+        tree::TaxonomyTree;
         ladderize::Bool = false,
         row_spacing::Real = 1.0,
     )::Tuple{Vector{Float64}, Vector{Float64}}
@@ -271,7 +271,7 @@ end
 
 """
     _dendrogram_segment_pairs(
-        tree::TaxonTree,
+        tree::TaxonomyTree,
         x::AbstractVector{<:Real},
         y::AbstractVector{<:Real},
     ) -> Vector{NTuple{4, Float64}}
@@ -292,7 +292,7 @@ Leaf vertices produce no segments.
 
 ## Arguments
 
-- `tree`: the source [`TaxonTree`](@ref).
+- `tree`: the source [`TaxonomyTree`](@ref).
 - `x`, `y`: position vectors from [`_compute_dendrogram_layout`](@ref),
   indexed by vertex index.
 
@@ -301,7 +301,7 @@ Leaf vertices produce no segments.
 `Vector{NTuple{4, Float64}}` — one `(x1, y1, x2, y2)` per segment.
 """
 function _dendrogram_segment_pairs(
-        tree::TaxonTree,
+        tree::TaxonomyTree,
         x::AbstractVector{<:Real},
         y::AbstractVector{<:Real},
     )::Vector{NTuple{4, Float64}}
@@ -331,7 +331,7 @@ end
 # ---------------------------------------------------------------------------
 
 """
-    tip_positions(tree::TaxonTree, xs, ys) -> NamedTuple
+    tip_positions(tree::TaxonomyTree, xs, ys) -> NamedTuple
 
 Extract leaf-tip coordinates from a pre-computed dendrogram layout.
 
@@ -351,10 +351,10 @@ All four vectors are the same length and are aligned by index.
 ```julia
 using PaleobiologyDB, PaleobiologyDB.Taxonomy
 using CairoMakie
-using PaleobiologyDB.TaxonTreeMakie
+using PaleobiologyDB.TaxonomyTreeMakie
 
 tree = taxon_subtree("Panthera")
-fig, ax, p = taxontreeplot(tree)
+fig, ax, p = taxonomytreeplot(tree)
 tips = tip_positions(p)   # convenience overload
 # tips.names, tips.x, tips.y  — one entry per leaf
 ```
@@ -362,7 +362,7 @@ tips = tip_positions(p)   # convenience overload
 See also [`augment_tip_phylopic!`](@ref).
 """
 function tip_positions(
-        tree::TaxonTree,
+        tree::TaxonomyTree,
         xs::AbstractVector{<:Real},
         ys::AbstractVector{<:Real},
     )::NamedTuple

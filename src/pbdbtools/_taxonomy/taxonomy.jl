@@ -11,5 +11,5 @@ include("_taxonomy_namevalidation.jl")
 include("_taxonomy_augment.jl")
 include("_taxonomy_queries.jl")
 include("_taxonomy.jl")       # drop_unqualified_taxa (depends on the others above)
-include("_taxonomygraphs.jl") # TaxonNode, TaxonTree, taxon_subtree (depends on queries)
+include("_taxonomygraphs.jl") # TaxonNode, TaxonomyTree, taxon_subtree (depends on queries)
 end

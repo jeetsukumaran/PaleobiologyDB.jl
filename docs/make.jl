@@ -6,14 +6,14 @@ using PaleobiologyDB.PhyloPicPBDB
 using PaleobiologyDB.Depot
 import PhyloPicMakie
 
-# Trigger TaxonTreeMakie extension (requires CairoMakie)
+# Trigger TaxonomyTreeMakie extension (requires CairoMakie)
 using CairoMakie
-using PaleobiologyDB.TaxonTreeMakie
+using PaleobiologyDB.TaxonomyTreeMakie
 
 makedocs(
     sitename = "PaleobiologyDB.jl",
     authors = "Jeet Sukumaran",
-    modules = [PaleobiologyDB, PaleobiologyDB.ApiHelp, PaleobiologyDB.Taxonomy, PaleobiologyDB.PhyloPicPBDB, PaleobiologyDB.Depot, PaleobiologyDB.TaxonTreeMakie],
+    modules = [PaleobiologyDB, PaleobiologyDB.ApiHelp, PaleobiologyDB.Taxonomy, PaleobiologyDB.PhyloPicPBDB, PaleobiologyDB.Depot, PaleobiologyDB.TaxonomyTreeMakie],
     format = Documenter.HTML(
         prettyurls = get(ENV, "CI", nothing) == "true",
         canonical = "https://jeetsukumaran.github.io/PaleobiologyDB.jl",
@@ -23,7 +23,7 @@ makedocs(
         "Guide" => [
             "Quick Start"      => "guide/quickstart.md",
             "Caching"          => "guide/caching.md",
-            "TaxonTreeMakie"   => "guide/taxontree_makie.md",
+            "TaxonomyTreeMakie"   => "guide/taxonomytree_makie.md",
             "PhyloPicMakie"    => "guide/phylopic_makie.md",
             "Contributing"     => "guide/contributing.md",
         ],
@@ -38,7 +38,7 @@ makedocs(
             "Taxonomy: Queries"     => "api/taxonomy_queries.md",
             "Taxonomy: Graphs"      => "api/taxonomy_graphs.md",
             "Taxonomy: Search"      => "api/taxonomy_search.md",
-            "TaxonTreeMakie"        => "api/taxontree_makie.md",
+            "TaxonomyTreeMakie"        => "api/taxonomytree_makie.md",
             "PhyloPic: Acquisition" => "api/phylopic_acquire.md",
             "PhyloPic: Rendering"   => "api/phylopic_makie.md",
             "Depot"                 => "api/depot.md",

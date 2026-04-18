@@ -1,8 +1,8 @@
 # ---------------------------------------------------------------------------
-# TaxonTreeMakie — PhyloPic silhouette support for dendrogram leaf tips
+# TaxonomyTreeMakie — PhyloPic silhouette support for dendrogram leaf tips
 #
 # This file provides helpers for loading and rendering PhyloPic silhouette
-# images at the tip positions of a TaxonTree dendrogram.
+# images at the tip positions of a TaxonomyTree dendrogram.
 #
 # Public (within extension):
 #   _load_tip_phylopic_image(taxon_name) → Union{Matrix{Makie.RGBA{Makie.N0f8}}, Nothing}
@@ -69,7 +69,7 @@ function _load_tip_phylopic_image(
     rec = try
         acquire_phylopic(string(taxon_name))
     catch err
-        @warn "TaxonTreeMakie: PhyloPic lookup failed for \"$taxon_name\"" exception = err
+        @warn "TaxonomyTreeMakie: PhyloPic lookup failed for \"$taxon_name\"" exception = err
         return nothing
     end
 
@@ -93,7 +93,7 @@ function _load_tip_phylopic_image(
     try
         return PhyloPicMakie._load_phylopic_image(string(url))
     catch err
-        @warn "TaxonTreeMakie: image load failed for \"$taxon_name\"" exception = err
+        @warn "TaxonomyTreeMakie: image load failed for \"$taxon_name\"" exception = err
         return nothing
     end
 end
@@ -105,7 +105,7 @@ end
 """
     _render_tip_phylopic!(
         p,
-        tree::TaxonTree,
+        tree::TaxonomyTree,
         xs::AbstractVector{<:Real},
         ys::AbstractVector{<:Real};
         glyph_size::Real,
@@ -133,8 +133,8 @@ proportions after auto-limits or window resize events.
 
 ## Arguments
 
-- `p`: the `TaxonTreePlot` compound plot to add child plots to.
-- `tree`: the `TaxonTree` being rendered.
+- `p`: the `TaxonomyTreePlot` compound plot to add child plots to.
+- `tree`: the `TaxonomyTree` being rendered.
 - `xs`, `ys`: dendrogram layout coordinates, one per vertex (from
   `_compute_dendrogram_layout`).
 - `glyph_size`: half-height of each rendered silhouette in data units.
@@ -163,7 +163,7 @@ proportions after auto-limits or window resize events.
 """
 function _render_tip_phylopic!(
         p,
-        tree::TaxonTree,
+        tree::TaxonomyTree,
         xs::AbstractVector{<:Real},
         ys::AbstractVector{<:Real};
         glyph_size::Real,
