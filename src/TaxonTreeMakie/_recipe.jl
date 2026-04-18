@@ -161,22 +161,22 @@ dendrogram.  Produced by [`taxontreeplot`](@ref) (standalone figure) or
 | `show_unifurcation_nodes` | `true` | When `false`, suppress markers at single-child (unifurcation) nodes; branch segments are still drawn |
 | `node_color` | `:black` | Node marker colour (used when `color_by_rank = false`) |
 | `node_size` | `5` | Node marker size in points |
-| `color_by_rank` | `true` | Colour branches and nodes by taxonomic rank |
+| `color_by_rank` | `false` | Colour branches and nodes by taxonomic rank |
 | `rank_palette` | `nothing` | `Dict{String,Any}` mapping rank name → colour; `nothing` uses the built-in cycle |
 | `showtips` | `true` | Show leaf taxon-name labels |
 | `tip_fontsize` | `9` | Leaf label font size in points |
 | `tip_color` | `:black` | Leaf label colour |
-| `row_spacing` | `1.0` | Vertical gap between consecutive leaf rows in data units; `1.0` gives integer positions, `2.0` doubles the spacing |
+| `row_spacing` | `2.0` | Vertical gap between consecutive leaf rows in data units; `2.0` gives double-spaced positions, `1.0` uses unit spacing |
 | `tip_xoffset` | `0.1` | Rightward offset for leaf labels in data units |
 | `tip_yoffset` | `0.0` | Vertical offset for leaf labels in data units (positive = upward) |
 | `showinternal` | `false` | Show internal node name labels |
 | `internal_fontsize` | `7` | Internal label font size in points |
 | `internal_color` | `:gray40` | Internal label colour |
 | `show_phylopic` | `true` | Draw a PhyloPic silhouette to the right of each leaf tip label|
-| `phylopic_glyph_size` | `0.8` | Half-height of each silhouette glyph in data units (total height = `2 × phylopic_glyph_size`) |
+| `phylopic_glyph_size` | `1.0` | Half-height of each silhouette glyph in data units (total height = `2 × phylopic_glyph_size`) |
 | `phylopic_align` | `false` | When `true`, all silhouettes are placed at a single right-hand column; when `false`, each appears immediately right of its label |
-| `phylopic_xoffset` | `0.9` | Additional rightward gap in data units beyond the tip-label start position |
-| `phylopic_yoffset` | `0.0` | Vertical offset for PhyloPic silhouettes in data units (positive = upward); applied independently of `tip_yoffset` |
+| `phylopic_xoffset` | `0.65` | Additional rightward gap in data units beyond the tip-label start position |
+| `phylopic_yoffset` | `0.3` | Vertical offset for PhyloPic silhouettes in data units (positive = upward); applied independently of `tip_yoffset` |
 | `phylopic_on_missing` | `:skip` | Policy when no PhyloPic image is found: `:skip` (omit), `:placeholder` (grey box), `:error` (throw) |
 | `phylopic_aspect` | `:preserve` | `:preserve` maintains the original image aspect ratio; `:stretch` renders as a square |
 | `phylopic_image_rendering` | `:thumbnail` | Image URL to fetch: `:thumbnail` (PNG thumbnail), `:raster` (PNG full-res), `:og_image` (PNG Open Graph), `:vector` (SVG — requires FileIO SVG plugin), `:source_file` (SVG or raster); see `PhyloPicDB.PHYLOPIC_IMAGE_RENDERINGS` |
@@ -205,7 +205,7 @@ See also [`taxontreeplot`](@ref), `taxontreeplot!`,
     Attributes(
         # Layout
         ladderize = false,
-        row_spacing = 1.0,
+        row_spacing = 2.0,
         # Branches
         branch_color = :black,
         branch_linewidth = 1.5,
@@ -215,7 +215,7 @@ See also [`taxontreeplot`](@ref), `taxontreeplot!`,
         node_color = :black,
         node_size = 5,
         # Rank-based colouring
-        color_by_rank = true,
+        color_by_rank = false,
         rank_palette = nothing,
         # Leaf labels
         showtips = true,
@@ -229,10 +229,10 @@ See also [`taxontreeplot`](@ref), `taxontreeplot!`,
         internal_color = :gray40,
         # PhyloPic silhouettes at leaf tips
         show_phylopic = true,
-        phylopic_glyph_size = 0.8,
+        phylopic_glyph_size = 1.0,
         phylopic_align = false,
         phylopic_xoffset = 0.65,
-        phylopic_yoffset = 0.0,
+        phylopic_yoffset = 0.3,
         phylopic_on_missing = :skip,
         phylopic_aspect = :preserve,
         phylopic_image_rendering = :thumbnail,

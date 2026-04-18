@@ -205,9 +205,10 @@ The result looks like:
 ### Controlling glyph size and aspect ratio
 
 `phylopic_glyph_size` sets the half-height of each silhouette in data units
-(total height = `2 × phylopic_glyph_size`).  The default `0.4` works well for
-trees where leaves are spaced 1 unit apart.  Set `phylopic_aspect = :stretch`
-to force square glyphs instead of preserving the original image proportions:
+(total height = `2 × phylopic_glyph_size`).  The default `1.0` works well for
+trees where leaves are spaced 2 units apart (the default `row_spacing`).  Set
+`phylopic_aspect = :stretch` to force square glyphs instead of preserving the
+original image proportions:
 
 ```julia
 fig, ax, p = taxontreeplot(tree;
@@ -302,10 +303,12 @@ All attributes can be passed as keyword arguments to `taxontreeplot` or
 | `showinternal` | `false` | Show internal node name labels |
 | `internal_fontsize` | `7` | Internal label font size in points |
 | `internal_color` | `:gray40` | Internal label colour |
+| `row_spacing` | `2.0` | Vertical gap between consecutive leaf rows in data units |
 | `show_phylopic` | `false` | Draw a PhyloPic silhouette to the right of each leaf tip (requires `FileIO`) |
-| `phylopic_glyph_size` | `0.4` | Half-height of each silhouette in data units |
+| `phylopic_glyph_size` | `1.0` | Half-height of each silhouette in data units |
 | `phylopic_align` | `false` | Place all silhouettes in a single right-hand column |
-| `phylopic_xoffset` | `0.3` | Rightward gap in data units beyond the tip-label start position |
+| `phylopic_xoffset` | `0.65` | Rightward gap in data units beyond the tip-label start position |
+| `phylopic_yoffset` | `0.3` | Vertical offset for PhyloPic silhouettes in data units (positive = upward) |
 | `phylopic_on_missing` | `:skip` | Policy when no image is found: `:skip`, `:placeholder`, `:error` |
 | `phylopic_aspect` | `:preserve` | `:preserve` (original proportions) or `:stretch` (square) |
 

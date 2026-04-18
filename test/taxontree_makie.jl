@@ -295,11 +295,13 @@ if _CAIRO_TTM_AVAILABLE
             # then confirm the attribute observables exist and carry their defaults.
             fig, ax, p = taxontreeplot(tree; show_phylopic = false)
             @test p[:show_phylopic][]       == false
-            @test p[:phylopic_glyph_size][] ≈ 0.4
+            @test p[:phylopic_glyph_size][] ≈ 1.0
             @test p[:phylopic_align][]      == false
-            @test p[:phylopic_xoffset][]    ≈ 0.3
+            @test p[:phylopic_xoffset][]    ≈ 0.65
+            @test p[:phylopic_yoffset][]    ≈ 0.3
             @test p[:phylopic_on_missing][] == :skip
             @test p[:phylopic_aspect][]     == :preserve
+            @test p[:row_spacing][]         ≈ 2.0
         end
     end
 
