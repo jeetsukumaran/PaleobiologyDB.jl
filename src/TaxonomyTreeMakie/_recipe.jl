@@ -541,7 +541,7 @@ Convenience method: look up `taxon_name` in the PBDB, build its subtree, and
 render it as a dendrogram in a standalone figure.
 
 Calls [`taxon_subtree`](@ref) with `leaf_rank` and `strict_leaf_rank`, then
-delegates to [`taxonomytreeplot(::TaxonomyTree; ...)`](@ref).  All remaining keyword
+delegates to [`taxonomytreeplot`](@ref).  All remaining keyword
 arguments (recipe attributes such as `ladderize`, `showtips`, `row_spacing`,
 `show_phylopic`, etc.) are forwarded unchanged.  See `TaxonomyTreePlot` for the
 full attribute reference.
@@ -555,7 +555,7 @@ full attribute reference.
   matches `leaf_rank` become leaves; pass `false` to also include shallower
   terminals.
 - `show_rank_ticks`, `figure_kwargs`, `axis_kwargs`: forwarded to
-  [`taxonomytreeplot(::TaxonomyTree; ...)`](@ref).
+  [`taxonomytreeplot`](@ref).
 
 ## Examples
 
