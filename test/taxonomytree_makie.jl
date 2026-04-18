@@ -212,67 +212,71 @@ end
 # ---------------------------------------------------------------------------
 
 if _CAIRO_TTM_AVAILABLE
-    @testset "TaxonomyTreeMakie — taxonomytreeplot smoke" begin
-        tree = _mock_carnivora_tree()
+    if LIVE
+        @testset "TaxonomyTreeMakie — taxonomytreeplot smoke" begin
+            tree = _mock_carnivora_tree()
 
-        @testset "taxonomytreeplot returns (Figure, Axis, TaxonomyTreePlot)" begin
-            fig, ax, p = taxonomytreeplot(tree)
-            @test fig isa CairoMakie.Figure
-            @test ax  isa CairoMakie.Axis
-            @test p   isa TaxonomyTreePlot
+            @testset "taxonomytreeplot returns (Figure, Axis, TaxonomyTreePlot)" begin
+                fig, ax, p = taxonomytreeplot(tree)
+                @test fig isa CairoMakie.Figure
+                @test ax  isa CairoMakie.Axis
+                @test p   isa TaxonomyTreePlot
+            end
+
+            @testset "showtips = false does not error" begin
+                @test_nowarn taxonomytreeplot(tree; showtips = false)
+            end
+
+            @testset "color_by_rank = true does not error" begin
+                @test_nowarn taxonomytreeplot(tree; color_by_rank = true)
+            end
+
+            @testset "ladderize = true does not error" begin
+                @test_nowarn taxonomytreeplot(tree; ladderize = true)
+            end
+
+            @testset "showinternal = true does not error" begin
+                @test_nowarn taxonomytreeplot(tree; showinternal = true)
+            end
+
+            @testset "show_rank_ticks = false skips axis tick setup" begin
+                @test_nowarn taxonomytreeplot(tree; show_rank_ticks = false)
+            end
+
+            @testset "color_by_rank with rank_palette does not error" begin
+                palette = Dict("order" => :red, "family" => :blue, "genus" => :green)
+                @test_nowarn taxonomytreeplot(tree; color_by_rank = true, rank_palette = palette)
+            end
+
+            @testset "show_unifurcation_nodes = false does not error" begin
+                @test_nowarn taxonomytreeplot(tree; show_unifurcation_nodes = false)
+            end
+
+            @testset "auto-sized figure height respects leaf-count floor" begin
+                # Mock tree has 3 leaves; max(400, 3*18) = 400 → height ≥ 400.
+                fig, _, _ = taxonomytreeplot(tree)
+                @test fig.scene.viewport[].widths[2] >= 400
+            end
         end
 
-        @testset "showtips = false does not error" begin
-            @test_nowarn taxonomytreeplot(tree; showtips = false)
+        @testset "TaxonomyTreeMakie — taxonomytreeplot! into existing axis" begin
+            tree = _mock_carnivora_tree()
+            fig  = CairoMakie.Figure()
+            ax   = CairoMakie.Axis(fig[1, 1])
+
+            p = taxonomytreeplot!(ax, tree; showtips = true, ladderize = true)
+            @test p isa TaxonomyTreePlot
+
+            # set_rank_axis_ticks! must run without error
+            @test_nowarn set_rank_axis_ticks!(ax, tree)
         end
 
-        @testset "color_by_rank = true does not error" begin
-            @test_nowarn taxonomytreeplot(tree; color_by_rank = true)
+        @testset "TaxonomyTreeMakie — single-node tree (placeholder)" begin
+            tree = _mock_single_node_tree()
+            @test_nowarn taxonomytreeplot(tree)
         end
-
-        @testset "ladderize = true does not error" begin
-            @test_nowarn taxonomytreeplot(tree; ladderize = true)
-        end
-
-        @testset "showinternal = true does not error" begin
-            @test_nowarn taxonomytreeplot(tree; showinternal = true)
-        end
-
-        @testset "show_rank_ticks = false skips axis tick setup" begin
-            @test_nowarn taxonomytreeplot(tree; show_rank_ticks = false)
-        end
-
-        @testset "color_by_rank with rank_palette does not error" begin
-            palette = Dict("order" => :red, "family" => :blue, "genus" => :green)
-            @test_nowarn taxonomytreeplot(tree; color_by_rank = true, rank_palette = palette)
-        end
-
-        @testset "show_unifurcation_nodes = false does not error" begin
-            @test_nowarn taxonomytreeplot(tree; show_unifurcation_nodes = false)
-        end
-
-        @testset "auto-sized figure height respects leaf-count floor" begin
-            # Mock tree has 3 leaves; max(400, 3*18) = 400 → height ≥ 400.
-            fig, _, _ = taxonomytreeplot(tree)
-            @test fig.scene.viewport[].widths[2] >= 400
-        end
-    end
-
-    @testset "TaxonomyTreeMakie — taxonomytreeplot! into existing axis" begin
-        tree = _mock_carnivora_tree()
-        fig  = CairoMakie.Figure()
-        ax   = CairoMakie.Axis(fig[1, 1])
-
-        p = taxonomytreeplot!(ax, tree; showtips = true, ladderize = true)
-        @test p isa TaxonomyTreePlot
-
-        # set_rank_axis_ticks! must run without error
-        @test_nowarn set_rank_axis_ticks!(ax, tree)
-    end
-
-    @testset "TaxonomyTreeMakie — single-node tree (placeholder)" begin
-        tree = _mock_single_node_tree()
-        @test_nowarn taxonomytreeplot(tree)
+    else
+        @info "Makie rendering smoke tests disabled (PBDB_LIVE not set) — skipping taxonomytreeplot, taxonomytreeplot!, single-node, set_rank_axis_ticks! tests"
     end
 
     # ── PhyloPic silhouette attribute tests (offline — no network) ───────────
@@ -374,15 +378,17 @@ if _CAIRO_TTM_AVAILABLE
         end
     end
 
-    @testset "TaxonomyTreeMakie — set_rank_axis_ticks!" begin
-        tree = _mock_carnivora_tree()
-        fig, ax, _p = taxonomytreeplot(tree; show_rank_ticks = false)
-        set_rank_axis_ticks!(ax, tree)
-        # Axis ticks should now reflect the three ranks present (order, family, genus)
-        tick_positions, tick_labels = ax.xticks[]
-        @test "order"  ∈ tick_labels
-        @test "family" ∈ tick_labels
-        @test "genus"  ∈ tick_labels
+    if LIVE
+        @testset "TaxonomyTreeMakie — set_rank_axis_ticks!" begin
+            tree = _mock_carnivora_tree()
+            fig, ax, _p = taxonomytreeplot(tree; show_rank_ticks = false)
+            set_rank_axis_ticks!(ax, tree)
+            # Axis ticks should now reflect the three ranks present (order, family, genus)
+            tick_positions, tick_labels = ax.xticks[]
+            @test "order"  ∈ tick_labels
+            @test "family" ∈ tick_labels
+            @test "genus"  ∈ tick_labels
+        end
     end
 
 else
