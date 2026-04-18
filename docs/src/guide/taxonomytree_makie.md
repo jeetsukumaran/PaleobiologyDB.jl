@@ -1,14 +1,13 @@
-# TaxonomyTreeMakie — Makie tree visualization
+# TaxonomyMakie — Makie tree visualization
 
-`PaleobiologyDB.TaxonomyTreeMakie` is a submodule that renders
+`PaleobiologyDB.TaxonomyMakie` is a package extension that renders
 [`TaxonomyTree`](@ref) objects as rectangular dendrograms in Makie figures.
+It activates when both a Makie backend and `PhyloPicMakie` are loaded.
 
 ## Installation
 
-Only a Makie backend is required — no additional packages beyond the backend:
-
 ```
-pkg> add CairoMakie
+pkg> add CairoMakie PhyloPicMakie
 ```
 
 ## Activation
@@ -16,7 +15,8 @@ pkg> add CairoMakie
 ```julia
 using PaleobiologyDB
 using CairoMakie   # or GLMakie, WGLMakie, …
-using PaleobiologyDB.TaxonomyTreeMakie
+import PhyloPicMakie
+using PaleobiologyDB.TaxonomyMakie
 ```
 
 ## Quick start — basic dendrogram
@@ -26,7 +26,7 @@ Build a subtree with [`taxon_subtree`](@ref) then pass it to `taxonomytreeplot`:
 ```julia
 using PaleobiologyDB, PaleobiologyDB.Taxonomy
 using CairoMakie
-using PaleobiologyDB.TaxonomyTreeMakie
+using PaleobiologyDB.TaxonomyMakie
 
 tree = taxon_subtree("Carnivora"; leaf_rank = "family")
 
@@ -102,7 +102,7 @@ allowing composition with other Makie plots or multi-panel figures:
 ```julia
 using PaleobiologyDB, PaleobiologyDB.Taxonomy
 using CairoMakie
-using PaleobiologyDB.TaxonomyTreeMakie
+using PaleobiologyDB.TaxonomyMakie
 
 tree = taxon_subtree("Canidae"; leaf_rank = "genus")
 
@@ -124,7 +124,7 @@ using the standalone `taxonomytreeplot`, this is called automatically unless
 ```julia
 using PaleobiologyDB, PaleobiologyDB.Taxonomy
 using CairoMakie
-using PaleobiologyDB.TaxonomyTreeMakie
+using PaleobiologyDB.TaxonomyMakie
 
 t_fam = taxon_subtree("Carnivora"; leaf_rank = "family")
 t_gen = taxon_subtree("Canidae";   leaf_rank = "genus")
@@ -151,8 +151,8 @@ loaded in the same session (which also activates `PhyloPicMakie`):
 ```julia
 using PaleobiologyDB
 using CairoMakie
-using FileIO   # enables PhyloPic image decoding
-using PaleobiologyDB.TaxonomyTreeMakie
+import PhyloPicMakie
+using PaleobiologyDB.TaxonomyMakie
 ```
 
 ### Inline mode (default)
@@ -244,11 +244,12 @@ PhyloPic images are loaded **once** when the plot is created.  Toggling
 without re-downloading.  Changing `phylopic_glyph_size`, `phylopic_align`, or
 the tree itself requires recreating the plot with `taxonomytreeplot`.
 
-### Note on FileIO
+### Note on extension activation
 
-If `FileIO` is not loaded, `show_phylopic = true` emits a one-time warning
-and falls back to the `phylopic_on_missing` policy (default `:skip`, so no
-images and no error).
+`show_phylopic = true` requires the `TaxonomyMakie` extension to be active
+(i.e. `PhyloPicMakie` must be loaded before this call).  If the extension is
+not loaded, `show_phylopic = true` emits a one-time warning and falls back to
+the `phylopic_on_missing` policy (default `:skip`).
 
 ## Saving figures
 

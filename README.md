@@ -104,7 +104,7 @@ Three functions map PBDB taxon names to [PhyloPic](https://www.phylopic.org/) si
 ```julia
 # Enrich an occurrences DataFrame with PhyloPic image columns
 using PaleobiologyDB: pbdb_occurrences
-using PaleobiologyDB.PhyloPicPBDB: acquire_phylopic, augment_phylopic
+using PaleobiologyDB.TaxonomyMakie: acquire_phylopic, augment_phylopic
 
 df      = pbdb_occurrences(base_name = "Ceratopsia", interval = "Cretaceous", show = "full")
 pics    = acquire_phylopic(df)              # DataFrame: one row per occurrence row
@@ -116,7 +116,7 @@ enriched = augment_phylopic(df)            # original columns + 14 phylopic_ col
 
 ```julia
 # Browse all available images for a taxon or clade
-using PaleobiologyDB.PhyloPicPBDB: phylopic_images_dataframe
+using PaleobiologyDB.TaxonomyMakie: phylopic_images_dataframe
 
 imgs = phylopic_images_dataframe("Carnivora")
 nrow(imgs)                    # → hundreds (all images within Carnivora clade)
@@ -129,12 +129,13 @@ imgs_node = phylopic_images_dataframe("Carnivora"; filter = :node)
 
 
 
-## PhyloPicPBDB — Taxon visualization
+## TaxonomyMakie — PhyloPic taxon visualization
 
 ```julia
 # Anchor a PhyloPic glyph at each taxon's first appearance on a range chart
+import PhyloPicMakie
 using CairoMakie: Figure, Axis, lines!, xlims!, display
-using PaleobiologyDB.PhyloPicPBDB: augment_phylopic_ranges!
+using PaleobiologyDB.TaxonomyMakie: augment_phylopic_ranges!
 
 taxa      = ["Tyrannosaurus", "Triceratops", "Ankylosaurus",
              "Pachycephalosaurus", "Edmontosaurus"]
@@ -161,7 +162,8 @@ display(fig)
 
 ```julia
 # PhyloPic thumbnail gallery
-using PaleobiologyDB.PhyloPicPBDB: phylopic_thumbnail_grid
+import PhyloPicMakie
+using PaleobiologyDB.TaxonomyMakie: phylopic_thumbnail_grid
 using CairoMakie: display
 
 # Single taxon — all clade images
@@ -177,14 +179,15 @@ fig2 = phylopic_thumbnail_grid(
 display(fig2)
 ```
 
-See the [PhyloPicPBDB guide](https://jeetsukumaran.github.io/PaleobiologyDB.jl/dev/guide/phylopic_makie/) for the full API and layout options.
+See the [TaxonomyMakie PhyloPic guide](https://jeetsukumaran.github.io/PaleobiologyDB.jl/dev/guide/phylopic_makie/) for the full API and layout options.
 
 
-## TaxonomyTreeMakie — dendrogram visualisation
+## TaxonomyMakie — dendrogram visualisation
 
 ```julia
+import PhyloPicMakie
 using PaleobiologyDB.Taxonomy: taxon_subtree
-using PaleobiologyDB.TaxonomyTreeMakie: taxonomytreeplot, taxonomytreeplot!, set_rank_axis_ticks!
+using PaleobiologyDB.TaxonomyMakie: taxonomytreeplot, taxonomytreeplot!, set_rank_axis_ticks!
 using CairoMakie: Figure, Axis, save, display
 
 # Build a subtree and render it — branches and nodes coloured by taxonomic rank
@@ -202,10 +205,10 @@ display(fig2)
 ```
 
 ```julia
+import PhyloPicMakie
 using PaleobiologyDB.Taxonomy: taxon_subtree
-using PaleobiologyDB.TaxonomyTreeMakie: taxonomytreeplot, augment_tip_phylopic!
+using PaleobiologyDB.TaxonomyMakie: taxonomytreeplot, augment_tip_phylopic!
 using CairoMakie: Figure, Axis, save
-using FileIO: load
 
 tree = taxon_subtree("Carnivora"; leaf_rank = "family")
 fig, ax, p = taxonomytreeplot(tree; showtips = true, color_by_rank = true, ladderize = true)
@@ -215,7 +218,7 @@ augment_tip_phylopic!(ax, p; xoffset = 0.5)
 save("carnivora_phylopic.png", fig)
 ```
 
-See the [TaxonomyTreeMakie guide](https://jeetsukumaran.github.io/PaleobiologyDB.jl/dev/guide/taxonomytree_makie/) for the full attribute reference and worked examples.
+See the [TaxonomyMakie guide](https://jeetsukumaran.github.io/PaleobiologyDB.jl/dev/guide/taxonomytree_makie/) for the full attribute reference and worked examples.
 
 ## Caching
 
@@ -285,7 +288,7 @@ Use `pbdb_count` to count records without downloading them.
 | Tree graphs | `taxon_subtree`, `root_taxon`, `leaf_taxa`, `taxa_at_rank` |
 | Types | `TaxonNode`, `TaxonomyTree` |
 
-### PhyloPic (`PaleobiologyDB.PhyloPicPBDB`)
+### PhyloPic and rendering (`PaleobiologyDB.TaxonomyMakie`)
 
 | Category | Functions |
 |---|---|
@@ -293,7 +296,7 @@ Use `pbdb_count` to count records without downloading them.
 | Makie overlays | `augment_phylopic!`, `augment_phylopic_ranges!`, `augment_phylopic_ranges` |
 | Gallery | `phylopic_thumbnail_grid`, `phylopic_thumbnail_grid!` |
 
-### TaxonomyTreeMakie extension (`PaleobiologyDB.TaxonomyTreeMakie`)
+### TaxonomyMakie extension (`PaleobiologyDB.TaxonomyMakie`) — tree visualization
 
 | Symbol | Description |
 |---|---|

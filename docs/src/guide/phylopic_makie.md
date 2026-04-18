@@ -1,14 +1,13 @@
-# PhyloPicMakie — Makie plot integration
+# TaxonomyMakie — PhyloPic Makie plot integration
 
-`PaleobiologyDB.PhyloPicPBDB` provides PhyloPic silhouette overlays
-for existing Makie plots.  It is a top-level submodule of `PaleobiologyDB` —
-`PhyloPicMakie` (and `FileIO` for image decoding) are hard dependencies of
-`PaleobiologyDB`, so no extension activation is needed.
+`PaleobiologyDB.TaxonomyMakie` provides PhyloPic silhouette overlays
+for existing Makie plots.  It is a package extension that activates
+when both a Makie backend and `PhyloPicMakie` are loaded.
 
 ## Installation
 
 ```
-pkg> add PaleobiologyDB CairoMakie
+pkg> add PaleobiologyDB CairoMakie PhyloPicMakie
 ```
 
 ## Activation
@@ -16,7 +15,8 @@ pkg> add PaleobiologyDB CairoMakie
 ```julia
 using PaleobiologyDB
 using CairoMakie   # or GLMakie, WGLMakie, …
-using PaleobiologyDB.PhyloPicPBDB
+import PhyloPicMakie
+using PaleobiologyDB.TaxonomyMakie
 # → augment_phylopic!, augment_phylopic_ranges!, phylopic_thumbnail_grid!, etc.
 # are now in scope
 ```
@@ -26,7 +26,7 @@ using PaleobiologyDB.PhyloPicPBDB
 ```julia
 using PaleobiologyDB
 using CairoMakie
-using PaleobiologyDB.PhyloPicPBDB
+using PaleobiologyDB.TaxonomyMakie
 
 taxa      = ["Tyrannosaurus", "Triceratops", "Ankylosaurus",
              "Pachycephalosaurus", "Edmontosaurus"]
@@ -70,7 +70,7 @@ table overloads accept column selectors directly:
 ```julia
 using PaleobiologyDB
 using CairoMakie
-using PaleobiologyDB.PhyloPicPBDB
+using PaleobiologyDB.TaxonomyMakie
 using DataFrames
 
 df = pbdb_occurrences(base_name = "Ursidae"; show = "full", vocab = "pbdb")
@@ -118,7 +118,7 @@ an image you have already loaded:
 ```julia
 using PaleobiologyDB
 using CairoMakie
-using PaleobiologyDB.PhyloPicPBDB
+using PaleobiologyDB.TaxonomyMakie
 import PhyloPicMakie
 
 rec = acquire_phylopic("Canis lupus")
@@ -193,7 +193,7 @@ collections grow downward rather than becoming excessively wide.
 ```julia
 using PaleobiologyDB
 using CairoMakie
-using PaleobiologyDB.PhyloPicPBDB
+using PaleobiologyDB.TaxonomyMakie
 
 fig = phylopic_thumbnail_grid(
     [

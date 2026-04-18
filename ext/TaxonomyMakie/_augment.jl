@@ -1,9 +1,9 @@
 # ---------------------------------------------------------------------------
-# TaxonomyTreeMakie — tree-aware PhyloPic overlay API
+# TaxonomyMakie — tree-aware PhyloPic overlay API
 #
 # Provides a composable overlay API that separates tree geometry extraction
 # from glyph rendering.  All rendering is delegated to
-# PaleobiologyDB.PhyloPicPBDB.augment_phylopic! so that placement math,
+# augment_phylopic! (from PhyloPicPBDB) so that placement math,
 # reactive axis-scale correction, and image caching are handled in one place.
 #
 # Public:
@@ -85,7 +85,7 @@ Add one PhyloPic silhouette per leaf tip of `tree` to `ax`.
 
 This is the primary tree-aware overlay API.  It computes anchor positions
 from the dendrogram layout and delegates all rendering to
-[`PaleobiologyDB.PhyloPicPBDB.augment_phylopic!`](@ref).
+[`augment_phylopic!`](@ref).
 
 See also the convenience overload [`augment_tip_phylopic!`](@ref)
 which reads tree and layout directly from a `TaxonomyTreePlot`.
