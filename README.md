@@ -25,7 +25,7 @@ Development version:
 
 ```julia
 using Pkg
-Pkg.add(url = "https://github.com/jeetsukumaran/PhyloPicDB.jl")
+Pkg.add(url = "https://github.com/jeetsukumaran/PhyloPicMakie.jl")
 Pkg.add(url = "https://github.com/jeetsukumaran/PaleobiologyDB.jl")
 ```
 
