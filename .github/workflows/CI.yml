@@ -62,5 +62,9 @@ jobs:
         run: |
           using Documenter: DocMeta, doctest
           using PaleobiologyDB
+          using CairoMakie
+          import PhyloPicMakie
+          using PaleobiologyDB.TaxonomyMakie
           DocMeta.setdocmeta!(PaleobiologyDB, :DocTestSetup, :(using PaleobiologyDB); recursive=true)
+          DocMeta.setdocmeta!(PaleobiologyDB.TaxonomyMakie, :DocTestSetup, :(using PaleobiologyDB; using CairoMakie; import PhyloPicMakie; using PaleobiologyDB.TaxonomyMakie); recursive=true)
           doctest(PaleobiologyDB)

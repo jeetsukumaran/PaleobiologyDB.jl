@@ -6,7 +6,11 @@
 [![Documentation (dev)](https://img.shields.io/badge/docs-dev-blue.svg)](https://jeetsukumaran.github.io/PaleobiologyDB.jl/dev)
 
 
-PaleobiologyDB.jl is a Julia interface to the [Paleobiology Database](https://paleobiodb.org/) (PBDB) Web API: every endpoint has a corresponding function, keyword arguments map directly to API parameters, and all results are returned as `DataFrame`s ready for the Julia data ecosystem.
+PaleobiologyDB.jl is a Julia package for paleobiological informatics and analysis.
+
+The primary package provides an interface to the [Paleobiology Database](https://paleobiodb.org/) (PBDB) Web API: every endpoint has a corresponding function, keyword arguments map directly to API parameters, and all results are returned as `DataFrame`s ready for the Julia data ecosystem.
+
+
 Beyond the API wrapper, the package includes a `Taxonomy` submodule for both data curation (resolving synonyms, filtering by quality) and biodiversity exploration and instruction (navigating hierarchies, building subtrees, classroom-ready querying); integrated caching designed for bandwidth-limited settings such as workshops and shared classroom networks; a PhyloPic integration layer for enriching DataFrames and plots with silhouette images; and Makie-based extensions for interactive dendrogram visualisation and range-chart overlays.
 
 ## Installation
