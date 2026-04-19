@@ -18,8 +18,10 @@ Pkg.add("PaleobiologyDB")
 
 Development version:
 
+
 ```julia
 using Pkg
+Pkg.add(url = "https://github.com/jeetsukumaran/PhyloPicDB.jl")
 Pkg.add(url = "https://github.com/jeetsukumaran/PaleobiologyDB.jl")
 ```
 
@@ -65,15 +67,16 @@ df = drop_unrecognized_taxa(df, :genus)    # drop rows with names not in PBDB au
 ```julia
 # Augment occurrences with full lineage columns, then filter by clade
 using PaleobiologyDB: pbdb_occurrences
-using PaleobiologyDB.Taxonomy: augment_taxonomy, contains_taxon
+using PaleobiologyDB.Taxonomy: augment_taxonomy, contains_taxon, taxon_occursin
 
 df  = pbdb_occurrences(base_name = "Canidae", interval = "Neogene", show = "full")
 df2 = augment_taxonomy(df)   # adds taxonomy_genus, taxonomy_family, …, taxonomy_clades
 
-# DataFrame-first row filtering: keep only Canis occurrences
+# Filters for taxon => "Canis"
 df2[contains_taxon(df2, "Canis"), :]
+df2[taxon_occursin("Canis", df2), :]
 
-# taxon_occursin provides a parallel pattern-first syntax for the same operation
+
 ```
 
 ```julia
