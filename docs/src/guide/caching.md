@@ -123,3 +123,41 @@ PaleobiologyDB.set_autocaching!(false, acquire_phylopic)
 Note: `set_autocaching!(true, augment_phylopic)` alone has **no effect** on the
 per-taxon cache, because the cache is keyed on `acquire_phylopic`.  Always use
 `acquire_phylopic` as the function reference when targeting PhyloPic caching.
+
+
+## Autocaching performance benefits 
+
+
+```julia
+
+julia> tt = Taxonomy.taxon_subtree("Ursidae"; leaf_rank = "species");
+
+julia> fig, ax, plt = @time taxonomytreeplot(tt; 
+           leaf_rank = "species", show_phylopic = false); fig
+  0.016077 seconds (136.06 k allocations: 14.557 MiB)
+
+julia> fig, ax, plt = @time taxonomytreeplot(tt; 
+           leaf_rank = "species", show_phylopic = true); fig
+ 58.754672 seconds (8.65 M allocations: 607.436 MiB, 1.54% gc time, 1345 lock conflicts, 7.07% compilation time: 4% of which was recompilation)
+
+julia> fig, ax, plt = @time taxonomytreeplot(tt; 
+           leaf_rank = "species", show_phylopic = true); fig
+ 45.769064 seconds (1.91 M allocations: 276.219 MiB, 0.09% gc time, 1344 lock conflicts)
+
+julia> set_autocaching!(true)
+
+julia> fig, ax, plt = @time taxonomytreeplot(tt; 
+           leaf_rank = "species", show_phylopic = true); fig
+ 57.396719 seconds (100.20 M allocations: 6.731 GiB, 4.57% gc time, 1180 lock conflicts, 5.82% compilation time)
+
+julia> fig, ax, plt = @time taxonomytreeplot(tt; 
+           leaf_rank = "species", show_phylopic = true); fig
+ 11.860014 seconds (108.21 M allocations: 5.300 GiB, 6.64% gc time, 0.14% compilation time)
+
+julia> fig, ax, plt = @time taxonomytreeplot(tt; 
+           leaf_rank = "species", show_phylopic = true); fig
+ 13.554290 seconds (114.35 M allocations: 5.548 GiB, 16.37% gc time)
+
+julia> 
+
+```
