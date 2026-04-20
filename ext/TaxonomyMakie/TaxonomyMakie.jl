@@ -8,7 +8,8 @@ the former TaxonomyTreeMakie source submodule) and the PBDB–PhyloPic bridge
 
 Activated by:
 
-    using PaleobiologyDB, PhyloPicMakie   # (any Makie backend triggers Makie)
+    using CairoMakie  # or any Makie backend
+    using PaleobiologyDB
 
 Public API — tree visualization:
 
@@ -37,7 +38,7 @@ module TaxonomyMakie
 
 import Makie
 import PhyloPicMakie
-using PhyloPicMakie.Makie: @recipe, Attributes
+using Makie: @recipe, Attributes
 import Graphs
 
 using PaleobiologyDB
@@ -69,8 +70,12 @@ export augment_phylopic_ranges
 export phylopic_thumbnail_grid!
 export phylopic_thumbnail_grid
 
-# Bind this extension in the parent package at load time (not precompile time)
-# so users can access it via `using PaleobiologyDB.TaxonomyMakie`.
+# Julia's extension system does not re-export extension symbols into the parent
+# module's namespace. Without this binding, `using PaleobiologyDB.TaxonomyMakie`
+# (the canonical way for users to bring this extension's exports into scope) would
+# not work. This is a deliberate design choice: TaxonomyMakie is exposed as a
+# named sub-module of PaleobiologyDB until it becomes its own registered package,
+# at which point this will be replaced by a normal `using` statement.
 function __init__()
     Core.eval(PaleobiologyDB, :(TaxonomyMakie = $(@__MODULE__)))
 end

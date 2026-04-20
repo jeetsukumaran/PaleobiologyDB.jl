@@ -2,7 +2,7 @@
 
 `PaleobiologyDB.TaxonomyMakie` provides PhyloPic silhouette overlays
 for existing Makie plots.  It is a package extension that activates
-when both a Makie backend and `PhyloPicMakie` are loaded.
+when a Makie backend is loaded.
 
 ## Installation
 
@@ -13,20 +13,17 @@ pkg> add PaleobiologyDB CairoMakie PhyloPicMakie
 ## Activation
 
 ```julia
-using PaleobiologyDB
 using CairoMakie   # or GLMakie, WGLMakie, …
-import PhyloPicMakie
-using PaleobiologyDB.TaxonomyMakie
-# → augment_phylopic!, augment_phylopic_ranges!, phylopic_thumbnail_grid!, etc.
+using PaleobiologyDB
+# augment_phylopic!, augment_phylopic_ranges!, phylopic_thumbnail_grid!, etc.
 # are now in scope
 ```
 
 ## Stratigraphic range chart — quick start
 
 ```julia
-using PaleobiologyDB
 using CairoMakie
-using PaleobiologyDB.TaxonomyMakie
+using PaleobiologyDB
 
 taxa      = ["Tyrannosaurus", "Triceratops", "Ankylosaurus",
              "Pachycephalosaurus", "Edmontosaurus"]
@@ -68,9 +65,8 @@ When data is in a DataFrame (or any `propertynames`-compatible structure) the
 table overloads accept column selectors directly:
 
 ```julia
-using PaleobiologyDB
 using CairoMakie
-using PaleobiologyDB.TaxonomyMakie
+using PaleobiologyDB
 using DataFrames
 
 df = pbdb_occurrences(base_name = "Ursidae"; show = "full", vocab = "pbdb")
@@ -116,9 +112,8 @@ Pass `glyph` instead of `taxon` to bypass the taxon-lookup pipeline and use
 an image you have already loaded:
 
 ```julia
-using PaleobiologyDB
 using CairoMakie
-using PaleobiologyDB.TaxonomyMakie
+using PaleobiologyDB
 import PhyloPicMakie
 
 rec = acquire_phylopic("Canis lupus")
@@ -191,9 +186,8 @@ names. The default layout keeps the number of columns bounded, so larger
 collections grow downward rather than becoming excessively wide.
 
 ```julia
-using PaleobiologyDB
 using CairoMakie
-using PaleobiologyDB.TaxonomyMakie
+using PaleobiologyDB
 
 fig = phylopic_thumbnail_grid(
     [

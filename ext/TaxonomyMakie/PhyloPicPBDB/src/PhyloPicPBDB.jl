@@ -32,11 +32,8 @@ wrappers.
 module PhyloPicPBDB
 
 import ..PhyloPicMakie
-# Access PhyloPicDB and Makie through the parent extension's PhyloPicMakie binding.
-# PhyloPicMakie is a weakdep trigger imported by TaxonomyMakie (the parent extension),
-# so we reference it via the parent scope rather than importing it afresh.
+import ..Makie
 const PhyloPicDB = PhyloPicMakie.PhyloPicDB
-const Makie = PhyloPicMakie.Makie
 const RGBA = Makie.RGBA
 const N0f8 = Makie.N0f8
 const Colorant = Makie.Colorant

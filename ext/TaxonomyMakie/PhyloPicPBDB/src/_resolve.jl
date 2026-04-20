@@ -20,8 +20,8 @@
 # The PBDB-specific taxon → node mapping is the only work done here.
 # ---------------------------------------------------------------------------
 
-# PhyloPicMakie, PhyloPicDB, and phylopic_node are all in scope from
-# the enclosing PhyloPicPBDB module (phylopic.jl).
+# PhyloPicMakie (hard dep of PaleobiologyDB), PhyloPicDB, and phylopic_node
+# are all in scope from the enclosing PhyloPicPBDB module.
 
 # ---------------------------------------------------------------------------
 # Internal: image rendering field resolution (PBDB-specific)

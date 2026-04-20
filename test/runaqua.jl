@@ -5,12 +5,12 @@ using PaleobiologyDB
 
 
 @testset "Aqua.jl" begin
-    Aqua.test_all(PaleobiologyDB)
-#   Aqua.test_all(
-#     PaleobiologyDB;
-#     # ambiguities=(exclude=[SomePackage.some_function], broken=true),
-#     # stale_deps=(ignore=[:SomePackage],),
-#     deps_compat=(ignore=[:Test],),
-#     # piracies=false,
-#   )
+    Aqua.test_all(
+        PaleobiologyDB;
+        # PhyloPicMakie is a hard dep used only inside the TaxonomyMakie extension,
+        # so it does not appear in main-package source. Aqua would flag it as stale
+        # without this exclusion.
+        stale_deps = (ignore = [:PhyloPicMakie],),
+        deps_compat = (ignore = [:Test],),
+    )
 end

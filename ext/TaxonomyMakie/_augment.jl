@@ -39,7 +39,8 @@ Returns a `NamedTuple` with fields:
 
 ```julia
 using PaleobiologyDB, PaleobiologyDB.Taxonomy, CairoMakie
-using PaleobiologyDB.TaxonomyTreeMakie
+using CairoMakie
+using PaleobiologyDB
 
 fig, ax, p = taxonomytreeplot(taxon_subtree("Panthera"))
 tips = tip_positions(p)
@@ -144,7 +145,8 @@ which reads tree and layout directly from a `TaxonomyTreePlot`.
 
 ```julia
 using PaleobiologyDB, PaleobiologyDB.Taxonomy, CairoMakie
-using PaleobiologyDB.TaxonomyTreeMakie
+using CairoMakie
+using PaleobiologyDB
 
 tree = taxon_subtree("Panthera")
 fig, ax, p = taxonomytreeplot(tree)

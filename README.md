@@ -20,8 +20,8 @@ using Pkg
 Pkg.add("PaleobiologyDB")
 ```
 
-Development version:
-
+Development version (PhyloPicMakie must be added first — it is a required
+dependency of PaleobiologyDB and is not yet in the registry):
 
 ```julia
 using Pkg
@@ -110,8 +110,8 @@ Three functions map PBDB taxon names to [PhyloPic](https://www.phylopic.org/) si
 
 ```julia
 # Enrich an occurrences DataFrame with PhyloPic image columns
-using PaleobiologyDB: pbdb_occurrences
-using PaleobiologyDB.TaxonomyMakie: acquire_phylopic, augment_phylopic
+using CairoMakie  # triggers TaxonomyMakie extension
+using PaleobiologyDB: pbdb_occurrences, acquire_phylopic, augment_phylopic
 
 df      = pbdb_occurrences(base_name = "Ceratopsia", interval = "Cretaceous", show = "full")
 pics    = acquire_phylopic(df)              # DataFrame: one row per occurrence row
@@ -123,7 +123,8 @@ enriched = augment_phylopic(df)            # original columns + 14 phylopic_ col
 
 ```julia
 # Browse all available images for a taxon or clade
-using PaleobiologyDB.TaxonomyMakie: phylopic_images_dataframe
+using CairoMakie  # triggers TaxonomyMakie extension
+using PaleobiologyDB: phylopic_images_dataframe
 
 imgs = phylopic_images_dataframe("Carnivora")
 nrow(imgs)                    # → hundreds (all images within Carnivora clade)
@@ -140,9 +141,8 @@ imgs_node = phylopic_images_dataframe("Carnivora"; filter = :node)
 
 ```julia
 # Anchor a PhyloPic glyph at each taxon's first appearance on a range chart
-import PhyloPicMakie
 using CairoMakie: Figure, Axis, lines!, xlims!, display
-using PaleobiologyDB.TaxonomyMakie: augment_phylopic_ranges!
+using PaleobiologyDB: augment_phylopic_ranges!
 
 taxa      = ["Tyrannosaurus", "Triceratops", "Ankylosaurus",
              "Pachycephalosaurus", "Edmontosaurus"]
@@ -169,9 +169,8 @@ display(fig)
 
 ```julia
 # PhyloPic thumbnail gallery
-import PhyloPicMakie
-using PaleobiologyDB.TaxonomyMakie: phylopic_thumbnail_grid
 using CairoMakie: display
+using PaleobiologyDB: phylopic_thumbnail_grid
 
 # Single taxon — all clade images
 fig = phylopic_thumbnail_grid("Felis"; image_filter = :clade, ncols = 4)
@@ -192,10 +191,9 @@ See the [TaxonomyMakie PhyloPic guide](https://jeetsukumaran.github.io/Paleobiol
 ## TaxonomyMakie — dendrogram visualisation
 
 ```julia
-import PhyloPicMakie
-using PaleobiologyDB.Taxonomy: taxon_subtree
-using PaleobiologyDB.TaxonomyMakie: taxonomytreeplot, taxonomytreeplot!, set_rank_axis_ticks!
 using CairoMakie: Figure, Axis, save, display
+using PaleobiologyDB.Taxonomy: taxon_subtree
+using PaleobiologyDB: taxonomytreeplot, taxonomytreeplot!, set_rank_axis_ticks!
 
 # Build a subtree and render it — branches and nodes coloured by taxonomic rank
 tree = taxon_subtree("Carnivora"; leaf_rank = "family")
@@ -212,10 +210,9 @@ display(fig2)
 ```
 
 ```julia
-import PhyloPicMakie
-using PaleobiologyDB.Taxonomy: taxon_subtree
-using PaleobiologyDB.TaxonomyMakie: taxonomytreeplot, augment_tip_phylopic!
 using CairoMakie: Figure, Axis, save
+using PaleobiologyDB.Taxonomy: taxon_subtree
+using PaleobiologyDB: taxonomytreeplot, augment_tip_phylopic!
 
 tree = taxon_subtree("Carnivora"; leaf_rank = "family")
 fig, ax, p = taxonomytreeplot(tree; showtips = true, color_by_rank = true, ladderize = true)

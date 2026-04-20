@@ -18,11 +18,16 @@ include("taxonomy_queries_basic.jl")
 include("taxonomy_queries_hierarchy.jl")
 include("taxonomy_graphs.jl")
 
-# Load PhyloPicMakie to trigger the TaxonomyMakie extension, then bring its
-# symbols into scope.  PhyloPicDB is accessed directly from PhyloPicMakie.
+# Load CairoMakie backend for rendering tests.
+# PhyloPicMakie (hard dep of PaleobiologyDB) loads Makie transitively,
+# triggering the TaxonomyMakie extension automatically.
+using CairoMakie
 import PhyloPicMakie
-using PaleobiologyDB.TaxonomyMakie
 const PhyloPicDB = PhyloPicMakie.PhyloPicDB
+
+# TaxonomyMakie is bound into PaleobiologyDB by the extension's __init__.
+# `using PaleobiologyDB.TaxonomyMakie` brings its exports into test scope.
+using PaleobiologyDB.TaxonomyMakie
 
 include("taxonomy_phylopic_acquire.jl")
 include("taxonomy_phylopic_images.jl")

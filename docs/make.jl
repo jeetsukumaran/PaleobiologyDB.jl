@@ -3,9 +3,9 @@ using PaleobiologyDB
 using PaleobiologyDB.ApiHelp
 using PaleobiologyDB.Taxonomy
 using PaleobiologyDB.Depot
-import PhyloPicMakie
 
-# Trigger TaxonomyMakie extension (requires Makie + PhyloPicMakie)
+# Trigger TaxonomyMakie extension (requires a Makie backend).
+# PhyloPicMakie is a hard dep of PaleobiologyDB and loads Makie transitively.
 using CairoMakie
 using PaleobiologyDB.TaxonomyMakie
 
