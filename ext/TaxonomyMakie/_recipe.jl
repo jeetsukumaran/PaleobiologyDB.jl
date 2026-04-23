@@ -319,23 +319,26 @@ function Makie.plot!(p::TaxonomyTreePlot{<:Tuple{TaxonomyTree}})
         [v for v in Graphs.vertices(g) if isempty(Graphs.outneighbors(g, v))]
     end
 
-    leaf_pts_obs = Makie.lift(layout_obs, leaf_vertices_obs, p[:tip_xoffset], p[:tip_yoffset]) do (xs, ys), lvs, xoff, yoff
-        [Makie.Point2f(xs[v] + xoff, ys[v] + yoff) for v in lvs]
+    leaf_vertices = leaf_vertices_obs[]
+    leaf_text_plots = Any[]
+    sizehint!(leaf_text_plots, length(leaf_vertices))
+    for v in leaf_vertices
+        leaf_point = Makie.Point2f(
+            layout_obs[][1][v] + p[:tip_xoffset][],
+            layout_obs[][2][v] + p[:tip_yoffset][],
+        )
+        leaf_text_plot = Makie.text!(
+            p,
+            leaf_point;
+            text = tree_obs[].taxa[v].name,
+            fontsize = p[:tip_fontsize],
+            color = p[:tip_color],
+            align = (:left, :center),
+            visible = p[:showtips],
+            clip_planes = Makie.Plane3f[],
+        )
+        push!(leaf_text_plots, leaf_text_plot)
     end
-
-    leaf_names_obs = Makie.lift(tree_obs, leaf_vertices_obs) do tree, lvs
-        [tree.taxa[v].name for v in lvs]
-    end
-
-    Makie.text!(
-        p, leaf_pts_obs;
-        text = leaf_names_obs,
-        fontsize = p[:tip_fontsize],
-        color = p[:tip_color],
-        align = (:left, :center),
-        visible = p[:showtips],
-        clip_planes = Makie.Plane3f[],
-    )
 
     # ── Internal node labels ──────────────────────────────────────────────
     internal_vertices_obs = Makie.lift(tree_obs) do tree
@@ -368,7 +371,11 @@ function Makie.plot!(p::TaxonomyTreePlot{<:Tuple{TaxonomyTree}})
     # layout attributes requires recreating the plot.
     if p[:show_phylopic][]
         _render_tip_phylopic!(
-            p, tree_obs[], layout_obs[]...;
+            p,
+            tree_obs[],
+            layout_obs[]...;
+            leaf_vertices = leaf_vertices,
+            leaf_text_plots = leaf_text_plots,
             glyph_size = p[:phylopic_glyph_size][],
             do_align = p[:phylopic_align][],
             phylopic_xoffset = p[:phylopic_xoffset][],
