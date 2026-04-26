@@ -1,26 +1,12 @@
-# STYLE.md — Julia Functional Design Principles
+# STYLE--julia.md — Julia Functional Design Principles
 
-This document governs how code in this project should be *designed*, regardless
-of who or what writes it. It applies to all contributors — human and AI alike.
+## 1. Core principles and their Julia expression
 
 The paradigm is **idiomatic functional Julia**: functional principles applied
 with Julia's grain, not against it. The goal is equational reasoning, local
 correctness, and composability — not syntactic purity or Haskell cosplay. Where
 Julia's idioms and FP principles align, follow both. Where performance requires
 mutation, use the mutation contract in §4.
-
-Code style formatting is enforced by `Runic.jl` (SciML standard). This
-document covers *design* decisions that no formatter can enforce.
-
-**Upstream authority**: [SciML Style Guide](https://docs.sciml.ai/SciMLStyle/dev/)
-is the normative reference. This document extends and contextualizes it with
-functional design principles.
-
-When they conflict, programmer judgement wins.
-
----
-
-## 1. Core principles and their Julia expression
 
 The principles below are ordered from most foundational to most derived. Each
 one follows from the one above it. All are in force unless §4 creates an
@@ -457,6 +443,37 @@ habitat(::TerrestrialOccurrence)::Symbol = :terrestrial
   dispatch and defeats the compiler.
 - Use `@code_warntype` to check for type instability in hot paths.
 
+
+#### Concrete struct fields and parametric type design
+
+> In Julia, struct fields must not be left undefined in type, must not be
+> abstractly typed, and must not use `Any` except in rare and explicitly
+> justified cases. Every struct field must be either concretely typed or made
+> concrete through type parameters at instantiation.
+
+**Rules:**
+- Every struct field must have a concrete type or a type parameter that becomes
+  concrete for each instantiated object.
+- Do not store `Any`, abstract types, or broad unions in struct fields unless
+  there is no sound alternative and the design justification is stated
+  explicitly in a comment or docstring.
+- Prefer parametric structs:
+  `struct Foo{T}; x::T; end`
+  over abstractly typed fields:
+  `struct Foo; x::AbstractThing; end`
+- Do not use undefined, unknown, or placeholder field types in structs.
+  Representation types must be fully specified by the struct definition and its
+  type parameters.
+- Distinguish function argument abstraction from struct field design:
+  function arguments should usually be typed at the appropriate abstract level,
+  but struct fields must usually be concrete or concretized through type
+  parameters.
+- Use abstract supertypes to define interfaces; use concrete field types and
+  parametric structs to obtain performance.
+- If a field appears to require `Any`, an abstract type, or a broad union,
+  redesign the representation first. Such fields are a last resort, not a
+  normal design option.
+
 ---
 
 ### 1.13 Annotations
@@ -682,12 +699,12 @@ structure should reflect it.
 
 ```
 ┌─────────────────────────────────────────┐
-│  Effectful shell                         │
+│  Effectful shell                        │
 │  - reads files / network                │
 │  - writes results / logs                │
 │  - calls mutating (!) functions         │
 │  ┌───────────────────────────────────┐  │
-│  │  Pure core                         │  │
+│  │  Pure core                        │  │
 │  │  - transforms data                │  │
 │  │  - computes results               │  │
 │  │  - referentially transparent      │  │
@@ -744,10 +761,231 @@ trace the global state to know what a function does.
 
 ---
 
-### 1.16 DRY (Don't Repeat Yourself)
+### 1.16 Software design principles
 
-> Every piece of knowledge has a single, authoritative representation. Duplication
-> means two places to update, two places to get wrong.
+The principles in this section apply across all code in this project alongside
+the functional principles in §1.1–§1.15. They are not Julia-specific, but each
+has a clear Julia expression described below.
+
+---
+
+#### 1.16.1 SOLID
+
+SOLID is an acronym for five complementary design principles. In Julia's
+multiple-dispatch, type-hierarchy model they translate naturally: dispatch
+replaces virtual methods, abstract types define interfaces, and argument
+injection replaces constructor wiring.
+
+---
+
+##### Single Responsibility Principle (SRP)
+
+> A function or type should have exactly one reason to change: it solves one
+> problem, not several interleaved ones.
+
+A function that validates input, performs a computation, formats the result,
+and writes it to disk has four responsibilities and four independent reasons to
+change. Each modification to one concern risks silently breaking the others.
+
+```julia
+# Violation: one function carries four responsibilities
+function run_analysis(path::String, taxon::String)::Nothing
+    isfile(path) || throw(ArgumentError("File not found: $path"))  # validate
+    data = parse_occurrences(read(path, String))                    # parse
+    result = diversity_index(data[taxon])                          # compute
+    println("Diversity: $(round(result; digits=3))")               # format + output
+    return nothing
+end
+
+# SRP: each function has one job
+function validate_input_path(path::String)::Nothing
+    isfile(path) || throw(ArgumentError("File not found: $path"))
+    return nothing
+end
+
+function load_occurrences(path::String)::Dict{String, Vector{OccurrenceRecord}}
+    return parse_occurrences(read(path, String))
+end
+
+function run_analysis(path::String, taxon::String)::Float64
+    validate_input_path(path)
+    data = load_occurrences(path)
+    return diversity_index(data[taxon])
+end
+```
+
+**Rules:**
+- A function that does more than one logically separable thing should be split.
+  The `f` / `f!` pair pattern (§4) is SRP in action: one function computes and
+  returns, the other mutates in place — two responsibilities, two names.
+- A `struct` that carries both domain data and I/O configuration has two
+  responsibilities — separate them.
+- If a function's docstring requires "and" to describe what it does, it may be
+  violating SRP.
+
+---
+
+##### Open/Closed Principle (OCP)
+
+> Software entities should be open for extension but closed for modification.
+> New behavior is added by extending, not by editing existing code.
+
+In Julia, this is the natural expression of multiple dispatch: add a new method
+to an existing generic function for a new type without touching any of the
+existing methods. The existing methods are stable; the new type extends the
+function's behavior.
+
+```julia
+# Existing: works for MarineOccurrence
+habitat_label(::MarineOccurrence)::String = "marine"
+
+# OCP extension: new type, new method — existing code unchanged
+habitat_label(::TerrestrialOccurrence)::String = "terrestrial"
+
+# OCP violation: modifying the original function every time a new type appears
+function habitat_label(occ::AbstractOccurrenceRecord)::String
+    if occ isa MarineOccurrence
+        return "marine"
+    elseif occ isa TerrestrialOccurrence   # requires editing existing function
+        return "terrestrial"
+    end
+end
+```
+
+**Rules:**
+- Prefer dispatch over `isa` / `typeof` branching. Dispatch is open for
+  extension; branching requires modifying the function for every new type.
+- Design generic functions against abstract types (§1.12) so that new concrete
+  types can participate without changing the generic function's definition.
+- If adding a new type requires editing existing methods, the existing methods
+  are not written at the right level of abstraction.
+
+---
+
+##### Liskov Substitution Principle (LSP)
+
+> A value of a subtype must be usable wherever a value of its supertype is
+> expected, without breaking correctness. Subtypes must honour the full
+> contract of their supertype, not merely its method signatures.
+
+In Julia, LSP applies to the abstract type hierarchy. Any concrete type declared
+as `<: AbstractFoo` must honour the contract implied by `AbstractFoo` — not just
+the methods that compile, but the invariants those methods are expected to
+preserve.
+
+```julia
+abstract type AbstractOccurrenceRecord end
+# Implied contract:
+#   - age_ma(r) returns a non-negative Float64
+#   - taxon_id(r) returns a positive Int
+
+struct ValidRecord <: AbstractOccurrenceRecord
+    taxon_id::Int
+    age_ma::Float64
+end
+age_ma(r::ValidRecord)::Float64 = r.age_ma          # honours the contract
+
+# LSP violation: subtype silently breaks the non-negativity invariant
+struct BrokenRecord <: AbstractOccurrenceRecord
+    taxon_id::Int
+    age_ma::Float64
+end
+age_ma(r::BrokenRecord)::Float64 = -abs(r.age_ma)   # returns negative — breaks all callers
+```
+
+**Rules:**
+- A concrete type must implement every method that callers of its abstract
+  supertype rely on. Missing methods cause `MethodError` at runtime — surface
+  this in tests.
+- A method on a subtype must not weaken preconditions or strengthen
+  postconditions relative to the abstract type's implied contract.
+- If a concrete type cannot honour the abstract type's contract, it must not
+  be declared as a subtype of it.
+- Document the contract of every abstract type explicitly in its docstring,
+  including any invariants methods are expected to preserve.
+
+---
+
+##### Interface Segregation Principle (ISP)
+
+> Prefer many narrow, focused interfaces over one fat one. A type should not
+> be forced to implement methods it does not meaningfully need.
+
+In Julia, an "interface" is an abstract type plus the set of generic functions
+that dispatch on it. A fat abstract type that implies ten required methods
+means every concrete subtype must implement all ten — most of which may be
+irrelevant or unimplementable for many subtypes.
+
+```julia
+# Fat interface: every subtype is burdened with all five requirements
+abstract type AbstractAnalysis end
+# implied: run!, summarize, plot, export_csv, send_to_db
+
+# ISP: segregated into narrow interfaces — each subtype opts in to what it needs
+abstract type AbstractRunnable end       # requires: run!
+abstract type AbstractSummarizable end   # requires: summarize
+abstract type AbstractPlottable end      # requires: plot
+
+struct DiversityAnalysis <: AbstractRunnable, AbstractSummarizable
+    # implements only run! and summarize — plot and export are not its concern
+end
+```
+
+**Rules:**
+- Define abstract types at the narrowest useful level of abstraction.
+- If a generic function only applies to some subtypes of an abstract type,
+  define a narrower abstract type for those subtypes and dispatch on that.
+- Avoid adding methods to an abstract type's implied interface unless every
+  current and foreseeable concrete subtype will meaningfully implement them.
+- Prefer composing multiple narrow abstract types over inheriting from one
+  broad one.
+
+---
+
+##### Dependency Inversion Principle (DIP)
+
+> High-level code should not depend on low-level implementation details. Both
+> should depend on shared abstractions. Dependencies are injected, not fetched.
+
+In Julia, DIP has two expressions: (1) annotate function arguments against
+abstract types rather than concrete types (§1.12, §1.13.1), so the function
+depends on the interface, not the implementation; and (2) inject dependencies —
+data sources, caches, configuration — as function arguments rather than reading
+them from globals or constructing them inside the function (§1.9).
+
+```julia
+# DIP violation: hard-coded dependency on one concrete data source
+function compute_diversity(taxon::String)::Float64
+    records = PBDBClient.fetch(taxon)   # coupled to a specific implementation
+    return diversity_index(records)
+end
+
+# DIP-compliant: depends on the abstract type; implementation is injected by caller
+function compute_diversity(records::AbstractVector{<:AbstractOccurrenceRecord})::Float64
+    return diversity_index(records)
+end
+
+# Also DIP-compliant when a fetch step is unavoidable: inject the source
+function compute_diversity(source::AbstractOccurrenceSource, taxon::String)::Float64
+    return diversity_index(fetch(source, taxon))
+end
+```
+
+**Rules:**
+- Annotate arguments against abstract types, not concrete ones (§1.12 and
+  §1.13.1 cover the full annotation rules and the correct level of abstraction).
+- Do not construct or look up dependencies (API clients, caches, file handles)
+  inside a function — accept them as arguments. This is statelessness (§1.9)
+  applied to dependencies.
+- The pure core (§1.14) automatically satisfies DIP: it depends only on its
+  argument types, which are abstractions.
+
+---
+
+#### 1.16.2 DRY — Don't Repeat Yourself
+
+> Every piece of knowledge has a single, authoritative representation.
+> Duplication means two places to update, two places to get wrong.
 
 DRY is the design consequence of abstraction and composition. If the same
 computation appears in two places, it belongs in a named function. If the same
@@ -755,7 +993,7 @@ type constraint appears in ten function signatures, it belongs in an abstract
 type or type alias.
 
 ```julia
-# Repeated: age validation in multiple functions
+# Repeated: age validation duplicated across functions
 function process_a(occ::OccurrenceRecord)::OccurrenceRecord
     occ.age_ma >= 0.0 || throw(DomainError(occ.age_ma, "Age must be non-negative"))
     # ...
@@ -786,6 +1024,181 @@ process_b(occ::OccurrenceRecord)::OccurrenceRecord = occ |> validate_age |> _pro
 
 ---
 
+#### 1.16.3 KISS — Keep It Simple, Stupid
+
+> The simplest correct solution is the right solution. Complexity is a cost,
+> not a feature.
+
+Every abstraction layer, type parameter, macro, and level of indirection has a
+cost: it must be understood, maintained, and debugged. Add complexity only when
+simplicity provably cannot solve the problem. When two designs are equally
+correct, the simpler one wins.
+
+```julia
+# Over-engineered: abstract machinery introduced for a single concrete case
+abstract type AbstractAgeFilter end
+struct MinAgeFilter <: AbstractAgeFilter
+    threshold::Float64
+end
+apply_filter(f::MinAgeFilter, occ::AbstractOccurrenceRecord)::Bool = occ.age_ma >= f.threshold
+
+# KISS: a function is sufficient for one filtering criterion
+is_old_enough(occ::AbstractOccurrenceRecord, min_age::Float64)::Bool = occ.age_ma >= min_age
+```
+
+Add the more general design only when a second concrete filter variant actually
+exists (see §1.16.5 YAGNI).
+
+**Rules:**
+- Do not add abstract types, type parameters, or dispatch layers speculatively.
+  Introduce them only when a second concrete variant exists and requires it.
+- Prefer Julia's built-in operations (`sum`, `filter`, broadcasting) over
+  custom implementations that replicate them.
+- Prefer a single function over a type hierarchy for a single, well-defined
+  behavior.
+- Metaprogramming (`@generated`, `@eval`, custom macros) carries high cognitive
+  cost. Use it only when there is no readable, direct alternative.
+- When two designs are equally correct, prefer the one with fewer concepts,
+  fewer lines, and fewer moving parts.
+
+---
+
+#### 1.16.4 POLA — Principle of Least Astonishment
+
+> Code should behave in a way that surprises no reader. A function should do
+> exactly what its name and signature imply — nothing more, nothing less.
+
+Surprise in code manifests as hidden side effects, names that do not match
+behavior, functions that do more than one thing, and conventions applied
+inconsistently. These create bugs at the point where a reader's mental model
+diverges from what the code actually does.
+
+```julia
+# Astonishing: the name implies a pure read; the behavior includes a write
+function get_diversity(taxon::String, cache::Dict)::Float64
+    result = _compute(taxon)
+    cache[taxon] = result    # silent side effect — caller does not expect this
+    return result
+end
+
+# POLA-compliant: name and `!` suffix make the mutation explicit
+function fetch_or_compute_diversity!(cache::Dict, taxon::String)::Float64
+    haskey(cache, taxon) && return cache[taxon]
+    cache[taxon] = _compute(taxon)
+    return cache[taxon]
+end
+```
+
+**Rules:**
+- The `!` convention (§1.2) is POLA applied to mutation: callers can trust that
+  a function without `!` does not mutate their data. Never violate this.
+- A function named in getter form (`age`, `get_age`, `taxon_id`) must not
+  perform I/O, trigger mutation, or produce observable side effects.
+- Return type annotations (§1.13.2) serve POLA: callers should never be
+  surprised by the type they receive.
+- Naming must be precise: `filter_valid` must not also sort; `compute_index`
+  must not also log; `load_data` must not also transform. One name, one thing.
+- Avoid keyword arguments that silently change the fundamental nature of what a
+  function does. Use separate named functions instead.
+
+---
+
+#### 1.16.5 YAGNI — You Aren't Gonna Need It
+
+> Do not implement functionality until it is actually required. Speculative
+> code is pre-paid technical debt with an uncertain payoff.
+
+Premature generality is not a virtue. An abstraction built for a use case that
+never materializes must still be read, tested, and maintained — indefinitely.
+Write the simplest concrete solution for the current requirement; add generality
+only when a second concrete use case forces it and the right abstraction is
+visible from both examples.
+
+```julia
+# YAGNI violation: abstract machinery for a data source that does not yet exist
+abstract type AbstractOccurrenceSource end
+struct PBDBSource <: AbstractOccurrenceSource end
+struct FossilWorksSource <: AbstractOccurrenceSource end  # does not exist yet
+
+fetch(::PBDBSource, taxon::String) = _fetch_pbdb(taxon)
+fetch(::FossilWorksSource, taxon::String) = error("not implemented")  # speculative stub
+
+# YAGNI-compliant: one concrete function for the one source that currently exists
+fetch_pbdb(taxon::String)::Vector{OccurrenceRecord} = _fetch_pbdb(taxon)
+```
+
+When `FossilWorksSource` is actually needed, introduce the abstraction then.
+The refactor is mechanical and the design will be better informed by two real
+use cases rather than one real and one imagined.
+
+**Rules:**
+- Do not write stub or placeholder implementations for functionality not yet
+  required. Stubs accrete and become permanent.
+- Do not introduce abstract types or dispatch layers until at least two concrete
+  variants exist in the codebase.
+- Do not add keyword arguments, configuration options, or flags for behavior
+  that no current caller needs.
+- Do not pre-emptively generalize type signatures beyond what current callers
+  require. Generalize when the need arises (§1.12 governs the correct level of
+  abstraction for what is needed now).
+
+---
+
+#### 1.16.6 POLP — Principle of Least Privilege
+
+> Each module, function, and binding should have access only to what it
+> actually needs. Unexposed surface area cannot be misused or broken.
+
+Least privilege applies at every scope level in Julia: which names a module
+imports, which names it exports, how broadly bindings are scoped, and what a
+function receives as arguments versus what it could in principle reach.
+
+```julia
+# POLP violation: entire namespace imported — uncontrolled name exposure
+using DataFrames          # pulls in all exported names; collisions possible
+using Statistics          # another full namespace import
+
+# POLP-compliant: only what is used is imported
+using DataFrames: DataFrame, select, transform
+using Statistics: mean, std
+```
+
+```julia
+# POLP violation: function receives more than it needs
+function compute_index(config::GlobalConfig)::Float64
+    return diversity_index(config.occurrences[config.target_taxon])
+    # receives the entire config but uses only two fields out of many
+end
+
+# POLP-compliant: receives exactly what it needs
+function compute_index(occurrences::AbstractVector{<:AbstractOccurrenceRecord},
+                       taxon::String)::Float64
+    return diversity_index(filter(o -> o.taxon_id == taxon, occurrences))
+end
+```
+
+**Rules:**
+- Always use `using Package: foo, bar` or `import Package: foo` rather than
+  bare `using Package` in library and module code (see §5 anti-patterns).
+- `export` only the names that form the public API. Internal helpers remain
+  unexported.
+- Use `let` blocks to limit the scope of intermediate bindings that need not
+  be visible beyond a single expression:
+  ```julia
+  result = let tmp = expensive_intermediate(x)
+      postprocess(tmp)
+  end
+  # tmp is not in scope here
+  ```
+- Pass only the data a function needs as arguments, not a large struct that
+  happens to contain it. This also satisfies DIP (§1.16.1) and statelessness
+  (§1.9).
+- Module-level mutable state (§1.9) is a POLP violation: it gives every
+  function in the module implicit, uncontrolled read/write access to shared
+  state.
+
+---
+
 ## 2. Naming conventions
 
 ### 2.1 Types, modules, and functions
@@ -793,9 +1206,11 @@ process_b(occ::OccurrenceRecord)::OccurrenceRecord = occ |> validate_age |> _pro
 - **Types**: `PascalCase` — first letter of each word capitalized.
   E.g. `OccurrenceRecord`, `MarineHabitat`.
 - **Modules**: `PascalCase`. E.g. `PaleobioDatabase`, `DiversityMetrics`.
-- **Functions**: all lowercase; underscores between words when the name would
-  otherwise be hard to read. Constructors follow their type name.
-  E.g. `compute_diversity`, `filter_valid`, `taxon_richness`.
+- **Functions**:
+    - **Non-constructor functions**: all lowercase; underscores between words when the name would
+      otherwise be hard to read. E.g. `compute_diversity`, `filter_valid`, `taxon_richness`.
+    - **Constructor functions**: follow their type name. E.g. `Foo()::Foo`
+
 
 ### 2.2 Module file naming
 
@@ -815,9 +1230,7 @@ age!(record, 65.0)       # set age field
 
 ---
 
-## 3. SciML-specific conventions
-
-These are drawn directly from the SciML Style Guide and are normative here.
+## 3. General coding conventions
 
 ### 3.1 Formatting
 
@@ -827,7 +1240,7 @@ These are drawn directly from the SciML Style Guide and are normative here.
 
 ### 3.2 Function argument order
 
-SciML convention for argument ordering (from most to least important):
+Argument ordering goes from most to least important:
 
 1. The function being applied `f`
 2. The output array / destination `du` or `out` (for `!`-functions)
@@ -859,7 +1272,11 @@ end
 - Tests should cover a wide gamut of input types — not just `Vector{Float64}`.
 - Known type limitations should be documented with `@test_broken`, not silently
   omitted.
-- One test file per source file: `test/test_<module>.jl` mirrors `src/<module>.jl`.
+- At *least* one test file per source file: `test/test_<module>.jl` mirrors `src/<module>.jl`. If test files exceed LOC thresholds (500-600 non-commented LOC), then break into subfiles to be `include`d.
+- Test directory gets its own `Project.toml` (see below).
+- Tests must verify externally meaningful behavior, not just internal geometry
+  or implementation-adjacent proxies. For stronger guidance, also follow
+  `STYLE-verification.md`.
 
 ### 3.5 Error handling
 
@@ -882,6 +1299,29 @@ end
   picture (`@.`, `@view`, `@inbounds`, `@muladd`).
 - Do not define macros that generate non-obvious code or change program
   semantics in opaque ways.
+
+### 3.8 Documentation
+
+- Use a dedicated Documenter.jl subproject in `docs/`, with its own `Project.toml` to manage documentation.
+- The root `README.md` should include synopsis of package, motivation/purpose, installation (from General as well as cloning from GitHub, links to served documentation, quick start, general tour of features through MWE's and snippets.
+- The Documenter project should provide all the deeper and foundational details, include example-rich tours and walkthroughs of all public functions and types, as well as supporting concepts, functions, types, and so on.
+- Documenter pages should be broken up to stay within Documenter's warning limits.
+
+### 3.9 Ownership, invariants, and anti-fixes
+
+- Repair shared invariants at the owning layer. Do not distribute one invariant
+  across many call sites through repeated defensive patches.
+- If multiple modules are applying the same corrective logic, stop and identify
+  the real owner before adding another patch.
+- Prefer a single well-owned repair over many local compensations.
+- Do not clamp, mask, or cosmetically suppress invalid state merely to make
+  tests pass or output look plausible. That is an anti-fix unless the masking
+  policy is itself the explicit owner-level contract.
+- When wrapping or extending a host framework, preserve the host-framework
+  contract unless an explicit, documented divergence has been approved.
+- When a local fix appears to require changes in several sibling layers, treat
+  that as an architectural smell and consult `STYLE-architecture.md` and
+  `STYLE-upstream-contracts.md`.
 
 ---
 
@@ -977,7 +1417,8 @@ stop and redesign.
 | Missing return type annotation                | Contract invisible at definition; refactoring errors are silent             | Add `::ReturnType` to all public and non-trivial functions (§1.13)      |
 | `Any` as return type                          | Defeats type stability and compiler optimization                            | Redesign to return a specific type                                        |
 | Macro that generates opaque code              | Violates readability                                                        | Prefer named functions                                                    |
-| `using Package` in library/module code        | Imports all exported names; obscures dependencies; increases collision risk | `using Package: foo, bar` or `import Package: foo` when extending methods |
+| `using Package` in library/module code        | Imports all exported names; obscures dependencies; increases collision risk (POLP, §1.16.6) | `using Package: foo, bar` or `import Package: foo` when extending methods |
+| Speculative type hierarchy or stub method     | Adds maintenance burden for code that may never be used (YAGNI, §1.16.5)   | Implement when the second concrete use case actually exists               |
 
 
 ---
@@ -1007,14 +1448,20 @@ Does it repeat logic from another function?
 ├── Yes → Extract a named function; apply DRY (§1.16)
 └── No  → Continue.
 
-Does it have expliit argument annotations that are at the correct level of abstraction?
+Does this function or type exist to serve a current, concrete requirement?
+├── No  → Remove it (YAGNI, §1.16.5). Speculative code is maintenance debt.
+└── Yes → Is it as simple as it can be while still being correct?
+          ├── No  → Simplify (KISS, §1.16.3): fewer layers, fewer concepts
+          └── Yes → Continue.
+
+Does it have explicit argument annotations at the correct level of abstraction?
 ├── No  → Add ::TypeAnnotation before the function body (§1.13)
 │         Ensure the type is at the correct level of abstraction; if not possible or advisable, discuss
-└── Yes → You're done. Write the docstring.
+└── Yes → Continue.
 
-Does it have an explicit return type annotations?
-├── No  → Add ::TypeAnnotation before the function body (§1.13)
-│         Ensure the type is concrete or constrained — not Any; if not possible or advisable, discusss
+Does it have an explicit return type annotation?
+├── No  → Add ::ReturnType after the argument list (§1.13)
+│         Ensure the type is concrete or constrained — not Any; if not possible or advisable, discuss
 └── Yes → You're done. Write the docstring.
 ```
 
@@ -1023,6 +1470,7 @@ Does it have an explicit return type annotations?
 
 - Documentation (`docs/`) and tests (`test/`) maintain their own project environments, using `[sources] ... = {path = "../"}` for the main package.
 - Use documented public Pkg.add, Pkg.develop, Pkg.rm etc. methods to curate the project environment rather than editing Project.toml file directly UNLESS there is no other way (e.g., adding a "`[sources]`" section to `Project.toml`), in which case bring to my attention for discussion.
+- Do not add dependencies by assuming you know the UUID. Always prefer to use Pkg.add unless there is no other way, in which case bring to my attention for discussion.
 
 ## 8. Codebase curation
 
@@ -1040,5 +1488,4 @@ Does it have an explicit return type annotations?
   end
   ```
 - Break large sources up into smaller files: 400-600 LOC's (lines of code, i.e. not including commented-out lines) is ideal.
-- Do not add dependencies by assuming you know the UUID. Always prefer to use Pkg.add unless there is no other way, in which case bring to my attention for discussion.
 - Never break existing functionality without approval/discussion, but if better approaches are available that would be enabled by a ground-up refactoring or breaking changes or an entirely different implementation, definitely bring it up for my consideration.
