@@ -1152,6 +1152,10 @@ deps = ["CSV", "DataCaches", "DataFrames", "Downloads", "Graphs", "HTTP", "JSON3
 path = ".."
 uuid = "c9cb2f45-518b-476d-9b58-4dd79871b05b"
 version = "2.0.0-DEV"
+weakdeps = ["Makie"]
+
+    [deps.PaleobiologyDB.extensions]
+    TaxonomyMakie = "Makie"
 
 [[deps.Pango_jll]]
 deps = ["Artifacts", "Cairo_jll", "Fontconfig_jll", "FreeType2_jll", "FriBidi_jll", "Glib_jll", "HarfBuzz_jll", "JLLWrappers", "Libdl"]
@@ -1168,7 +1172,6 @@ version = "2.8.4"
 [[deps.PhyloPicMakie]]
 deps = ["DataCaches", "Downloads", "FileIO", "HTTP", "JSON3", "Makie"]
 git-tree-sha1 = "98355ad8cf20dadcfd0af8249636cb9627524b74"
-repo-rev = "main"
 repo-url = "https://github.com/jeetsukumaran/PhyloPicMakie.jl.git"
 uuid = "29f7fcc2-58b8-448e-949b-ed9dd2d8a249"
 version = "0.1.0"

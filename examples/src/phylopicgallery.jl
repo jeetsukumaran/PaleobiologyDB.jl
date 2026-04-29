@@ -1,5 +1,5 @@
 using CairoMakie
-using PaleobiologyDB.Taxonomy
-using PaleobiologyDB.PhyloPic
+using PaleobiologyDB.TaxonomyMakie
 
-pbdb_phylopic_grid(["Felis"])
+fig = pbdb_phylopic_grid(["Felis"])
+fig
