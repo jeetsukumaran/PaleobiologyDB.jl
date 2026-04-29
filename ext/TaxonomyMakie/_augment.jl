@@ -3,7 +3,7 @@
 #
 # Provides a composable overlay API that separates tree geometry extraction
 # from glyph rendering.  All rendering is delegated to
-# augment_phylopic! (from PhyloPicPBDB) so that placement math,
+# augment_phylopic! (from PhyloPic) so that placement math,
 # reactive axis-scale correction, and image caching are handled in one place.
 #
 # Public:
@@ -206,7 +206,7 @@ function augment_tip_phylopic!(
         fill!(x_anchors, xcol)
     end
 
-    PhyloPicPBDB.augment_phylopic!(
+    PhyloPic.augment_phylopic!(
         ax, x_anchors, tips.y;
         taxon = tips.names,
         placement = placement,

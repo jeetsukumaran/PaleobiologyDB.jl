@@ -1,5 +1,5 @@
 # ---------------------------------------------------------------------------
-# PhyloPicPBDB — rendering: augment_phylopic! and all public variants
+# PhyloPic — rendering: augment_phylopic! and all public variants
 #
 # All public functions resolve images via _resolve_images (from _resolve.jl)
 # and then delegate to PhyloPicMakie.augment_phylopic!.
@@ -19,7 +19,7 @@
 #               (after PhyloPicMakie._range_anchor)
 #
 # Makie, PhyloPicMakie, RGBA, N0f8, Colorant are all in scope from the
-# enclosing PhyloPicPBDB module (PhyloPicPBDB.jl).
+# enclosing PhyloPic module (PhyloPic.jl).
 # ---------------------------------------------------------------------------
 
 # ---------------------------------------------------------------------------
@@ -108,7 +108,7 @@ reduce to this.
 
 ```julia
 using PaleobiologyDB
-using PaleobiologyDB.PhyloPicPBDB
+using PaleobiologyDB.PhyloPic
 using CairoMakie
 
 fig = Figure()
@@ -236,7 +236,7 @@ then calls [`augment_phylopic!`](@ref).
 
 ```julia
 using PaleobiologyDB
-using PaleobiologyDB.PhyloPicPBDB
+using PaleobiologyDB.PhyloPic
 using CairoMakie
 
 taxa      = ["Tyrannosaurus", "Triceratops"]
@@ -347,7 +347,7 @@ Extracts coordinate and taxon columns from any Tables.jl-compatible source
 
 ```julia
 using PaleobiologyDB
-using PaleobiologyDB.PhyloPicPBDB
+using PaleobiologyDB.PhyloPic
 using CairoMakie, DataFrames
 
 df = DataFrame(
@@ -433,7 +433,7 @@ forwards to the vector range API.
 
 ```julia
 using PaleobiologyDB
-using PaleobiologyDB.PhyloPicPBDB
+using PaleobiologyDB.PhyloPic
 using CairoMakie, DataFrames
 
 df = DataFrame(

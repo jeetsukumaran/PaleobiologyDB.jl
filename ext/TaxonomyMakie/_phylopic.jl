@@ -8,7 +8,7 @@
 # ---------------------------------------------------------------------------
 
 const PhyloPicDB = PhyloPicMakie.PhyloPicDB
-using .PhyloPicPBDB: acquire_phylopic
+using .PhyloPic: acquire_phylopic
 
 # ---------------------------------------------------------------------------
 # Image loading

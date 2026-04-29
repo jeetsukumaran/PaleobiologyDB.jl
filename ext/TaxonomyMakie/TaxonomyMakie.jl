@@ -4,7 +4,7 @@
 Package extension for PaleobiologyDB.jl that activates when both Makie and
 PhyloPicMakie are loaded.  Provides the full tree-visualization API (moved from
 the former TaxonomyTreeMakie source submodule) and the PBDB–PhyloPic bridge
-(vendored from the former PhyloPicPBDB source submodule).
+(vendored from the former PhyloPic source submodule).
 
 Activated by:
 
@@ -22,7 +22,7 @@ Public API — tree visualization:
 | `tip_positions` | Leaf-tip coordinates from a tree or plot |
 | `augment_tip_phylopic!` | PhyloPic silhouettes at leaf tips |
 
-Public API — PBDB–PhyloPic bridge (re-exported from PhyloPicPBDB):
+Public API — PBDB–PhyloPic bridge (re-exported from PhyloPic):
 
 | Symbol | Description |
 |---|---|
@@ -32,7 +32,7 @@ Public API — PBDB–PhyloPic bridge (re-exported from PhyloPicPBDB):
 | `phylopic_images_dataframe` | All images for a taxon |
 | `phylopic_node` | PBDB → PhyloPic node lookup |
 | `phylopic_images` | PBDB → PhyloPic images |
-| `phylopic_thumbnail_grid` / `phylopic_thumbnail_grid!` | Gallery figure/axis |
+| `pbdb_phylopic_grid` / `pbdb_phylopic_grid!` | Gallery figure/axis |
 """
 module TaxonomyMakie
 
@@ -45,8 +45,8 @@ using PaleobiologyDB
 using PaleobiologyDB.Taxonomy: TaxonomyTree, TaxonNode, taxon_subtree
 
 # Vendored PBDB–PhyloPic bridge submodule.
-include("PhyloPicPBDB/src/PhyloPicPBDB.jl")
-using .PhyloPicPBDB  # bring PhyloPicPBDB exports into TaxonomyMakie's scope for re-export
+include("PhyloPic/src/PhyloPic.jl")
+using .PhyloPic  # bring PhyloPic exports into TaxonomyMakie's scope for re-export
 
 # Tree-visualization implementation files.
 include("_layout.jl")
@@ -58,7 +58,7 @@ include("_augment.jl")
 export TaxonomyTreePlot, taxonomytreeplot, taxonomytreeplot!, set_rank_axis_ticks!
 export tip_positions, augment_tip_phylopic!
 
-# PBDB–PhyloPic bridge exports (re-exported from PhyloPicPBDB for flat API surface).
+# PBDB–PhyloPic bridge exports (re-exported from PhyloPic for flat API surface).
 export acquire_phylopic
 export augment_phylopic
 export phylopic_images_dataframe
@@ -67,8 +67,8 @@ export phylopic_images
 export augment_phylopic!
 export augment_phylopic_ranges!
 export augment_phylopic_ranges
-export phylopic_thumbnail_grid!
-export phylopic_thumbnail_grid
+export pbdb_phylopic_grid!
+export pbdb_phylopic_grid
 
 # Julia's extension system does not re-export extension symbols into the parent
 # module's namespace. Without this binding, `using PaleobiologyDB.TaxonomyMakie`

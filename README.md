@@ -170,14 +170,14 @@ display(fig)
 ```julia
 # PhyloPic thumbnail gallery
 using CairoMakie: display
-using PaleobiologyDB: phylopic_thumbnail_grid
+using PaleobiologyDB: pbdb_phylopic_grid
 
 # Single taxon — all clade images
-fig = phylopic_thumbnail_grid("Felis"; image_filter = :clade, ncols = 4)
+fig = pbdb_phylopic_grid("Felis"; image_filter = :clade, ncols = 4)
 display(fig)
 
 # Multiple taxa — primary image per taxon
-fig2 = phylopic_thumbnail_grid(
+fig2 = pbdb_phylopic_grid(
     ["Felis", "Canis", "Panthera", "Lynx"];
     image_filter = :primary,
     ncols        = 2,
@@ -298,7 +298,7 @@ Use `pbdb_count` to count records without downloading them.
 |---|---|
 | Data acquisition | `acquire_phylopic`, `augment_phylopic`, `phylopic_images_dataframe`, `phylopic_images`, `phylopic_node` |
 | Makie overlays | `augment_phylopic!`, `augment_phylopic_ranges!`, `augment_phylopic_ranges` |
-| Gallery | `phylopic_thumbnail_grid`, `phylopic_thumbnail_grid!` |
+| Gallery | `pbdb_phylopic_grid`, `pbdb_phylopic_grid!` |
 
 ### TaxonomyMakie extension (`PaleobiologyDB.TaxonomyMakie`) — tree visualization
 
@@ -316,7 +316,7 @@ Use `pbdb_count` to count records without downloading them.
 - [Quick Start](https://jeetsukumaran.github.io/PaleobiologyDB.jl/dev/guide/quickstart/) — examples for all endpoint types, advanced query options
 - [Caching](https://jeetsukumaran.github.io/PaleobiologyDB.jl/dev/guide/caching/) — file, memory, and autocaching; classroom pre-fetch patterns
 - [TaxonomyTreeMakie](https://jeetsukumaran.github.io/PaleobiologyDB.jl/dev/guide/taxonomytree_makie/) — dendrogram visualisation guide and attribute reference
-- [PhyloPicPBDB](https://jeetsukumaran.github.io/PaleobiologyDB.jl/dev/guide/phylopic_makie/) — PhyloPic overlay and gallery guide
+- [PhyloPic](https://jeetsukumaran.github.io/PaleobiologyDB.jl/dev/guide/phylopic_makie/) — PhyloPic overlay and gallery guide
 - [Contributing](https://jeetsukumaran.github.io/PaleobiologyDB.jl/dev/guide/contributing/) — testing, development, and external resources
 
 **API reference**
@@ -331,7 +331,7 @@ Use `pbdb_count` to count records without downloading them.
 - [Taxonomy — tree graphs](https://jeetsukumaran.github.io/PaleobiologyDB.jl/dev/api/taxonomy_graphs/)
 - [Taxonomy — search](https://jeetsukumaran.github.io/PaleobiologyDB.jl/dev/api/taxonomy_search/)
 - [PhyloPic acquisition](https://jeetsukumaran.github.io/PaleobiologyDB.jl/dev/api/phylopic_acquire/)
-- [PhyloPicPBDB Makie API](https://jeetsukumaran.github.io/PaleobiologyDB.jl/dev/api/phylopic_makie/)
+- [PhyloPic Makie API](https://jeetsukumaran.github.io/PaleobiologyDB.jl/dev/api/phylopic_makie/)
 - [TaxonomyTreeMakie API](https://jeetsukumaran.github.io/PaleobiologyDB.jl/dev/api/taxonomytree_makie/)
 - [Interactive Help](https://jeetsukumaran.github.io/PaleobiologyDB.jl/dev/api/apihelp/) — REPL-based parameter and field discovery
 - [Depot](https://jeetsukumaran.github.io/PaleobiologyDB.jl/dev/api/depot/) — local data snapshot management

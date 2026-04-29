@@ -1,5 +1,5 @@
 # ---------------------------------------------------------------------------
-# PhyloPicPBDB — thumbnail grid: PBDB name-resolution bridge
+# PhyloPic — thumbnail grid: PBDB name-resolution bridge
 #
 # This file contains only the PBDB-specific parts of the thumbnail grid:
 # resolving taxon names → PhyloPic node UUIDs via phylopic_node, and
@@ -11,15 +11,15 @@
 #
 # Call graph:
 #
-#   phylopic_thumbnail_grid! / phylopic_thumbnail_grid (vector API)
-#   phylopic_thumbnail_grid! / phylopic_thumbnail_grid (table API)
-#   phylopic_thumbnail_grid! / phylopic_thumbnail_grid (single-string API)
+#   pbdb_phylopic_grid! / pbdb_phylopic_grid (vector API)
+#   pbdb_phylopic_grid! / pbdb_phylopic_grid (table API)
+#   pbdb_phylopic_grid! / pbdb_phylopic_grid (single-string API)
 #       └─► map taxon names → PhyloPic node UUIDs via phylopic_node
 #           └─► PhyloPicMakie.phylopic_thumbnail_grid!(ax, node_uuids; ...)
 #                   node_labels = taxon names (passed through as display labels)
 #
 # Makie, PhyloPicMakie, and phylopic_node are all in scope from the
-# enclosing PhyloPicPBDB module (phylopic.jl).
+# enclosing PhyloPic module (phylopic.jl).
 # ---------------------------------------------------------------------------
 
 # ---------------------------------------------------------------------------
@@ -65,7 +65,7 @@ end
 # ---------------------------------------------------------------------------
 
 """
-    phylopic_thumbnail_grid!(
+    pbdb_phylopic_grid!(
         ax::Makie.Axis,
         taxon::AbstractVector{<:AbstractString};
         ncols::Union{Integer, Nothing} = nothing,
@@ -137,7 +137,7 @@ taxon may produce multiple cells (one per image in its clade).
 
 `Nothing`.
 """
-function phylopic_thumbnail_grid!(
+function pbdb_phylopic_grid!(
         ax::Makie.Axis,
         taxon::AbstractVector{<:AbstractString};
         ncols::Union{Integer, Nothing} = nothing,
@@ -188,23 +188,23 @@ function phylopic_thumbnail_grid!(
 end
 
 """
-    phylopic_thumbnail_grid!(
+    pbdb_phylopic_grid!(
         ax::Makie.Axis,
         taxon_name::AbstractString;
         kwargs...,
     ) -> Nothing
 
 Single-taxon convenience wrapper.  Equivalent to
-`phylopic_thumbnail_grid!(ax, [taxon_name]; kwargs...)`.
+`pbdb_phylopic_grid!(ax, [taxon_name]; kwargs...)`.
 
-See [`phylopic_thumbnail_grid!`](@ref) for full keyword documentation.
+See [`pbdb_phylopic_grid!`](@ref) for full keyword documentation.
 """
-function phylopic_thumbnail_grid!(
+function pbdb_phylopic_grid!(
         ax::Makie.Axis,
         taxon_name::AbstractString;
         kwargs...,
     )::Nothing
-    return phylopic_thumbnail_grid!(ax, [taxon_name]; kwargs...)
+    return pbdb_phylopic_grid!(ax, [taxon_name]; kwargs...)
 end
 
 # ---------------------------------------------------------------------------
@@ -212,14 +212,14 @@ end
 # ---------------------------------------------------------------------------
 
 """
-    phylopic_thumbnail_grid!(
+    pbdb_phylopic_grid!(
         ax::Makie.Axis,
         table;
         taxon,
         kwargs...,
     ) -> Nothing
 
-Table-oriented variant of [`phylopic_thumbnail_grid!`](@ref).
+Table-oriented variant of [`pbdb_phylopic_grid!`](@ref).
 
 Extracts the taxon column from any Tables.jl-compatible source (e.g. a
 `DataFrame`) and forwards to the vector API.
@@ -227,14 +227,14 @@ Extracts the taxon column from any Tables.jl-compatible source (e.g. a
 - `taxon`: column selector for taxon names (Symbol, String, or Integer).
 - All remaining keyword arguments are forwarded to the vector API.
 """
-function phylopic_thumbnail_grid!(
+function pbdb_phylopic_grid!(
         ax::Makie.Axis,
         table;
         taxon,
         kwargs...,
     )::Nothing
     taxa = PhyloPicMakie._extract_column(table, taxon)
-    return phylopic_thumbnail_grid!(ax, collect(String, string.(taxa)); kwargs...)
+    return pbdb_phylopic_grid!(ax, collect(String, string.(taxa)); kwargs...)
 end
 
 # ---------------------------------------------------------------------------
@@ -242,7 +242,7 @@ end
 # ---------------------------------------------------------------------------
 
 """
-    phylopic_thumbnail_grid(
+    pbdb_phylopic_grid(
         taxon::AbstractVector{<:AbstractString};
         figure_size::Union{Tuple{<:Integer, <:Integer}, Nothing} = nothing,
         axis = NamedTuple(),
@@ -267,11 +267,11 @@ dimensions are corrected from the actual axis limits so that cell proportions
 remain consistent.  Pass `figure_size` to fix both dimensions and bypass
 the auto-resize.
 
-See [`phylopic_thumbnail_grid!`](@ref) for full documentation.
+See [`pbdb_phylopic_grid!`](@ref) for full documentation.
 
 Returns the created `Makie.Figure`.
 """
-function phylopic_thumbnail_grid(
+function pbdb_phylopic_grid(
         taxon::AbstractVector{<:AbstractString};
         figure_size::Union{Tuple{<:Integer, <:Integer}, Nothing} = nothing,
         axis = NamedTuple(),
@@ -308,25 +308,25 @@ function phylopic_thumbnail_grid(
 end
 
 """
-    phylopic_thumbnail_grid(
+    pbdb_phylopic_grid(
         taxon_name::AbstractString;
         kwargs...,
     ) -> Makie.Figure
 
 Single-taxon convenience wrapper.  Equivalent to
-`phylopic_thumbnail_grid([taxon_name]; kwargs...)`.
+`pbdb_phylopic_grid([taxon_name]; kwargs...)`.
 
-See [`phylopic_thumbnail_grid`](@ref) for full keyword documentation.
+See [`pbdb_phylopic_grid`](@ref) for full keyword documentation.
 """
-function phylopic_thumbnail_grid(
+function pbdb_phylopic_grid(
         taxon_name::AbstractString;
         kwargs...,
     )::Makie.Figure
-    return phylopic_thumbnail_grid([taxon_name]; kwargs...)
+    return pbdb_phylopic_grid([taxon_name]; kwargs...)
 end
 
 """
-    phylopic_thumbnail_grid(
+    pbdb_phylopic_grid(
         table;
         taxon,
         kwargs...,
@@ -335,11 +335,11 @@ end
 Table-oriented factory variant.  Extracts `taxon` column and calls the
 vector factory.
 """
-function phylopic_thumbnail_grid(
+function pbdb_phylopic_grid(
         table;
         taxon,
         kwargs...,
     )::Makie.Figure
     taxa = PhyloPicMakie._extract_column(table, taxon)
-    return phylopic_thumbnail_grid(collect(String, string.(taxa)); kwargs...)
+    return pbdb_phylopic_grid(collect(String, string.(taxa)); kwargs...)
 end

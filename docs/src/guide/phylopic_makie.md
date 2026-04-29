@@ -15,7 +15,7 @@ pkg> add PaleobiologyDB CairoMakie PhyloPicMakie
 ```julia
 using CairoMakie   # or GLMakie, WGLMakie, …
 using PaleobiologyDB
-# augment_phylopic!, augment_phylopic_ranges!, phylopic_thumbnail_grid!, etc.
+# augment_phylopic!, augment_phylopic_ranges!, pbdb_phylopic_grid!, etc.
 # are now in scope
 ```
 
@@ -181,7 +181,7 @@ range the glyph is anchored:
 
 ## Thumbnail gallery
 
-Use `phylopic_thumbnail_grid` to build a gallery of silhouettes paired with taxon
+Use `pbdb_phylopic_grid` to build a gallery of silhouettes paired with taxon
 names. The default layout keeps the number of columns bounded, so larger
 collections grow downward rather than becoming excessively wide.
 
@@ -189,7 +189,7 @@ collections grow downward rather than becoming excessively wide.
 using CairoMakie
 using PaleobiologyDB
 
-fig = phylopic_thumbnail_grid(
+fig = pbdb_phylopic_grid(
     [
         "Tyrannosaurus",
         "Triceratops",

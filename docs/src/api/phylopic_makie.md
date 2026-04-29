@@ -16,7 +16,7 @@ See the [PhyloPicMakie guide](../guide/phylopic_makie.md) for installation
 instructions, worked examples, and a keyword-argument reference.
 
 ```@docs
-PhyloPicPBDB
+PhyloPic
 ```
 
 ## Point placement
@@ -36,6 +36,6 @@ augment_phylopic_ranges
 ## Thumbnail grids
 
 ```@docs
-phylopic_thumbnail_grid!
-phylopic_thumbnail_grid
+pbdb_phylopic_grid!
+pbdb_phylopic_grid
 ```
