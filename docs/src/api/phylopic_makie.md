@@ -37,6 +37,6 @@ augment_phylopic_ranges
 ## Thumbnail grids
 
 ```@docs
-phylopic_thumbnail_grid!
-phylopic_thumbnail_grid
+pbdb_phylopic_grid!
+pbdb_phylopic_grid
 ```

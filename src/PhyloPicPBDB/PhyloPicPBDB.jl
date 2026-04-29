@@ -26,8 +26,8 @@ wrappers.
 | `augment_phylopic!(ax, table; x, y, taxon, ...)` | Table-oriented variant |
 | `augment_phylopic_ranges!(ax, xstart, xstop, y; taxon, ...)` | Range-anchored glyphs |
 | `augment_phylopic_ranges(...)` | Non-bang alias |
-| `phylopic_thumbnail_grid!(ax, taxon; ...)` | Gallery in existing axis |
-| `phylopic_thumbnail_grid(taxon; ...)` | Factory: creates Figure + Axis |
+| `pbdb_phylopic_grid!(ax, taxon; ...)` | Gallery in existing axis |
+| `pbdb_phylopic_grid(taxon; ...)` | Factory: creates Figure + Axis |
 """
 module PhyloPicPBDB
 
@@ -55,8 +55,8 @@ export phylopic_images
 export augment_phylopic!
 export augment_phylopic_ranges!
 export augment_phylopic_ranges
-export phylopic_thumbnail_grid!
-export phylopic_thumbnail_grid
+export pbdb_phylopic_grid!
+export pbdb_phylopic_grid
 
 # Core PBDB-PhyloPic data bridge (no Makie dependency).
 include("_phylopic_core.jl")
@@ -64,6 +64,6 @@ include("_phylopic_core.jl")
 # Makie visualization bridge.
 include("_resolve.jl")
 include("_render.jl")
-include("_phylopic_thumbnail_grid.jl")
+include("_pbdb_phylopic_grid.jl")
 
 end # module PhyloPicPBDB

@@ -7,7 +7,7 @@
 #      - augment_phylopic! vector and ranges API (PBDB wrappers, glyph=pre-resolved)
 #      - augment_phylopic! table (DataFrame) API
 #      - augment_phylopic_ranges! table API
-#      - phylopic_thumbnail_grid! offline validation (PBDB wrapper)
+#      - pbdb_phylopic_grid! offline validation (PBDB wrapper)
 #   2. Live tests — gated on ENV["PBDB_LIVE"]="1"
 #
 # Pure-function PhyloPicMakie helpers (_compute_image_bbox, _apply_rotation,
@@ -58,8 +58,8 @@ using Makie: RGBA, N0f8, Image
     @test :augment_phylopic         ∈ names(PaleobiologyDB.PhyloPicPBDB)
     @test :augment_phylopic_ranges! ∈ names(PaleobiologyDB.PhyloPicPBDB)
     @test :augment_phylopic_ranges  ∈ names(PaleobiologyDB.PhyloPicPBDB)
-    @test :phylopic_thumbnail_grid! ∈ names(PaleobiologyDB.PhyloPicPBDB)
-    @test :phylopic_thumbnail_grid  ∈ names(PaleobiologyDB.PhyloPicPBDB)
+    @test :pbdb_phylopic_grid! ∈ names(PaleobiologyDB.PhyloPicPBDB)
+    @test :pbdb_phylopic_grid  ∈ names(PaleobiologyDB.PhyloPicPBDB)
 
     # PhyloPicMakie is a hard dep of PaleobiologyDB — always available.
     @test PhyloPicMakie isa Module
@@ -231,7 +231,7 @@ end  # range table API
     @testset "empty names produce no cells (skip mode)" begin
         fig = Figure(); ax = Axis(fig[1, 1])
         n0 = length(ax.scene.plots)
-        phylopic_thumbnail_grid!(ax, ["", " "]; on_missing = :skip, ncols = 1)
+        pbdb_phylopic_grid!(ax, ["", " "]; on_missing = :skip, ncols = 1)
         @test _count_images(ax) == 0
         @test length(ax.scene.plots) == n0   # nothing drawn for empty names
     end
@@ -239,7 +239,7 @@ end  # range table API
     @testset "empty names produce no cells (placeholder mode)" begin
         fig = Figure(); ax = Axis(fig[1, 1])
         n0 = length(ax.scene.plots)
-        phylopic_thumbnail_grid!(ax, ["", " "]; on_missing = :placeholder, ncols = 1)
+        pbdb_phylopic_grid!(ax, ["", " "]; on_missing = :placeholder, ncols = 1)
         @test _count_images(ax) == 0
         @test length(ax.scene.plots) == n0   # blank names → no pool → no cells
     end
@@ -248,30 +248,30 @@ end  # range table API
         # Empty names yield 0 cells; on_missing=:error only fires for cells
         # with a selected image whose download failed — not for missing pools.
         fig = Figure(); ax = Axis(fig[1, 1])
-        @test_nowarn phylopic_thumbnail_grid!(ax, [""]; on_missing = :error)
+        @test_nowarn pbdb_phylopic_grid!(ax, [""]; on_missing = :error)
     end
 
     @testset "invalid glyph fraction throws ArgumentError" begin
         fig = Figure(); ax = Axis(fig[1, 1])
-        @test_throws ArgumentError phylopic_thumbnail_grid!(ax, ["Tyrannosaurus"]; glyph_fraction = 1.0)
+        @test_throws ArgumentError pbdb_phylopic_grid!(ax, ["Tyrannosaurus"]; glyph_fraction = 1.0)
     end
 
     @testset "invalid image_filter throws ArgumentError" begin
         fig = Figure(); ax = Axis(fig[1, 1])
-        @test_throws ArgumentError phylopic_thumbnail_grid!(
+        @test_throws ArgumentError pbdb_phylopic_grid!(
             ax, ["Tyrannosaurus"]; image_filter = :universe)
     end
 
     @testset "invalid image_layout throws ArgumentError" begin
         fig = Figure(); ax = Axis(fig[1, 1])
-        @test_throws ArgumentError phylopic_thumbnail_grid!(
+        @test_throws ArgumentError pbdb_phylopic_grid!(
             ax, ["Tyrannosaurus"]; image_layout = :diagonal)
     end
 
     @testset "image_filter = :clade, empty names → no cells" begin
         fig = Figure(); ax = Axis(fig[1, 1])
         n0 = length(ax.scene.plots)
-        phylopic_thumbnail_grid!(ax, ["", " "]; image_filter = :clade)
+        pbdb_phylopic_grid!(ax, ["", " "]; image_filter = :clade)
         @test _count_images(ax) == 0
         @test length(ax.scene.plots) == n0
     end
@@ -279,7 +279,7 @@ end  # range table API
     @testset "image_filter = :node, empty names, blocks layout → no cells" begin
         fig = Figure(); ax = Axis(fig[1, 1])
         n0 = length(ax.scene.plots)
-        phylopic_thumbnail_grid!(ax, ["", " "];
+        pbdb_phylopic_grid!(ax, ["", " "];
             image_filter = :node, image_layout = :blocks)
         @test _count_images(ax) == 0
         @test length(ax.scene.plots) == n0
@@ -288,26 +288,26 @@ end  # range table API
     @testset "image_layout = :rows, empty names → no cells" begin
         fig = Figure(); ax = Axis(fig[1, 1])
         n0 = length(ax.scene.plots)
-        phylopic_thumbnail_grid!(ax, ["", " "]; image_filter = :node, image_layout = :rows)
+        pbdb_phylopic_grid!(ax, ["", " "]; image_filter = :node, image_layout = :rows)
         @test _count_images(ax) == 0
         @test length(ax.scene.plots) == n0
     end
 
     @testset "image_layout = :grouped now throws ArgumentError (renamed to :blocks)" begin
         fig = Figure(); ax = Axis(fig[1, 1])
-        @test_throws ArgumentError phylopic_thumbnail_grid!(
+        @test_throws ArgumentError pbdb_phylopic_grid!(
             ax, ["Tyrannosaurus"]; image_layout = :grouped)
     end
 
     @testset "image_label = :attribution, empty names → no crash" begin
         fig = Figure(); ax = Axis(fig[1, 1])
-        @test_nowarn phylopic_thumbnail_grid!(ax, ["", " "];
+        @test_nowarn pbdb_phylopic_grid!(ax, ["", " "];
             image_filter = :primary, image_label = :attribution)
     end
 
     @testset "image_label callable, empty names → no crash" begin
         fig = Figure(); ax = Axis(fig[1, 1])
-        @test_nowarn phylopic_thumbnail_grid!(ax, ["", " "];
+        @test_nowarn pbdb_phylopic_grid!(ax, ["", " "];
             image_filter = :primary, image_label = (name, k, img) -> "$name-$k")
     end
 
@@ -317,36 +317,36 @@ end  # range table API
         # exceed the taxon count, causing _infer_thumbnail_grid_shape to throw.
         # Empty names produce 0 cells, so this is fully offline.
         fig = Figure(); ax = Axis(fig[1, 1])
-        @test_nowarn phylopic_thumbnail_grid!(ax, ["", "", ""];
+        @test_nowarn pbdb_phylopic_grid!(ax, ["", "", ""];
             image_filter = :primary, ncols = 1, nrows = 1)
     end
 
     @testset "image_label = :BASICFIELDS (default), empty names → no crash" begin
         fig = Figure(); ax = Axis(fig[1, 1])
-        @test_nowarn phylopic_thumbnail_grid!(ax, ["", " "];
+        @test_nowarn pbdb_phylopic_grid!(ax, ["", " "];
             image_filter = :primary, image_label = :BASICFIELDS)
     end
 
     @testset "image_label = :ALLFIELDS, empty names → no crash" begin
         fig = Figure(); ax = Axis(fig[1, 1])
-        @test_nowarn phylopic_thumbnail_grid!(ax, ["", " "];
+        @test_nowarn pbdb_phylopic_grid!(ax, ["", " "];
             image_filter = :primary, image_label = :ALLFIELDS)
     end
 
     @testset "image_label = :BASICFIELDS, empty names → no crash" begin
         fig = Figure(); ax = Axis(fig[1, 1])
-        @test_nowarn phylopic_thumbnail_grid!(ax, ["", " "];
+        @test_nowarn pbdb_phylopic_grid!(ax, ["", " "];
             image_filter = :primary, image_label = :BASICFIELDS)
     end
 
     @testset "image_label = Vector{Symbol}, empty names → no crash" begin
         fig = Figure(); ax = Axis(fig[1, 1])
-        @test_nowarn phylopic_thumbnail_grid!(ax, ["", " "];
+        @test_nowarn pbdb_phylopic_grid!(ax, ["", " "];
             image_filter = :primary, image_label = [:taxon_name, :index, :uuid])
     end
 
     @testset "labeljoin forwarded through non-bang, empty names → no crash" begin
-        @test_nowarn phylopic_thumbnail_grid(["", " "];
+        @test_nowarn pbdb_phylopic_grid(["", " "];
             image_filter = :primary, image_label = :BASICFIELDS, labeljoin = " | ")
     end
 
@@ -354,22 +354,22 @@ end  # range table API
         # Empty names → no cells; ymax = 1 row × eff_cell_height.
         # With label_lines = 1, eff_cell_height equals the nominal cell_height.
         fig1 = Figure(); ax1 = Axis(fig1[1, 1])
-        phylopic_thumbnail_grid!(ax1, ["", " "]; image_filter = :primary)
+        pbdb_phylopic_grid!(ax1, ["", " "]; image_filter = :primary)
         fig2 = Figure(); ax2 = Axis(fig2[1, 1])
-        phylopic_thumbnail_grid!(ax2, ["", " "]; image_filter = :primary, label_lines = 1)
+        pbdb_phylopic_grid!(ax2, ["", " "]; image_filter = :primary, label_lines = 1)
         @test ax1.limits[] == ax2.limits[]
     end
 
     @testset "label_lines = 3 expands eff_cell_height above nominal" begin
         fig = Figure(); ax = Axis(fig[1, 1])
-        phylopic_thumbnail_grid!(ax, ["", " "]; image_filter = :primary, label_lines = 3)
+        pbdb_phylopic_grid!(ax, ["", " "]; image_filter = :primary, label_lines = 3)
         ymax         = ax.limits[][2][2]
         default_cell = PhyloPicMakie.DEFAULT_THUMBNAIL_GRID_CELL_HEIGHT
         @test ymax > default_cell
     end
 
     @testset "label_lines forwarded through non-bang, empty names → no crash" begin
-        @test_nowarn phylopic_thumbnail_grid(["", " "];
+        @test_nowarn pbdb_phylopic_grid(["", " "];
             image_filter = :primary, label_lines = 2)
     end
 
@@ -380,7 +380,7 @@ end  # range table API
             taxa = ["Tyrannosaurus", "Triceratops", "Ankylosaurus", "Edmontosaurus"]
             fig = Figure(); ax = Axis(fig[1, 1])
             n0 = length(ax.scene.plots)
-            phylopic_thumbnail_grid!(ax, taxa;
+            pbdb_phylopic_grid!(ax, taxa;
                 image_filter = :primary, glyph_fraction = 0.5,
                 ncols = 2, on_missing = :placeholder)
             @test _count_images(ax) == 4
@@ -390,7 +390,7 @@ end  # range table API
         @testset "clade filter, :first selector — one cell per taxon" begin
             taxa = ["Tyrannosaurus", "Triceratops"]
             fig = Figure(); ax = Axis(fig[1, 1])
-            phylopic_thumbnail_grid!(ax, taxa;
+            pbdb_phylopic_grid!(ax, taxa;
                 image_filter = :clade, image_selector = :first,
                 on_missing = :placeholder, ncols = 2)
             @test length(ax.scene.plots) ≥ 2
@@ -398,7 +398,7 @@ end  # range table API
 
         @testset "clade filter, integer selector — one cell per taxon" begin
             fig = Figure(); ax = Axis(fig[1, 1])
-            phylopic_thumbnail_grid!(ax, ["Tyrannosaurus"];
+            pbdb_phylopic_grid!(ax, ["Tyrannosaurus"];
                 image_filter = :clade, image_selector = 1,
                 on_missing = :placeholder, ncols = 2)
             @test length(ax.scene.plots) ≥ 1
@@ -406,7 +406,7 @@ end  # range table API
 
         @testset "node filter, all images, blocks layout" begin
             fig = Figure(); ax = Axis(fig[1, 1])
-            phylopic_thumbnail_grid!(ax, ["Tyrannosaurus"];
+            pbdb_phylopic_grid!(ax, ["Tyrannosaurus"];
                 image_filter = :node, image_layout = :blocks,
                 image_max_pages = 1, on_missing = :placeholder, ncols = 4)
             @test length(ax.scene.plots) ≥ 1
@@ -414,7 +414,7 @@ end  # range table API
 
         @testset "callable selector returns list" begin
             fig = Figure(); ax = Axis(fig[1, 1])
-            phylopic_thumbnail_grid!(ax, ["Carnivora"];
+            pbdb_phylopic_grid!(ax, ["Carnivora"];
                 image_filter = :clade,
                 image_selector = imgs -> isempty(imgs) ? imgs : [imgs[1]],
                 image_layout = :flat, image_max_pages = 1, ncols = 4)
@@ -422,13 +422,13 @@ end  # range table API
         end
 
         @testset "non-bang constructor returns a Figure" begin
-            fig = phylopic_thumbnail_grid(
+            fig = pbdb_phylopic_grid(
                 ["Tyrannosaurus", "Triceratops", "Ankylosaurus"]; ncols = 2)
             @test fig isa Figure
         end
 
         @testset "non-bang with clade filter returns a Figure" begin
-            fig = phylopic_thumbnail_grid(
+            fig = pbdb_phylopic_grid(
                 ["Tyrannosaurus"];
                 image_filter = :clade, image_selector = :first, ncols = 2)
             @test fig isa Figure

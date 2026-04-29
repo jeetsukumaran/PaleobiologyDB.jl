@@ -161,15 +161,15 @@ display(fig)
 
 ```julia
 # PhyloPic thumbnail gallery
-using PaleobiologyDB.PhyloPicPBDB: phylopic_thumbnail_grid
+using PaleobiologyDB.PhyloPicPBDB: pbdb_phylopic_grid
 using CairoMakie: display
 
 # Single taxon — all clade images
-fig = phylopic_thumbnail_grid("Felis"; image_filter = :clade, ncols = 4)
+fig = pbdb_phylopic_grid("Felis"; image_filter = :clade, ncols = 4)
 display(fig)
 
 # Multiple taxa — primary image per taxon
-fig2 = phylopic_thumbnail_grid(
+fig2 = pbdb_phylopic_grid(
     ["Felis", "Canis", "Panthera", "Lynx"];
     image_filter = :primary,
     ncols        = 2,
@@ -291,7 +291,7 @@ Use `pbdb_count` to count records without downloading them.
 |---|---|
 | Data acquisition | `acquire_phylopic`, `augment_phylopic`, `phylopic_images_dataframe`, `phylopic_images`, `phylopic_node` |
 | Makie overlays | `augment_phylopic!`, `augment_phylopic_ranges!`, `augment_phylopic_ranges` |
-| Gallery | `phylopic_thumbnail_grid`, `phylopic_thumbnail_grid!` |
+| Gallery | `pbdb_phylopic_grid`, `pbdb_phylopic_grid!` |
 
 ### TaxonTreeMakie extension (`PaleobiologyDB.TaxonTreeMakie`)
 
