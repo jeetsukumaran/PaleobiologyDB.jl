@@ -172,7 +172,7 @@ dendrogram.  Produced by [`taxonomytreeplot`](@ref) (standalone figure) or
 | `showinternal` | `false` | Show internal node name labels |
 | `internal_fontsize` | `7` | Internal label font size in points |
 | `internal_color` | `:gray40` | Internal label colour |
-| `show_phylopic` | `true` | Draw a PhyloPic silhouette to the right of each leaf tip label|
+| `show_phylopic` | `false` | Draw a PhyloPic silhouette to the right of each leaf tip label|
 | `phylopic_glyph_size` | `1.0` | Half-height of each silhouette glyph in data units (total height = `2 × phylopic_glyph_size`) |
 | `phylopic_align` | `false` | When `true`, all silhouettes are placed at a single right-hand column; when `false`, each appears immediately right of its label |
 | `phylopic_xoffset` | `0.65` | Additional rightward gap in data units beyond the tip-label start position |
@@ -228,7 +228,7 @@ See also [`taxonomytreeplot`](@ref), `taxonomytreeplot!`,
         internal_fontsize = 7,
         internal_color = :gray40,
         # PhyloPic silhouettes at leaf tips
-        show_phylopic = true,
+        show_phylopic = false,
         phylopic_glyph_size = 1.0,
         phylopic_align = false,
         phylopic_xoffset = 0.65,
