@@ -104,7 +104,7 @@ Three functions map PBDB taxon names to [PhyloPic](https://www.phylopic.org/) si
 ```julia
 # Enrich an occurrences DataFrame with PhyloPic image columns
 using PaleobiologyDB: pbdb_occurrences
-using PaleobiologyDB.PhyloPicPBDB: acquire_phylopic, augment_phylopic
+using PaleobiologyDB.PhyloPic: acquire_phylopic, augment_phylopic
 
 df      = pbdb_occurrences(base_name = "Ceratopsia", interval = "Cretaceous", show = "full")
 pics    = acquire_phylopic(df)              # DataFrame: one row per occurrence row
@@ -116,7 +116,7 @@ enriched = augment_phylopic(df)            # original columns + 14 phylopic_ col
 
 ```julia
 # Browse all available images for a taxon or clade
-using PaleobiologyDB.PhyloPicPBDB: phylopic_images_dataframe
+using PaleobiologyDB.PhyloPic: phylopic_images_dataframe
 
 imgs = phylopic_images_dataframe("Carnivora")
 nrow(imgs)                    # → hundreds (all images within Carnivora clade)
@@ -129,12 +129,12 @@ imgs_node = phylopic_images_dataframe("Carnivora"; filter = :node)
 
 
 
-## PhyloPicPBDB — Taxon visualization
+## PhyloPic — Taxon visualization
 
 ```julia
 # Anchor a PhyloPic glyph at each taxon's first appearance on a range chart
 using CairoMakie: Figure, Axis, lines!, xlims!, display
-using PaleobiologyDB.PhyloPicPBDB: augment_phylopic_ranges!
+using PaleobiologyDB.PhyloPic: augment_phylopic_ranges!
 
 taxa      = ["Tyrannosaurus", "Triceratops", "Ankylosaurus",
              "Pachycephalosaurus", "Edmontosaurus"]
@@ -161,7 +161,7 @@ display(fig)
 
 ```julia
 # PhyloPic thumbnail gallery
-using PaleobiologyDB.PhyloPicPBDB: pbdb_phylopic_grid
+using PaleobiologyDB.PhyloPic: pbdb_phylopic_grid
 using CairoMakie: display
 
 # Single taxon — all clade images
@@ -177,7 +177,7 @@ fig2 = pbdb_phylopic_grid(
 display(fig2)
 ```
 
-See the [PhyloPicPBDB guide](https://jeetsukumaran.github.io/PaleobiologyDB.jl/dev/guide/phylopic_makie/) for the full API and layout options.
+See the [PhyloPic guide](https://jeetsukumaran.github.io/PaleobiologyDB.jl/dev/guide/phylopic_makie/) for the full API and layout options.
 
 
 ## TaxonTreeMakie — dendrogram visualisation
@@ -285,7 +285,7 @@ Use `pbdb_count` to count records without downloading them.
 | Tree graphs | `taxon_subtree`, `root_taxon`, `leaf_taxa`, `taxa_at_rank` |
 | Types | `TaxonNode`, `TaxonTree` |
 
-### PhyloPic (`PaleobiologyDB.PhyloPicPBDB`)
+### PhyloPic (`PaleobiologyDB.PhyloPic`)
 
 | Category | Functions |
 |---|---|
@@ -309,7 +309,7 @@ Use `pbdb_count` to count records without downloading them.
 - [Quick Start](https://jeetsukumaran.github.io/PaleobiologyDB.jl/dev/guide/quickstart/) — examples for all endpoint types, advanced query options
 - [Caching](https://jeetsukumaran.github.io/PaleobiologyDB.jl/dev/guide/caching/) — file, memory, and autocaching; classroom pre-fetch patterns
 - [TaxonTreeMakie](https://jeetsukumaran.github.io/PaleobiologyDB.jl/dev/guide/taxontree_makie/) — dendrogram visualisation guide and attribute reference
-- [PhyloPicPBDB](https://jeetsukumaran.github.io/PaleobiologyDB.jl/dev/guide/phylopic_makie/) — PhyloPic overlay and gallery guide
+- [PhyloPic](https://jeetsukumaran.github.io/PaleobiologyDB.jl/dev/guide/phylopic_makie/) — PhyloPic overlay and gallery guide
 - [Contributing](https://jeetsukumaran.github.io/PaleobiologyDB.jl/dev/guide/contributing/) — testing, development, and external resources
 
 **API reference**
@@ -324,7 +324,7 @@ Use `pbdb_count` to count records without downloading them.
 - [Taxonomy — tree graphs](https://jeetsukumaran.github.io/PaleobiologyDB.jl/dev/api/taxonomy_graphs/)
 - [Taxonomy — search](https://jeetsukumaran.github.io/PaleobiologyDB.jl/dev/api/taxonomy_search/)
 - [PhyloPic acquisition](https://jeetsukumaran.github.io/PaleobiologyDB.jl/dev/api/phylopic_acquire/)
-- [PhyloPicPBDB Makie API](https://jeetsukumaran.github.io/PaleobiologyDB.jl/dev/api/phylopic_makie/)
+- [PhyloPic Makie API](https://jeetsukumaran.github.io/PaleobiologyDB.jl/dev/api/phylopic_makie/)
 - [TaxonTreeMakie API](https://jeetsukumaran.github.io/PaleobiologyDB.jl/dev/api/taxontree_makie/)
 - [Interactive Help](https://jeetsukumaran.github.io/PaleobiologyDB.jl/dev/api/apihelp/) — REPL-based parameter and field discovery
 - [Depot](https://jeetsukumaran.github.io/PaleobiologyDB.jl/dev/api/depot/) — local data snapshot management

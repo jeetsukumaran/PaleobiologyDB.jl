@@ -1,5 +1,5 @@
 # ---------------------------------------------------------------------------
-# PhyloPicPBDB — PBDB taxon name → PhyloPic node UUID bridge
+# PhyloPic — PBDB taxon name → PhyloPic node UUID bridge
 #
 # Provides:
 #   _phylopic_field_for_rendering(image_rendering) → Symbol
@@ -21,7 +21,7 @@
 # ---------------------------------------------------------------------------
 
 # PhyloPicMakie, PhyloPicDB, and phylopic_node are all in scope from
-# the enclosing PhyloPicPBDB module (phylopic.jl).
+# the enclosing PhyloPic module (phylopic.jl).
 
 # ---------------------------------------------------------------------------
 # Internal: image rendering field resolution (PBDB-specific)

@@ -1,5 +1,5 @@
 """
-    PaleobiologyDB.PhyloPicPBDB
+    PaleobiologyDB.PhyloPic
 
 PBDB-specific PhyloPic integration submodule.
 
@@ -29,7 +29,7 @@ wrappers.
 | `pbdb_phylopic_grid!(ax, taxon; ...)` | Gallery in existing axis |
 | `pbdb_phylopic_grid(taxon; ...)` | Factory: creates Figure + Axis |
 """
-module PhyloPicPBDB
+module PhyloPic
 
 import PhyloPicMakie
 # Access PhyloPicDB and Makie through PhyloPicMakie.
@@ -66,4 +66,4 @@ include("_resolve.jl")
 include("_render.jl")
 include("_pbdb_phylopic_grid.jl")
 
-end # module PhyloPicPBDB
+end # module PhyloPic

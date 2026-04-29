@@ -1,10 +1,10 @@
 ```@meta
-CurrentModule = PaleobiologyDB.PhyloPicPBDB
+CurrentModule = PaleobiologyDB.PhyloPic
 ```
 
 # PhyloPic: Rendering — API Reference
 
-`PaleobiologyDB.PhyloPicPBDB` overlays
+`PaleobiologyDB.PhyloPic` overlays
 [PhyloPic](https://www.phylopic.org/) silhouette images on existing Makie axes.
 `PhyloPicMakie` (and `FileIO` for image decoding) are hard dependencies of
 `PaleobiologyDB`, so no extension activation step is needed — just load a Makie
@@ -17,7 +17,7 @@ See the [PhyloPicMakie guide](../guide/phylopic_makie.md) for installation
 instructions, worked examples, and a keyword-argument reference.
 
 ```@docs
-PhyloPicPBDB
+PhyloPic
 ```
 
 ## Point placement

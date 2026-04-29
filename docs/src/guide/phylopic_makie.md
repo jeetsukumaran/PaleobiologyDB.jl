@@ -1,6 +1,6 @@
 # PhyloPicMakie — Makie plot integration
 
-`PaleobiologyDB.PhyloPicPBDB` provides PhyloPic silhouette overlays
+`PaleobiologyDB.PhyloPic` provides PhyloPic silhouette overlays
 for existing Makie plots.  It is a top-level submodule of `PaleobiologyDB` —
 `PhyloPicMakie` (and `FileIO` for image decoding) are hard dependencies of
 `PaleobiologyDB`, so no extension activation is needed.
@@ -16,7 +16,7 @@ pkg> add PaleobiologyDB CairoMakie
 ```julia
 using PaleobiologyDB
 using CairoMakie   # or GLMakie, WGLMakie, …
-using PaleobiologyDB.PhyloPicPBDB
+using PaleobiologyDB.PhyloPic
 # → augment_phylopic!, augment_phylopic_ranges!, pbdb_phylopic_grid!, etc.
 # are now in scope
 ```
@@ -26,7 +26,7 @@ using PaleobiologyDB.PhyloPicPBDB
 ```julia
 using PaleobiologyDB
 using CairoMakie
-using PaleobiologyDB.PhyloPicPBDB
+using PaleobiologyDB.PhyloPic
 
 taxa      = ["Tyrannosaurus", "Triceratops", "Ankylosaurus",
              "Pachycephalosaurus", "Edmontosaurus"]
@@ -70,7 +70,7 @@ table overloads accept column selectors directly:
 ```julia
 using PaleobiologyDB
 using CairoMakie
-using PaleobiologyDB.PhyloPicPBDB
+using PaleobiologyDB.PhyloPic
 using DataFrames
 
 df = pbdb_occurrences(base_name = "Ursidae"; show = "full", vocab = "pbdb")
@@ -118,7 +118,7 @@ an image you have already loaded:
 ```julia
 using PaleobiologyDB
 using CairoMakie
-using PaleobiologyDB.PhyloPicPBDB
+using PaleobiologyDB.PhyloPic
 import PhyloPicMakie
 
 rec = acquire_phylopic("Canis lupus")
@@ -193,7 +193,7 @@ collections grow downward rather than becoming excessively wide.
 ```julia
 using PaleobiologyDB
 using CairoMakie
-using PaleobiologyDB.PhyloPicPBDB
+using PaleobiologyDB.PhyloPic
 
 fig = pbdb_phylopic_grid(
     [

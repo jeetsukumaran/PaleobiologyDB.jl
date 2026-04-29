@@ -2,7 +2,7 @@ using Documenter
 using PaleobiologyDB
 using PaleobiologyDB.ApiHelp
 using PaleobiologyDB.Taxonomy
-using PaleobiologyDB.PhyloPicPBDB
+using PaleobiologyDB.PhyloPic
 using PaleobiologyDB.Depot
 import PhyloPicMakie
 
@@ -13,7 +13,7 @@ using PaleobiologyDB.TaxonTreeMakie
 makedocs(
     sitename = "PaleobiologyDB.jl",
     authors = "Jeet Sukumaran",
-    modules = [PaleobiologyDB, PaleobiologyDB.ApiHelp, PaleobiologyDB.Taxonomy, PaleobiologyDB.PhyloPicPBDB, PaleobiologyDB.Depot, PaleobiologyDB.TaxonTreeMakie],
+    modules = [PaleobiologyDB, PaleobiologyDB.ApiHelp, PaleobiologyDB.Taxonomy, PaleobiologyDB.PhyloPic, PaleobiologyDB.Depot, PaleobiologyDB.TaxonTreeMakie],
     format = Documenter.HTML(
         prettyurls = get(ENV, "CI", nothing) == "true",
         canonical = "https://jeetsukumaran.github.io/PaleobiologyDB.jl",

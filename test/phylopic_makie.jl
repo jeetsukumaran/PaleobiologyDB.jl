@@ -1,9 +1,9 @@
 # test/phylopic_makie.jl
-# Tests for PaleobiologyDB.PhyloPicPBDB rendering integration.
+# Tests for PaleobiologyDB.PhyloPic rendering integration.
 #
 # Structure:
 #   1. Makie-gated tests — require CairoMakie
-#      - PhyloPicPBDB submodule loaded
+#      - PhyloPic submodule loaded
 #      - augment_phylopic! vector and ranges API (PBDB wrappers, glyph=pre-resolved)
 #      - augment_phylopic! table (DataFrame) API
 #      - augment_phylopic_ranges! table API
@@ -32,7 +32,7 @@ const _EXT_AVAILABLE = _CAIRO_AVAILABLE
 
 if _EXT_AVAILABLE
     @eval using CairoMakie
-    @eval using PaleobiologyDB.PhyloPicPBDB
+    @eval using PaleobiologyDB.PhyloPic
     # PhyloPicMakie is a hard dep of PaleobiologyDB; import for unit-test helpers.
     @eval import PhyloPicMakie
 end
@@ -50,16 +50,16 @@ else
 
 using Makie: RGBA, N0f8, Image
 
-@testset "PhyloPicPBDB — submodule loaded" begin
-    # PhyloPicPBDB is a top-level submodule of PaleobiologyDB.
-    @test isdefined(PaleobiologyDB, :PhyloPicPBDB)
-    @test PaleobiologyDB.PhyloPicPBDB isa Module
-    @test :augment_phylopic!        ∈ names(PaleobiologyDB.PhyloPicPBDB)
-    @test :augment_phylopic         ∈ names(PaleobiologyDB.PhyloPicPBDB)
-    @test :augment_phylopic_ranges! ∈ names(PaleobiologyDB.PhyloPicPBDB)
-    @test :augment_phylopic_ranges  ∈ names(PaleobiologyDB.PhyloPicPBDB)
-    @test :pbdb_phylopic_grid! ∈ names(PaleobiologyDB.PhyloPicPBDB)
-    @test :pbdb_phylopic_grid  ∈ names(PaleobiologyDB.PhyloPicPBDB)
+@testset "PhyloPic — submodule loaded" begin
+    # PhyloPic is a top-level submodule of PaleobiologyDB.
+    @test isdefined(PaleobiologyDB, :PhyloPic)
+    @test PaleobiologyDB.PhyloPic isa Module
+    @test :augment_phylopic!        ∈ names(PaleobiologyDB.PhyloPic)
+    @test :augment_phylopic         ∈ names(PaleobiologyDB.PhyloPic)
+    @test :augment_phylopic_ranges! ∈ names(PaleobiologyDB.PhyloPic)
+    @test :augment_phylopic_ranges  ∈ names(PaleobiologyDB.PhyloPic)
+    @test :pbdb_phylopic_grid! ∈ names(PaleobiologyDB.PhyloPic)
+    @test :pbdb_phylopic_grid  ∈ names(PaleobiologyDB.PhyloPic)
 
     # PhyloPicMakie is a hard dep of PaleobiologyDB — always available.
     @test PhyloPicMakie isa Module
@@ -72,7 +72,7 @@ const _TEST_IMG = fill(RGBA{N0f8}(0.5, 0.5, 0.5, 1.0), 4, 8)
 # Convenience: count Image plots added to an axis.
 _count_images(ax) = count(p -> p isa Image, ax.scene.plots)
 
-@testset "PhyloPicPBDB — augment_phylopic! vector API" begin
+@testset "PhyloPic — augment_phylopic! vector API" begin
 
     @testset "glyph broadcast to all data points" begin
         fig = Figure(); ax = Axis(fig[1, 1])
@@ -130,7 +130,7 @@ _count_images(ax) = count(p -> p isa Image, ax.scene.plots)
 
 end  # augment_phylopic! vector API
 
-@testset "PhyloPicPBDB — augment_phylopic_ranges! vector API" begin
+@testset "PhyloPic — augment_phylopic_ranges! vector API" begin
 
     @testset "at=:start" begin
         fig = Figure(); ax = Axis(fig[1, 1])
@@ -168,7 +168,7 @@ end  # augment_phylopic! vector API
 
 end  # augment_phylopic_ranges! vector API
 
-@testset "PhyloPicPBDB — table API (DataFrame)" begin
+@testset "PhyloPic — table API (DataFrame)" begin
     df = DataFrame(x = [0.0, 1.0, 2.0], y = [0.0, 1.0, 2.0])
 
     @testset "augment_phylopic! with Symbol column selectors" begin
@@ -193,7 +193,7 @@ end  # augment_phylopic_ranges! vector API
 
 end  # table API
 
-@testset "PhyloPicPBDB — range table API (DataFrame)" begin
+@testset "PhyloPic — range table API (DataFrame)" begin
     df = DataFrame(
         first_app = [68.0, 68.0],
         last_app  = [66.0, 66.0],
@@ -219,7 +219,7 @@ end  # table API
 end  # range table API
 
 
-@testset "PhyloPicPBDB — thumbnail grid" begin
+@testset "PhyloPic — thumbnail grid" begin
 
     # Offline tests: no network needed.
     #

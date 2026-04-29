@@ -61,7 +61,7 @@ import PhyloPicMakie
 include("dbapi.jl")
 include("pbdbdocs.jl")
 
-include("PhyloPicPBDB/PhyloPicPBDB.jl")
+include("PhyloPic/PhyloPic.jl")
 include("pbdbtools/pbdbtools.jl")
 include("TaxonTreeMakie/TaxonTreeMakie.jl")
 

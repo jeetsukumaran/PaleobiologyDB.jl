@@ -1,5 +1,5 @@
 # ---------------------------------------------------------------------------
-# PhyloPicPBDB — PBDB-PhyloPic data bridge (no Makie dependency)
+# PhyloPic — PBDB-PhyloPic data bridge (no Makie dependency)
 #
 # Maps PBDB taxon names to PhyloPic silhouette images via a two-stage pipeline:
 #

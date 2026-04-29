@@ -3,7 +3,7 @@
 #
 # Provides a composable overlay API that separates tree geometry extraction
 # from glyph rendering.  All rendering is delegated to
-# PaleobiologyDB.PhyloPicPBDB.augment_phylopic! so that placement math,
+# PaleobiologyDB.PhyloPic.augment_phylopic! so that placement math,
 # reactive axis-scale correction, and image caching are handled in one place.
 #
 # Public:
@@ -85,7 +85,7 @@ Add one PhyloPic silhouette per leaf tip of `tree` to `ax`.
 
 This is the primary tree-aware overlay API.  It computes anchor positions
 from the dendrogram layout and delegates all rendering to
-[`PaleobiologyDB.PhyloPicPBDB.augment_phylopic!`](@ref).
+[`PaleobiologyDB.PhyloPic.augment_phylopic!`](@ref).
 
 See also the convenience overload [`augment_tip_phylopic!`](@ref)
 which reads tree and layout directly from a `TaxonTreePlot`.
@@ -204,7 +204,7 @@ function augment_tip_phylopic!(
         fill!(x_anchors, xcol)
     end
 
-    PaleobiologyDB.PhyloPicPBDB.augment_phylopic!(
+    PaleobiologyDB.PhyloPic.augment_phylopic!(
         ax, x_anchors, tips.y;
         taxon = tips.names,
         placement = placement,

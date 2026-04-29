@@ -1,5 +1,5 @@
 # ---------------------------------------------------------------------------
-# PhyloPicPBDB — thumbnail grid: PBDB name-resolution bridge
+# PhyloPic — thumbnail grid: PBDB name-resolution bridge
 #
 # This file contains only the PBDB-specific parts of the thumbnail grid:
 # resolving taxon names → PhyloPic node UUIDs via phylopic_node, and
@@ -19,7 +19,7 @@
 #                   node_labels = taxon names (passed through as display labels)
 #
 # Makie, PhyloPicMakie, and phylopic_node are all in scope from the
-# enclosing PhyloPicPBDB module (phylopic.jl).
+# enclosing PhyloPic module (phylopic.jl).
 # ---------------------------------------------------------------------------
 
 # ---------------------------------------------------------------------------
