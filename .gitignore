@@ -1,4 +1,11 @@
-.claude/**
+
+# =====================================
+# VS Code
+# =====================================
+
+.vscode/*
+.codex
+.workflow-docs/*.code-workspace
 
 # =====================================
 # Quarto: output directories and formats
@@ -15,6 +22,7 @@ _book/
 # Quarto output cruft
 **/*_files/**
 */_imagify/**
+**/._*_xref.json
 
 # Computing environments
 **/.CondaPkg/**
@@ -72,6 +80,7 @@ __pycache__/
 *.pyo
 *.pyd
 *.ipynb
+*.quarto_ipynb
 
 # Virtual environments
 .env/
@@ -99,31 +108,24 @@ poetry.lock
 
 # ------- Julia -------
 
-# Julia package development
-/Manifest*.toml
+# For packages or "dynamic replicability";
+# For full static replicable snapshot running,
+# this needs to be committed
+Manifest.toml
 
 # Julia compiled packages (cache)
 .julia/compiled/
 
-# Julia package installations (optional to ignore)
+# Julia package installations
 .julia/packages/
 .julia/environments/
 
-# Julia REPL command history (optional)
+# Julia REPL command history
 .julia/logs/repl_history.jl
-
-# IMPORTANT: Keep Julia project and environment files
-# These are essential for reproducibility
-# DO NOT IGNORE:
-#   Project.toml
-#   Manifest.toml
 
 # =====================================
 # Editor / IDE-specific files
 # =====================================
-
-# VS Code
-.vscode/
 
 # Vim / Neovim
 *.swp
@@ -138,12 +140,11 @@ poetry.lock
 
 # Obsidian
 
-**/.obsidian/**
-**/.obsidian/workspace.json
-**/.obsidian/workspaces.json
-**/.obsidian/workspace-mobile.json
-**/.obsidian/plugins/obsidian-pandoc-reference-list/data.json
-**/.obsidian/plugins/recent-files-obsidian/data.json
+.obsidian/workspace.json
+.obsidian/workspaces.json
+.obsidian/workspace-mobile.json
+.obsidian/plugins/obsidian-pandoc-reference-list/data.json
+.obsidian/plugins/recent-files-obsidian/data.json
 
 # JetBrains IDEs
 .idea/
@@ -181,7 +182,7 @@ Thumbs.db
 build/
 dist/
 
-# If using Quarto to render to `docs/` for GitHub Pages, DO NOT ignore it:
+# If using Quarto to render to 'docs/' for GitHub Pages, DO NOT ignore it:
 # Uncomment the next line only if docs/ is NOT your Quarto output directory.
 # docs/
 
@@ -203,7 +204,10 @@ coverage/
 # Manual inclusion overrides
 # =====================================
 
-# !docs/  ← Uncomment this to *include* `docs/` if Quarto outputs there
+# !docs/  ← Uncomment this to *include* 'docs/' if Quarto outputs there
 
 
 /.quarto/
+
+/.luarc.json
+
