@@ -72,13 +72,6 @@ If the work touches more than one module or layer, the document must identify:
 - the shared contract or invariant
 - whether a foundational tranche is required before user-facing work
 
-If a public semantic is accepted through more than one entry surface, the
-document must also identify:
-
-- the canonical owner that normalizes that semantic
-- each supported public surface through which it may enter
-- which surfaces must be covered by verification
-
 ### Authorization boundary
 
 If disruptive redesign, deep refactor, clean-room replacement, migration, or
