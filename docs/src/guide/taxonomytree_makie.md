@@ -28,11 +28,12 @@ using PaleobiologyDB, PaleobiologyDB.Taxonomy
 
 tree = taxon_subtree("Carnivora"; leaf_rank = "family")
 
-fig, ax, p = taxonomytreeplot(tree; showtips = true)
+fig, ax, plt = taxonomytreeplot(tree; showtips = true)
 display(fig)
 ```
 
-`taxonomytreeplot` returns a 3-tuple `(fig, ax, plot_object)`.  The x-axis is
+`taxonomytreeplot` returns a `Makie.FigureAxisPlot` object containing the figure,
+axis, and plot object accessible via `.figure`, `.axis`, and `.plot`. The x-axis is
 automatically labelled with rank names at their dendrogram depth positions.
 
 ## Coloring by rank
@@ -41,7 +42,7 @@ Set `color_by_rank = true` to assign each branch and node a colour based on
 its taxonomic rank:
 
 ```julia
-fig, ax, p = taxonomytreeplot(tree;
+fig, ax, plt = taxonomytreeplot(tree;
     color_by_rank = true,
     showtips      = true,
 )
@@ -58,7 +59,7 @@ palette = Dict(
     "genus"  => :seagreen,
 )
 
-fig, ax, p = taxonomytreeplot(tree;
+fig, ax, plt = taxonomytreeplot(tree;
     color_by_rank = true,
     rank_palette  = palette,
     showtips      = true,
@@ -73,7 +74,7 @@ plot, giving a cleaner, more asymmetric appearance for trees with unequal
 branching:
 
 ```julia
-fig, ax, p = taxonomytreeplot(tree;
+fig, ax, plt = taxonomytreeplot(tree;
     ladderize = true,
     showtips  = true,
 )
@@ -84,7 +85,7 @@ fig, ax, p = taxonomytreeplot(tree;
 Internal nodes (non-leaf taxa) can be labelled with their taxon names:
 
 ```julia
-fig, ax, p = taxonomytreeplot(tree;
+fig, ax, plt = taxonomytreeplot(tree;
     showinternal      = true,
     internal_fontsize = 7,
     internal_color    = :gray50,
@@ -157,7 +158,7 @@ The horizontal gap is controlled by `phylopic_xoffset` (in data units):
 ```julia
 tree = taxon_subtree("Carnivora"; leaf_rank = "family")
 
-fig, ax, p = taxonomytreeplot(tree;
+fig, ax, plt = taxonomytreeplot(tree;
     showtips         = true,
     show_phylopic    = true,
     phylopic_xoffset = 0.5,
@@ -179,7 +180,7 @@ column, regardless of label length.  Increase `phylopic_xoffset` to control
 the column's distance from the deepest rank:
 
 ```julia
-fig, ax, p = taxonomytreeplot(tree;
+fig, ax, plt = taxonomytreeplot(tree;
     showtips         = true,
     show_phylopic    = true,
     phylopic_align   = true,
@@ -205,7 +206,7 @@ trees where leaves are spaced 2 units apart (the default `row_spacing`).  Set
 original image proportions:
 
 ```julia
-fig, ax, p = taxonomytreeplot(tree;
+fig, ax, plt = taxonomytreeplot(tree;
     showtips             = true,
     show_phylopic        = true,
     phylopic_glyph_size  = 0.35,
@@ -225,7 +226,7 @@ what happens:
 | `:error` | Throw an `ErrorException` |
 
 ```julia
-fig, ax, p = taxonomytreeplot(tree;
+fig, ax, plt = taxonomytreeplot(tree;
     show_phylopic       = true,
     phylopic_on_missing = :placeholder,
 )
@@ -250,7 +251,7 @@ and is always available once the package is installed.
 Makie's standard `save` function works with any output format:
 
 ```julia
-fig, ax, p = taxonomytreeplot(tree; showtips = true)
+fig, ax, plt = taxonomytreeplot(tree; showtips = true)
 
 save("carnivora_families.png", fig)
 save("carnivora_families.svg", fig)
@@ -263,7 +264,7 @@ Pass `figure_kwargs` and `axis_kwargs` (named tuples) to control the
 underlying `Figure` and `Axis`:
 
 ```julia
-fig, ax, p = taxonomytreeplot(tree;
+fig, ax, plt = taxonomytreeplot(tree;
     figure_kwargs = (; size = (1200, 900), backgroundcolor = :white),
     axis_kwargs   = (;
         title           = "Carnivora — family-level tree",

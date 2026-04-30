@@ -216,11 +216,13 @@ if _CAIRO_TTM_AVAILABLE
         @testset "TaxonomyTreeMakie — taxonomytreeplot smoke" begin
             tree = _mock_carnivora_tree()
 
-            @testset "taxonomytreeplot returns (Figure, Axis, TaxonomyTreePlot)" begin
-                fig, ax, p = taxonomytreeplot(tree)
+            @testset "taxonomytreeplot returns FigureAxisPlot" begin
+                result = taxonomytreeplot(tree)
+                @test result isa Makie.FigureAxisPlot
+                fig, ax, plt = result
                 @test fig isa CairoMakie.Figure
                 @test ax  isa CairoMakie.Axis
-                @test p   isa TaxonomyTreePlot
+                @test plt isa TaxonomyTreePlot
             end
 
             @testset "showtips = false does not error" begin
@@ -254,7 +256,7 @@ if _CAIRO_TTM_AVAILABLE
 
             @testset "auto-sized figure height respects leaf-count floor" begin
                 # Mock tree has 3 leaves; max(400, 3*18) = 400 → height ≥ 400.
-                fig, _, _ = taxonomytreeplot(tree)
+                fig, ax, plt = taxonomytreeplot(tree)
                 @test fig.scene.viewport[].widths[2] >= 400
             end
         end
@@ -296,15 +298,15 @@ if _CAIRO_TTM_AVAILABLE
         @testset "PhyloPic attributes are registered on the recipe" begin
             # Render with show_phylopic = false so no network calls are made,
             # then confirm the attribute observables exist and carry their defaults.
-            fig, ax, p = taxonomytreeplot(tree; show_phylopic = false)
-            @test p[:show_phylopic][]       == false
-            @test p[:phylopic_glyph_size][] ≈ 1.0
-            @test p[:phylopic_align][]      == false
-            @test p[:phylopic_xoffset][]    ≈ 0.65
-            @test p[:phylopic_yoffset][]    ≈ 0.3
-            @test p[:phylopic_on_missing][] == :skip
-            @test p[:phylopic_aspect][]     == :preserve
-            @test p[:row_spacing][]         ≈ 2.0
+            fig, ax, plt = taxonomytreeplot(tree; show_phylopic = false)
+            @test plt[:show_phylopic][]       == false
+            @test plt[:phylopic_glyph_size][] ≈ 1.0
+            @test plt[:phylopic_align][]      == false
+            @test plt[:phylopic_xoffset][]    ≈ 0.65
+            @test plt[:phylopic_yoffset][]    ≈ 0.3
+            @test plt[:phylopic_on_missing][] == :skip
+            @test plt[:phylopic_aspect][]     == :preserve
+            @test plt[:row_spacing][]         ≈ 2.0
         end
     end
 
@@ -358,7 +360,7 @@ if _CAIRO_TTM_AVAILABLE
             end
 
             @testset "taxonomytreeplot right margin widens with show_phylopic = true" begin
-                fig, ax, _ = taxonomytreeplot(
+                fig, ax, plt = taxonomytreeplot(
                     tree;
                     show_phylopic       = true,
                     phylopic_on_missing = :skip,
@@ -381,7 +383,7 @@ if _CAIRO_TTM_AVAILABLE
     if LIVE
         @testset "TaxonomyTreeMakie — set_rank_axis_ticks!" begin
             tree = _mock_carnivora_tree()
-            fig, ax, _p = taxonomytreeplot(tree; show_rank_ticks = false)
+            fig, ax, plt = taxonomytreeplot(tree; show_rank_ticks = false)
             set_rank_axis_ticks!(ax, tree)
             # Axis ticks should now reflect the three ranks present (order, family, genus)
             tick_positions, tick_labels = ax.xticks[]

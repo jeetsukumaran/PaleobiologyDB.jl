@@ -42,8 +42,8 @@ using PaleobiologyDB, PaleobiologyDB.Taxonomy, CairoMakie
 using CairoMakie
 using PaleobiologyDB
 
-fig, ax, p = taxonomytreeplot(taxon_subtree("Panthera"))
-tips = tip_positions(p)
+fig, ax, plt = taxonomytreeplot(taxon_subtree("Panthera"))
+tips = tip_positions(plt)
 # tips.names  — Vector{String} of leaf taxon names
 # tips.x      — x positions in data space
 # tips.y      — y positions in data space
@@ -149,20 +149,20 @@ using CairoMakie
 using PaleobiologyDB
 
 tree = taxon_subtree("Panthera")
-fig, ax, p = taxonomytreeplot(tree)
+fig, ax, plt = taxonomytreeplot(tree)
 
 # Silhouettes 1.0 data unit right of each leaf tip
-augment_tip_phylopic!(ax, p; xoffset = 1.0)
+augment_tip_phylopic!(ax, plt; xoffset = 1.0)
 
 # Anchor at tip-label origin so silhouettes appear after the text
-augment_tip_phylopic!(ax, p;
+augment_tip_phylopic!(ax, plt;
     anchor      = :tip_label_origin,
     tip_xoffset = 0.2,   # match recipe tip_xoffset attribute
     xoffset     = 0.5,
 )
 
 # Aligned column
-augment_tip_phylopic!(ax, p; align = true, xoffset = 0.2)
+augment_tip_phylopic!(ax, plt; align = true, xoffset = 0.2)
 ```
 
 See also [`tip_positions`](@ref), [`taxonomytreeplot`](@ref).
@@ -238,8 +238,8 @@ All keyword arguments are forwarded unchanged to the primary method.  See
 ## Examples
 
 ```julia
-fig, ax, p = taxonomytreeplot(taxon_subtree("Panthera"))
-augment_tip_phylopic!(ax, p; xoffset = 1.0)
+fig, ax, plt = taxonomytreeplot(taxon_subtree("Panthera"))
+augment_tip_phylopic!(ax, plt; xoffset = 1.0)
 ```
 """
 function augment_tip_phylopic!(

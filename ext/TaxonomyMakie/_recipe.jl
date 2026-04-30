@@ -447,14 +447,14 @@ end
         figure_kwargs::NamedTuple = (;),
         axis_kwargs::NamedTuple = (;),
         kwargs...,
-    ) -> Tuple{Makie.Figure, Makie.Axis, TaxonomyTreePlot}
+    ) -> Makie.FigureAxisPlot
 
 Create a standalone Makie figure containing a dendrogram of `tree`.
 
-Returns `(fig, ax, plot_object)`, which can be destructured:
+Returns a `Makie.FigureAxisPlot` object containing the figure, axis, and plot:
 
 ```julia
-fig, ax, p = taxonomytreeplot(tree; showtips = true)
+fig, ax, plt = taxonomytreeplot(tree; showtips = true)
 display(fig)
 save("tree.png", fig)
 ```
@@ -479,18 +479,18 @@ using PaleobiologyDB.TaxonomyTreeMakie
 tree = taxon_subtree("Carnivora"; leaf_rank = "family")
 
 # Basic dendrogram with tip labels
-fig, ax, p = taxonomytreeplot(tree; showtips = true)
+fig, ax, plt = taxonomytreeplot(tree; showtips = true)
 save("carnivora_families.png", fig)
 
 # Coloured by rank, ladderized
-fig2, ax2, p2 = taxonomytreeplot(tree;
+fig2, ax2, plt2 = taxonomytreeplot(tree;
     color_by_rank = true,
     ladderize     = true,
     showtips      = true,
 )
 
 # Custom figure and axis sizes
-fig3, ax3, p3 = taxonomytreeplot(tree;
+fig3, ax3, plt3 = taxonomytreeplot(tree;
     figure_kwargs = (; size = (1200, 800)),
     axis_kwargs   = (; title = "Carnivora families", yreversed = false),
 )
@@ -505,7 +505,7 @@ function taxonomytreeplot(
         figure_kwargs::NamedTuple = (;),
         axis_kwargs::NamedTuple = (;),
         kwargs...,
-    )::Tuple{Makie.Figure, Makie.Axis, TaxonomyTreePlot}
+    )::Makie.FigureAxisPlot
     # Auto-size the figure based on the number of leaves so that dense trees
     # are not cramped.  User-supplied figure_kwargs / axis_kwargs take
     # precedence via merge (last-writer wins in NamedTuple merge).
@@ -526,7 +526,7 @@ function taxonomytreeplot(
     ax = Makie.Axis(fig[1, 1]; effective_axis_kwargs...)
     p = taxonomytreeplot!(ax, tree; kwargs...)
     show_rank_ticks && set_rank_axis_ticks!(ax, tree)
-    return (fig, ax, p)
+    return Makie.FigureAxisPlot(fig, ax, p)
 end
 
 # ---------------------------------------------------------------------------
@@ -542,7 +542,7 @@ end
         figure_kwargs::NamedTuple = (;),
         axis_kwargs::NamedTuple = (;),
         kwargs...,
-    ) -> Tuple{Makie.Figure, Makie.Axis, TaxonomyTreePlot}
+    ) -> Makie.FigureAxisPlot
 
 Convenience method: look up `taxon_name` in the PBDB, build its subtree, and
 render it as a dendrogram in a standalone figure.
@@ -570,10 +570,10 @@ full attribute reference.
 using PaleobiologyDB, CairoMakie
 using PaleobiologyDB.Taxonomy.TaxonomyTreeMakie
 
-fig, ax, p = taxonomytreeplot("Carnivora"; leaf_rank = "family")
+fig, ax, plt = taxonomytreeplot("Carnivora"; leaf_rank = "family")
 save("carnivora.png", fig)
 
-fig2, _, _ = taxonomytreeplot("Canidae"; leaf_rank = "genus", ladderize = true, row_spacing = 1.5)
+fig2, ax2, plt2 = taxonomytreeplot("Canidae"; leaf_rank = "genus", ladderize = true, row_spacing = 1.5)
 ```
 """
 function taxonomytreeplot(
@@ -584,7 +584,7 @@ function taxonomytreeplot(
         figure_kwargs::NamedTuple = (;),
         axis_kwargs::NamedTuple = (;),
         kwargs...,
-    )::Tuple{Makie.Figure, Makie.Axis, TaxonomyTreePlot}
+    )::Makie.FigureAxisPlot
     tree = taxon_subtree(taxon_name; leaf_rank, strict_leaf_rank)
     return taxonomytreeplot(tree; show_rank_ticks, figure_kwargs, axis_kwargs, kwargs...)
 end

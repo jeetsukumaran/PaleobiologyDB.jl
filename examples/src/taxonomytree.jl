@@ -15,7 +15,7 @@ set_autocaching!(true)
 
 # Visualize the taxonomy
 fig, ax, plt = taxonomytreeplot(
-    "Elephantidae"; 
+    "Elephantidae";
     leaf_rank = "genus",
     show_phylopic = true
 )

@@ -197,7 +197,7 @@ using PaleobiologyDB: taxonomytreeplot, taxonomytreeplot!, set_rank_axis_ticks!
 
 # Build a subtree and render it — branches and nodes coloured by taxonomic rank
 tree = taxon_subtree("Carnivora"; leaf_rank = "family")
-fig, ax, p = taxonomytreeplot(tree; showtips = true, color_by_rank = true, ladderize = true)
+fig, ax, plt = taxonomytreeplot(tree; showtips = true, color_by_rank = true, ladderize = true)
 save("carnivora_families.png", fig)
 
 # Compose into an existing axis
@@ -215,10 +215,10 @@ using PaleobiologyDB.Taxonomy: taxon_subtree
 using PaleobiologyDB: taxonomytreeplot, augment_tip_phylopic!
 
 tree = taxon_subtree("Carnivora"; leaf_rank = "family")
-fig, ax, p = taxonomytreeplot(tree; showtips = true, color_by_rank = true, ladderize = true)
+fig, ax, plt = taxonomytreeplot(tree; showtips = true, color_by_rank = true, ladderize = true)
 
 # Overlay PhyloPic silhouettes at each leaf tip
-augment_tip_phylopic!(ax, p; xoffset = 0.5)
+augment_tip_phylopic!(ax, plt; xoffset = 0.5)
 save("carnivora_phylopic.png", fig)
 ```
 
@@ -304,7 +304,7 @@ Use `pbdb_count` to count records without downloading them.
 
 | Symbol | Description |
 |---|---|
-| `taxonomytreeplot` | Standalone figure; returns `(Figure, Axis, TaxonomyTreePlot)` |
+| `taxonomytreeplot` | Standalone figure; returns `Makie.FigureAxisPlot` |
 | `taxonomytreeplot!` | Add dendrogram to an existing axis |
 | `set_rank_axis_ticks!` | Label x-axis with rank names at their depth positions |
 | `tip_positions` | Extract leaf-tip coordinates from a tree or plot |

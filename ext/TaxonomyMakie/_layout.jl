@@ -354,8 +354,8 @@ using CairoMakie
 using PaleobiologyDB.TaxonomyTreeMakie
 
 tree = taxon_subtree("Panthera")
-fig, ax, p = taxonomytreeplot(tree)
-tips = tip_positions(p)   # convenience overload
+fig, ax, plt = taxonomytreeplot(tree)
+tips = tip_positions(plt)   # convenience overload
 # tips.names, tips.x, tips.y  — one entry per leaf
 ```
 

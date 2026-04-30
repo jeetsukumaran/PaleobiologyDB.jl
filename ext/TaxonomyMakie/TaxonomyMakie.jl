@@ -16,7 +16,7 @@ Public API — tree visualization:
 | Symbol | Description |
 |---|---|
 | `TaxonomyTreePlot` | Makie plot type |
-| `taxonomytreeplot` | Standalone figure; returns `(Figure, Axis, TaxonomyTreePlot)` |
+| `taxonomytreeplot` | Standalone figure; returns `Makie.FigureAxisPlot` |
 | `taxonomytreeplot!` | Add dendrogram to existing axis |
 | `set_rank_axis_ticks!` | Label x-axis with rank names |
 | `tip_positions` | Leaf-tip coordinates from a tree or plot |
