@@ -1,8 +1,11 @@
+using PaleobiologyDB.DataCaches: set_autocaching!
+using PaleobiologyDB.TaxonomyMakie: taxonomytreeplot 
 using CairoMakie
-using PaleobiologyDB.TaxonomyMakie: pbdb_phylopic_grid
+
+set_autocaching!(true)
 
 fig, ax, plt = taxonomytreeplot(
-    "Canis"; 
+    "Ursidae"; 
     leaf_rank = "species",
     show_phylopic = true
 )
