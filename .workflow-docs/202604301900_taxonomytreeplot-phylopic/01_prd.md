@@ -43,9 +43,10 @@ This duplicate ownership has produced shallow, overlapping mechanisms, inconsist
 
 When this effort is complete:
 
-- tree plots with PhyloPic glyphs render at correct visible size, correct aspect ratio, and correct placement relative to the intended leaf-label or leaf-tip anchor,
+- tree plots with PhyloPic glyphs render at correct visible size, correct aspect ratio, and correct placement relative to the intended leaf-label or leaf-position anchor,
 - the one-step convenience path `taxonomytreeplot(...; show_phylopic = true, ...)` remains available as an idiomatic happy-path wrapper,
 - the one-step wrapper is thin and built on the same lower-level tree-aware overlay path exposed explicitly to advanced users,
+- `PhyloPicMakie` exposes a flexible, user-friendly generic overlay surface for glyph placement relative to labels, markers, ticks, legends, and arbitrary explicit anchors, so that non-tree clients can reuse the same machinery,
 - `TaxonomyMakie` owns only tree-specific concerns such as leaf discovery, anchor derivation, label-relative layout policy, and convenience API,
 - `PhyloPicMakie` owns general glyph rendering behavior, shared Makie-space projection/rendering machinery, image loading/caching, and any renderer-general geometry helpers that are truly reusable,
 - all public naming and documentation are brought back into compliance with the active controlled vocabulary and `STYLE*` governance,
@@ -70,9 +71,10 @@ When this effort is complete:
 15. As a tester, I want direct verification of glyph size, aspect, and anchor placement, so that the historical failure mode is caught by automated checks.
 16. As a tester, I want at least one rendered tree+PhyloPic artifact checked as part of green state, so that purely geometric or no-error tests do not mask a visual regression.
 17. As a downstream package author using `PhyloPicMakie`, I want any general glyph-rendering improvements to live in `PhyloPicMakie`, so that other clients can benefit from the same fixes.
-18. As a downstream tree-plot maintainer, I want tree-specific ergonomic wrappers to remain available, so that architectural cleanup does not force an awkward user experience.
-19. As a reviewer, I want the redesign to distinguish owner-level fixes from local symptom patches, so that another anti-fix is not mistaken for resolution.
-20. As a future maintainer, I want the final module boundaries to make it obvious where taxonomy resolution ends and generic Makie glyph rendering begins, so that new features extend the right layer.
+18. As a downstream package author using `PhyloPicMakie`, I want a generic anchor-driven overlay API that works for labels, markers, ticks, legends, and explicit coordinates, so that I do not need tree-specific internals to place silhouettes cleanly.
+19. As a downstream tree-plot maintainer, I want tree-specific ergonomic wrappers to remain available, so that architectural cleanup does not force an awkward user experience.
+20. As a reviewer, I want the redesign to distinguish owner-level fixes from local symptom patches, so that another anti-fix is not mistaken for resolution.
+21. As a future maintainer, I want the final module boundaries to make it obvious where taxonomy resolution ends and generic Makie glyph rendering begins, so that new features extend the right layer.
 
 ## Authorized disruption boundary
 
@@ -87,7 +89,7 @@ When this effort is complete:
   - Yes, in principle, because this surface is not yet externally adopted and the user explicitly allows best-practice breaks.
   - Every proposed public API break or rename must still be explicitly flagged and ratified by the user before implementation is finalized.
 - required migration or compatibility obligations:
-  - Compatibility shims and migration notes are not required by default.
+  - Compatibility shims, deprecation aliases, and migration notes are not required by default.
   - Final documentation must accurately and comprehensively reflect the approved final public surface.
   - If external-use assumptions change later, migration/compatibility obligations must be revisited with the user.
 - non-negotiable protections:
@@ -112,6 +114,7 @@ When this effort is complete:
 - Existing coupling, duplication, or design debt:
   - `show_phylopic = true` bypasses the explicit `augment_tip_phylopic!` path and duplicates rendering ownership in the recipe layer.
   - Tree-specific overlay code duplicates image loading, glyph sizing, and label-relative placement logic that overlaps with general `PhyloPicMakie` responsibilities.
+  - The current design does not cleanly expose a general-purpose anchored-overlay surface in `PhyloPicMakie`, which encourages tree clients to grow their own partial rendering logic.
   - The public surface is inconsistent with the controlled vocabulary: `tip_positions`, `augment_tip_phylopic!`, `showtips`, and `tip_*` names remain despite `tip` being proscribed.
   - Tests in `test/taxonomytree_makie.jl` cover offline layout and smoke behavior, but do not verify actual size, aspect, or placement correctness.
   - Documentation describes tree-specific PhyloPic options in data-unit terms tied to the current implementation, which may not survive a better architectural split unchanged.
@@ -121,20 +124,22 @@ When this effort is complete:
 - Major modules and responsibilities:
   - A `TaxonomyMakie` tree-plot module owns taxonomy-tree layout, leaf extraction, label policy, plot orchestration, and user-facing convenience wrappers.
   - A tree-aware overlay planning module in `TaxonomyMakie` owns derivation of final glyph anchors from leaf positions and chosen label-relative policy.
+  - `PhyloPicMakie` owns a generic anchor-driven overlay API for label-relative, marker-relative, tick-relative, legend-relative, and explicit-anchor glyph placement.
   - `PhyloPicMakie` owns all general-purpose Makie glyph rendering and image geometry behavior that is not tree-specific.
   - The Paleobiology/PhyloPic bridge owns PBDB taxon-to-PhyloPic node/image resolution and any PBDB-specific lookup strategy, but not generic rendering policy.
 - Ownership boundaries:
   - Tree-specific questions such as “which leaves receive glyphs,” “what is a label-relative anchor,” and “how should aligned versus inline tree columns behave” belong to `TaxonomyMakie`.
-  - General glyph-rendering questions such as image aspect preservation, renderer-safe size computation, rotation, mirroring, missing-image handling, and Makie-space conversion belong to `PhyloPicMakie`.
+  - General glyph-rendering questions such as image aspect preservation, renderer-safe size computation, rotation, mirroring, missing-image handling, Makie-space conversion, and reusable anchored-placement mechanics belong to `PhyloPicMakie`.
   - Any helper that is generic enough to benefit multiple clients should live in `PhyloPicMakie`, not remain hidden in `TaxonomyMakie`.
 - Shared contracts and invariants:
   - Glyphs must be visibly sized and aspect-correct on anisotropic axes and after viewport/auto-limit changes.
   - One-step and two-step tree APIs must route through the same underlying overlay machinery rather than diverging.
+  - Tree overlays should use the same generic `PhyloPicMakie` anchor/overlay substrate that non-tree clients use, rather than a tree-only rendering fork.
   - Tree-specific wrappers must remain ergonomic, but must not become owners of general rendering logic.
   - Controlled vocabulary must be consistent across code, tests, docs, and public API.
 - Target deep modules and simplified interfaces:
   - The integrated `show_phylopic = true` path becomes a thin wrapper over the same lower-level tree-aware overlay pipeline exposed explicitly to advanced callers.
-  - `PhyloPicMakie` provides a sufficiently expressive low-level rendering interface for pre-resolved images and projected or data-space anchors, so tree clients do not reimplement Makie mechanics.
+  - `PhyloPicMakie` provides a sufficiently expressive anchor/overlay interface for pre-resolved images and projected or data-space anchors, so tree clients, tick/legend helpers, and arbitrary plot overlays do not reimplement Makie mechanics.
   - Tree overlay planning becomes a deep, testable module that translates leaf geometry plus label policy into anchor instructions without owning pixel/data rendering internals.
 
 ## Implementation decisions
@@ -146,6 +151,7 @@ When this effort is complete:
   - a composable two-step flow where callers plot first and overlay second.
 - The final design must prefer Makie-supported projection and coordinate-space tools over ad hoc viewport/data-limit reconstruction wherever feasible.
 - Public naming cleanup is in scope and desired, especially where current names violate controlled vocabulary.
+- Current public `tip*` surface should be cleanly refactored to `leaf*` equivalents with no deprecation layer, unless the user later explicitly requests transitional aliases.
 - Because external adoption is effectively zero, API cleanup may proceed more aggressively than it would in a mature released surface, but only with explicit user sign-off on the final break set.
 - No downstream implementation tranche may assume that compatibility wrappers are required by default; that question is already user-scoped as “not required unless later requested.”
 - Live verification should use `set_autocaching!(true)` for PBDB and PhyloPic-heavy paths to keep green-state checks tractable.
@@ -163,8 +169,13 @@ When this effort is complete:
   - **Tested**: yes
 
 - **Name**: `PhyloPicMakie` general glyph rendering core
-  - **Responsibility**: Render pre-resolved image matrices in Makie with correct aspect, placement, rotation, missing-image policy, and reactive space handling.
-  - **Interface**: General `augment_phylopic!` and related low-level calls for explicit coordinates, plus any newly required generic projected-anchor support. Failure modes include invalid rendering options, mismatched vector lengths, unsupported rotation/aspect values, and missing images under `:error`.
+  - **Responsibility**: Render pre-resolved image matrices in Makie with correct aspect, placement, rotation, missing-image policy, reactive space handling, and reusable anchored-placement support.
+  - **Interface**: General `augment_phylopic!` and related low-level calls for explicit coordinates, plus a generic anchor/overlay surface for label-, marker-, tick-, legend-, and projected-anchor workflows. Failure modes include invalid rendering options, mismatched vector lengths, unsupported rotation/aspect values, unsupported anchor specifications, and missing images under `:error`.
+  - **Tested**: yes
+
+- **Name**: `PhyloPicMakie` generic anchor and placement layer
+  - **Responsibility**: Normalize high-level placement requests such as “offset from this rendered label” or “attach to this marker/tick/legend anchor” into stable render instructions for the general glyph core.
+  - **Interface**: User-facing or helper-facing anchor-specification types and placement adapters that can serve trees and non-tree clients alike. Failure modes include ambiguous anchor semantics, unsupported host-object kinds, or anchor specifications that cannot be resolved under the active Makie scene state.
   - **Tested**: yes
 
 - **Name**: Paleobiology/PhyloPic bridge
@@ -195,7 +206,7 @@ When this effort is complete:
   - No repo-local `CONTRIBUTING*.md` or `STYLE*.md` files were found in the checked-out `PhyloPicMakie.jl` root. Work there remains governed by the active project governance set for this run plus the explicit upstream primary-source obligations listed below.
 - Vocabulary decisions and required cleanup:
   - `tip` terminology is to be treated as legacy debt and cleaned up toward `leaf` terminology.
-  - Current names such as `tip_positions`, `augment_tip_phylopic!`, `showtips`, `tip_xoffset`, and `tip_yoffset` are not vocabulary-compliant and should be reviewed for rename or replacement.
+  - Current names such as `tip_positions`, `augment_tip_phylopic!`, `showtips`, `tip_xoffset`, and `tip_yoffset` are not vocabulary-compliant and should be hard-renamed or replaced with `leaf*` equivalents.
   - `edge`, not `branch`, remains the canonical structural term in code identifiers.
   - Public surfaces and docs must continue to use canonical project spellings such as `rootnode`, `edgeweight`, `lineageunits`, and `node_positions`.
   - Downstream work must not preserve the appearance of vocabulary compliance while silently retaining proscribed legacy identifiers without explicit exception approval.
@@ -291,13 +302,13 @@ When this effort is complete:
 
 ## Open questions
 
-- **Question**: Should current public `tip*` names be hard-renamed immediately to `leaf*` equivalents, or should an intermediate alias/deprecation period be preserved temporarily even though the surface is unreleased?
-  - **Owner**: user plus implementation tranche owner.
-  - **Suggested resolution path**: produce the proposed final public naming table before the tranche that changes public API identifiers and get explicit user approval.
-
-- **Question**: Which Makie-compliant lower-level mechanism should become the long-term generic rendering substrate for label-relative tree overlays: extending the existing `PhyloPicMakie` `image!`-based path, or adding a more explicit projected-anchor primitive that tree clients can feed with precomputed pixel/data anchor information?
+- **Question**: Which low-level `PhyloPicMakie` mechanism should power the new generic anchored-overlay API when placement depends on rendered screen geometry?
+  - **Plain-language form**: for cases like tree labels, axis tick labels, legends, or other rendered objects whose final on-screen location matters, should `PhyloPicMakie`:
+    - extend its current reactive data-space `image!` path until it can robustly express those screen-dependent placements itself, or
+    - adopt an explicit projected-anchor primitive so higher-level clients can hand it a resolved screen-space or pixel-space anchor and let the renderer handle the rest?
   - **Owner**: first foundational tranche.
-  - **Suggested resolution path**: prototype both within the approved disruption boundary, measure them against resize/reactivity and placement tests, and keep the owner-level logic in the deepest reusable layer.
+  - **Suggested resolution path**: prototype both within the approved disruption boundary, measure them against resize/reactivity and placement tests, and keep the general-purpose winner in `PhyloPicMakie` so tree, tick, legend, marker, and arbitrary-overlay clients can all share it.
+  - **Current recommendation**: make the product-level decision now that `PhyloPicMakie` should grow a first-class generic anchored-overlay surface; inside that boundary, bias toward a reusable projected-anchor primitive if rendered-object screen geometry is the true contract, because that keeps Makie-space projection mechanics in the general renderer and keeps `TaxonomyMakie` focused on leaf and label policy rather than renderer internals.
 
 ## Further notes
 
