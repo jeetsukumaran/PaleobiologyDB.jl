@@ -47,6 +47,7 @@ When this effort is complete:
 - the one-step convenience path `taxonomytreeplot(...; show_phylopic = true, ...)` remains available as an idiomatic happy-path wrapper,
 - the one-step wrapper is thin and built on the same lower-level tree-aware overlay path exposed explicitly to advanced users,
 - `PhyloPicMakie` exposes a flexible, user-friendly generic overlay surface for glyph placement relative to labels, markers, ticks, legends, and arbitrary explicit anchors, so that non-tree clients can reuse the same machinery,
+- `PhyloPicMakie.jl` ships standalone minimal working example scripts in `examples/src` with an isolated `examples` environment, so that its public overlay interface can be demonstrated and exercised independently of `PaleobiologyDB.jl`,
 - `TaxonomyMakie` owns only tree-specific concerns such as leaf discovery, anchor derivation, label-relative layout policy, and convenience API,
 - `PhyloPicMakie` owns general glyph rendering behavior, shared Makie-space projection/rendering machinery, image loading/caching, and any renderer-general geometry helpers that are truly reusable,
 - all public naming and documentation are brought back into compliance with the active controlled vocabulary and `STYLE*` governance,
@@ -72,9 +73,10 @@ When this effort is complete:
 16. As a tester, I want at least one rendered tree+PhyloPic artifact checked as part of green state, so that purely geometric or no-error tests do not mask a visual regression.
 17. As a downstream package author using `PhyloPicMakie`, I want any general glyph-rendering improvements to live in `PhyloPicMakie`, so that other clients can benefit from the same fixes.
 18. As a downstream package author using `PhyloPicMakie`, I want a generic anchor-driven overlay API that works for labels, markers, ticks, legends, and explicit coordinates, so that I do not need tree-specific internals to place silhouettes cleanly.
-19. As a downstream tree-plot maintainer, I want tree-specific ergonomic wrappers to remain available, so that architectural cleanup does not force an awkward user experience.
-20. As a reviewer, I want the redesign to distinguish owner-level fixes from local symptom patches, so that another anti-fix is not mistaken for resolution.
-21. As a future maintainer, I want the final module boundaries to make it obvious where taxonomy resolution ends and generic Makie glyph rendering begins, so that new features extend the right layer.
+19. As a downstream package author evaluating `PhyloPicMakie`, I want standalone runnable examples in `examples/src` with an isolated `examples` environment, so that I can learn and verify the public overlay interface without depending on `PaleobiologyDB.jl`.
+20. As a downstream tree-plot maintainer, I want tree-specific ergonomic wrappers to remain available, so that architectural cleanup does not force an awkward user experience.
+21. As a reviewer, I want the redesign to distinguish owner-level fixes from local symptom patches, so that another anti-fix is not mistaken for resolution.
+22. As a future maintainer, I want the final module boundaries to make it obvious where taxonomy resolution ends and generic Makie glyph rendering begins, so that new features extend the right layer.
 
 ## Authorized disruption boundary
 
@@ -118,6 +120,7 @@ When this effort is complete:
   - The public surface is inconsistent with the controlled vocabulary: `tip_positions`, `augment_tip_phylopic!`, `showtips`, and `tip_*` names remain despite `tip` being proscribed.
   - Tests in `test/taxonomytree_makie.jl` cover offline layout and smoke behavior, but do not verify actual size, aspect, or placement correctness.
   - Documentation describes tree-specific PhyloPic options in data-unit terms tied to the current implementation, which may not survive a better architectural split unchanged.
+  - `PhyloPicMakie.jl` does not currently ship an isolated `examples` environment or standalone public-interface show-off scripts, which makes it harder to validate and communicate the generic overlay surface independently of tree clients.
 
 ## Target architecture
 
@@ -135,6 +138,7 @@ When this effort is complete:
   - Glyphs must be visibly sized and aspect-correct on anisotropic axes and after viewport/auto-limit changes.
   - One-step and two-step tree APIs must route through the same underlying overlay machinery rather than diverging.
   - Tree overlays should use the same generic `PhyloPicMakie` anchor/overlay substrate that non-tree clients use, rather than a tree-only rendering fork.
+  - `PhyloPicMakie.jl` standalone examples must run in an isolated `examples` environment and demonstrate the public interface without any dependency on `PaleobiologyDB.jl`.
   - Tree-specific wrappers must remain ergonomic, but must not become owners of general rendering logic.
   - Controlled vocabulary must be consistent across code, tests, docs, and public API.
 - Target deep modules and simplified interfaces:
@@ -184,8 +188,8 @@ When this effort is complete:
   - **Tested**: yes
 
 - **Name**: Documentation and rendered-example verification layer
-  - **Responsibility**: Ensure the final public surface, examples, and rendered artifacts stay synchronized with the approved architecture.
-  - **Interface**: Guide pages, API reference pages, example scripts, and render-check harnesses. Failure modes include outdated examples, docs that describe superseded keywords, and render artifacts that contradict intended placement behavior.
+  - **Responsibility**: Ensure the final public surface, standalone `PhyloPicMakie.jl` examples, tree examples, and rendered artifacts stay synchronized with the approved architecture.
+  - **Interface**: Guide pages, API reference pages, isolated `examples/src` scripts with an `examples` project where required, and render-check harnesses. Failure modes include outdated examples, docs that describe superseded keywords, example environments that drift from package reality, and render artifacts that contradict intended placement behavior.
   - **Tested**: yes
 
 ## Governance and controlled vocabulary
@@ -234,6 +238,17 @@ When this effort is complete:
   - `/home/jeetsukumaran/site/storage/local/computing/research/20260414_PhyloPicMakie.jl/PhyloPicMakie.jl/test/test_coordinates.jl`
   - `/home/jeetsukumaran/site/storage/local/computing/research/20260414_PhyloPicMakie.jl/PhyloPicMakie.jl/test/test_render_core.jl`
   - `/home/jeetsukumaran/site/storage/local/computing/research/20260414_PhyloPicMakie.jl/PhyloPicMakie.jl/test/test_makie_integration.jl`
+- Additional graph-stack primary sources for standalone `PhyloPicMakie.jl` examples:
+  - `/home/jeetsukumaran/site/storage/local/00_resources/codebases-and-documentation/Graphs.jl/README.md`
+  - `/home/jeetsukumaran/site/storage/local/00_resources/codebases-and-documentation/Graphs.jl/docs/src/first_steps/construction.md`
+  - `/home/jeetsukumaran/site/storage/local/00_resources/codebases-and-documentation/Graphs.jl/docs/src/first_steps/plotting.md`
+  - `/home/jeetsukumaran/site/storage/local/00_resources/codebases-and-documentation/MetaGraphsNext.jl/README.md`
+  - `/home/jeetsukumaran/site/storage/local/00_resources/codebases-and-documentation/MetaGraphsNext.jl/docs/src/index.md`
+  - `/home/jeetsukumaran/site/storage/local/00_resources/codebases-and-documentation/MetaGraphsNext.jl/docs/src/api.md`
+  - `/home/jeetsukumaran/site/storage/local/00_resources/codebases-and-documentation/MetaGraphsNext.jl/src/metagraph.jl`
+  - `/home/jeetsukumaran/site/storage/local/00_resources/codebases-and-documentation/GraphMakie.jl/README.md`
+  - `/home/jeetsukumaran/site/storage/local/00_resources/codebases-and-documentation/GraphMakie.jl/docs/src/index.md`
+  - `/home/jeetsukumaran/site/storage/local/00_resources/codebases-and-documentation/GraphMakie.jl/src/recipes.jl`
 - `PaleobiologyDB.jl` current-state sources:
   - `examples/src/taxonomytree.jl`
   - `ext/TaxonomyMakie/_layout.jl`
@@ -255,6 +270,7 @@ When this effort is complete:
   - no unauthorized regressions in unaffected plotting or PhyloPic functionality.
 - Required docs, example builds, or integration outputs:
   - updated API docs and guide pages for any renamed or redesigned public surface,
+  - standalone `PhyloPicMakie.jl` examples in `examples/src` runnable from an isolated `examples` project, independent of `PaleobiologyDB.jl`,
   - a rendered tree+PhyloPic example artifact demonstrating visible, correctly placed glyphs,
   - updated example script(s) when user-facing workflow changes.
 - Migration and compatibility verification obligations:
@@ -275,6 +291,7 @@ When this effort is complete:
   - docs for any touched pages,
   - at least one example render artifact.
 - What examples or integration artifacts must be checked:
+  - at least one standalone `PhyloPicMakie.jl` example run from `julia --project=examples examples/src/<name>.jl`,
   - `examples/src/taxonomytree.jl`,
   - one rendered output showing `show_phylopic = true`,
   - one explicit two-step overlay flow using the lower-level tree-aware API,

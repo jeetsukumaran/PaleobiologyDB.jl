@@ -101,15 +101,88 @@ If Makie host-framework behavior proves the projected-anchor bias unworkable, th
 - User story 15: tests that catch the historical bug
 - User story 17: shared `PhyloPicMakie` ownership for generic improvements
 - User story 18: generic anchor-driven overlay API
-- User story 20: distinguish owner-level fixes from symptom patches
-- User story 21: clear final module boundaries
+- User story 21: distinguish owner-level fixes from symptom patches
+- User story 22: clear final module boundaries
 
 ---
 
-## Tranche 2: Migrate TaxonomyMakie to Shared Leaf Overlay Planning
+## Tranche 2: Build Standalone PhyloPicMakie Examples Environment and MWE Gallery
 
 **Type**: AFK
 **Blocked by**: Tranche 1
+
+### Parent PRD
+
+`01_prd.md`
+
+### Governance and required reading
+
+- Mandated line-by-line reading of all relevant `CONTRIBUTING*.md`, `STYLE*.md`, and user-supplied governance documents listed above.
+- Mandated line-by-line reading of `STYLE-docs.md`, `STYLE-makie.md`, `STYLE-verification.md`, and `STYLE-vocabulary.md` in both repositories.
+- Mandated reading of the `PhyloPicMakie.jl` public-surface and verification owners named in the PRD, especially:
+  - `src/PhyloPicMakie.jl`
+  - `src/_coordinates.jl`
+  - `src/_render_core.jl`
+  - `src/_augment_api.jl`
+  - `test/test_makie_integration.jl`
+- Mandated reading of the additional graph-stack primary sources named in the PRD, especially:
+  - `/home/jeetsukumaran/site/storage/local/00_resources/codebases-and-documentation/Graphs.jl/README.md`
+  - `/home/jeetsukumaran/site/storage/local/00_resources/codebases-and-documentation/Graphs.jl/docs/src/first_steps/construction.md`
+  - `/home/jeetsukumaran/site/storage/local/00_resources/codebases-and-documentation/Graphs.jl/docs/src/first_steps/plotting.md`
+  - `/home/jeetsukumaran/site/storage/local/00_resources/codebases-and-documentation/MetaGraphsNext.jl/README.md`
+  - `/home/jeetsukumaran/site/storage/local/00_resources/codebases-and-documentation/MetaGraphsNext.jl/docs/src/index.md`
+  - `/home/jeetsukumaran/site/storage/local/00_resources/codebases-and-documentation/MetaGraphsNext.jl/docs/src/api.md`
+  - `/home/jeetsukumaran/site/storage/local/00_resources/codebases-and-documentation/MetaGraphsNext.jl/src/metagraph.jl`
+  - `/home/jeetsukumaran/site/storage/local/00_resources/codebases-and-documentation/GraphMakie.jl/README.md`
+  - `/home/jeetsukumaran/site/storage/local/00_resources/codebases-and-documentation/GraphMakie.jl/docs/src/index.md`
+  - `/home/jeetsukumaran/site/storage/local/00_resources/codebases-and-documentation/GraphMakie.jl/src/recipes.jl`
+
+### What to build
+
+Build a standalone `PhyloPicMakie.jl` examples environment and minimal working example gallery that showcases the approved public interface independently of `PaleobiologyDB.jl`.
+
+This is a user-facing and stabilization-oriented tranche. It should:
+
+- create an `examples` project in `PhyloPicMakie.jl`,
+- add runnable scripts under `examples/src`,
+- ensure the examples can be invoked as `julia --project=examples examples/src/<name>.jl`,
+- keep the examples isolated from `PaleobiologyDB.jl`,
+- use `Graphs.jl`, `MetaGraphsNext.jl`, and `GraphMakie.jl` where useful to provide graph abstractions and rendered scenes onto which PhyloPic overlays are plotted,
+- showcase the public overlay interface rather than private internals,
+- include at least one graph-oriented example that exercises the shared hand-off architecture in a non-tree context.
+
+The goal is not a generic graph-visualization subsystem. The goal is a compact, credible gallery of public-interface examples that prove `PhyloPicMakie.jl` stands on its own as a reusable Makie overlay package.
+
+### How to verify
+
+- **Manual**:
+  1. In `PhyloPicMakie.jl`, run at least one standalone example as `julia --project=examples examples/src/<name>.jl`.
+  2. Inspect that the example runs without `PaleobiologyDB.jl` in the environment and produces the intended plot or rendered artifact.
+  3. Run at least one graph-based example using `Graphs.jl`, `MetaGraphsNext.jl`, or `GraphMakie.jl` support and inspect that the PhyloPic overlay behavior is visibly correct.
+- **Automated**:
+  - In `PhyloPicMakie.jl`, run `julia --project=. -e 'import Pkg; Pkg.test()'`.
+  - If examples are wired into docs or verification harnesses, run `julia --project=docs docs/make.jl` in `PhyloPicMakie.jl`.
+  - Add a lightweight verification path, script check, or CI-friendly smoke run so the examples environment does not silently rot.
+
+### Acceptance criteria
+
+- [ ] Given a fresh `PhyloPicMakie.jl` checkout, when a user runs `julia --project=examples examples/src/<name>.jl`, then the example executes in an isolated examples environment and demonstrates the public overlay interface without depending on `PaleobiologyDB.jl`.
+- [ ] Given at least one graph-oriented example built on `Graphs.jl`, `MetaGraphsNext.jl`, or `GraphMakie.jl`, then the example showcases a realistic reusable overlay scenario without introducing a tree-specific dependency or private-interface coupling.
+
+### User stories addressed
+
+- User story 8: trustworthy final docs and API reference
+- User story 17: shared `PhyloPicMakie` ownership for generic improvements
+- User story 18: generic anchor-driven overlay API
+- User story 19: standalone runnable `PhyloPicMakie` examples
+- User story 22: clear final module boundaries
+
+---
+
+## Tranche 3: Migrate TaxonomyMakie to Shared Leaf Overlay Planning
+
+**Type**: AFK
+**Blocked by**: Tranche 2
 
 ### Parent PRD
 
@@ -168,15 +241,15 @@ This is the cross-package migration tranche. It should:
 - User story 9: one owner for general glyph rendering
 - User story 10: one owner for tree-specific anchor semantics
 - User story 11: Makie-supported projection contracts
-- User story 19: keep tree wrappers ergonomic
-- User story 21: clear final module boundaries
+- User story 20: keep tree wrappers ergonomic
+- User story 22: clear final module boundaries
 
 ---
 
-## Tranche 3: Finalize Public Surface and Vocabulary Cleanup
+## Tranche 4: Finalize Public Surface and Vocabulary Cleanup
 
 **Type**: HITL
-**Blocked by**: Tranche 2
+**Blocked by**: Tranche 3
 
 ### Parent PRD
 
@@ -229,15 +302,15 @@ This tranche is `HITL` because the user explicitly reserved approval rights over
 - User story 8: trustworthy final docs and API reference
 - User story 12: vocabulary cleanup to `leaf*`
 - User story 13: explicit approval of API changes
-- User story 20: distinguish owner-level fixes from symptom patches
-- User story 21: clear final module boundaries
+- User story 21: distinguish owner-level fixes from symptom patches
+- User story 22: clear final module boundaries
 
 ---
 
-## Tranche 4: Stabilize Verification, Docs, and Rendered Artifacts
+## Tranche 5: Stabilize Verification, Docs, and Rendered Artifacts
 
 **Type**: AFK
-**Blocked by**: Tranche 3
+**Blocked by**: Tranche 4
 
 ### Parent PRD
 
@@ -255,6 +328,8 @@ This tranche is `HITL` because the user explicitly reserved approval rights over
   - `docs/src/api/taxonomytree_makie.md`
   - `docs/src/guide/phylopic_makie.md`
   - `docs/src/api/phylopic_makie.md`
+  - `/home/jeetsukumaran/site/storage/local/computing/research/20260414_PhyloPicMakie.jl/PhyloPicMakie.jl/examples/Project.toml`
+  - `/home/jeetsukumaran/site/storage/local/computing/research/20260414_PhyloPicMakie.jl/PhyloPicMakie.jl/examples/src`
   - `/home/jeetsukumaran/site/storage/local/computing/research/20260414_PhyloPicMakie.jl/PhyloPicMakie.jl/test/test_makie_integration.jl`
 
 ### What to build
@@ -266,6 +341,7 @@ This is the stabilization tranche. It should:
 - ensure automated coverage would have caught the original tiny-glyph failure,
 - harden resize, relimit, and anchor-relationship checks,
 - ensure docs and examples describe the approved final surface exactly,
+- keep the standalone `PhyloPicMakie.jl` examples environment healthy and aligned with the finalized public overlay interface,
 - produce at least one rendered tree plus PhyloPic artifact and one explicit two-step overlay artifact,
 - keep live verification practical by using `set_autocaching!(true)` for slow PBDB and PhyloPic-heavy checks.
 
@@ -273,18 +349,19 @@ This is the stabilization tranche. It should:
 
 - **Manual**:
   1. Enable `set_autocaching!(true)` for live example checks.
-  2. Run the final `examples/src/taxonomytree.jl` flow and inspect the rendered artifact.
-  3. Run one explicit two-step leaf overlay example and inspect the rendered artifact.
-  4. Perform at least one resize or relimit scenario and confirm the artifact remains visually correct.
+  2. Run at least one standalone `PhyloPicMakie.jl` example as `julia --project=examples examples/src/<name>.jl` and inspect the rendered output.
+  3. Run the final `examples/src/taxonomytree.jl` flow and inspect the rendered artifact.
+  4. Run one explicit two-step leaf overlay example and inspect the rendered artifact.
+  5. Perform at least one resize or relimit scenario and confirm the artifact remains visually correct.
 - **Automated**:
   - In `PaleobiologyDB.jl`, run `julia --project=test test/runtests.jl`.
   - In `PaleobiologyDB.jl`, run `julia --project=docs docs/make.jl`.
   - If this tranche changes `PhyloPicMakie.jl` verification or docs assets, run `julia --project=. -e 'import Pkg; Pkg.test()'` and `julia --project=docs docs/make.jl` in `PhyloPicMakie.jl`.
-  - Ensure the example and rendered-artifact generation path is part of tranche verification, not an optional manual afterthought.
+  - Ensure the standalone `PhyloPicMakie.jl` examples environment and the rendered-artifact generation path are part of tranche verification, not optional manual afterthoughts.
 
 ### Acceptance criteria
 
-- [ ] Given the approved final tree and generic overlay surfaces, when tests, docs builds, and example or artifact checks run, then they produce a visible correctly placed tree-plus-PhyloPic happy path and an explicit two-step overlay happy path that match the documented behavior.
+- [ ] Given the approved final tree and generic overlay surfaces, when tests, docs builds, and example or artifact checks run, then they produce a visible correctly placed standalone `PhyloPicMakie.jl` happy path, a tree-plus-PhyloPic happy path, and an explicit two-step overlay happy path that match the documented behavior.
 - [ ] Given resize, relimit, or slow live lookup conditions, then the verification suite and cached example workflow catch regressions without depending on uncached ad hoc manual probing.
 
 ### User stories addressed
