@@ -23,7 +23,7 @@ TaxonomyMakie = "Makie"
 
 [sources]
 DataCaches = {url = "https://github.com/JuliaData/DataCaches.jl.git"}
-PhyloPicMakie = {url = "https://github.com/jeetsukumaran/PhyloPicMakie.jl.git", rev = "20260501T1352--tranche02"}
+PhyloPicMakie = {url = "https://github.com/jeetsukumaran/PhyloPicMakie.jl.git"}
 
 [compat]
 Aqua = "0.8"
