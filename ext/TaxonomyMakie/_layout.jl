@@ -1,5 +1,5 @@
 # ---------------------------------------------------------------------------
-# TaxonomyTreeMakie — pure dendrogram layout
+# TaxonomyMakie — pure dendrogram layout
 #
 # All functions here are pure: they depend only on their arguments and produce
 # no side effects.  They can be tested without loading Makie.
@@ -201,8 +201,8 @@ import Graphs
 tree = taxon_subtree("Carnivora"; leaf_rank = "family")
 
 # Access the extension layout function after loading Makie:
-xs, ys = PaleobiologyDB.TaxonomyTreeMakie._compute_dendrogram_layout(tree)
-xs, ys = PaleobiologyDB.TaxonomyTreeMakie._compute_dendrogram_layout(tree; row_spacing = 2.0)
+xs, ys = PaleobiologyDB.TaxonomyMakie._compute_dendrogram_layout(tree)
+xs, ys = PaleobiologyDB.TaxonomyMakie._compute_dendrogram_layout(tree; row_spacing = 2.0)
 ```
 """
 function _compute_dendrogram_layout(
@@ -327,13 +327,13 @@ function _dendrogram_segment_pairs(
 end
 
 # ---------------------------------------------------------------------------
-# Public: tip coordinate extraction
+# Public: leaf coordinate extraction
 # ---------------------------------------------------------------------------
 
 """
-    tip_positions(tree::TaxonomyTree, xs, ys) -> NamedTuple
+    leaf_positions(tree::TaxonomyTree, xs, ys) -> NamedTuple
 
-Extract leaf-tip coordinates from a pre-computed dendrogram layout.
+Extract leaf-node coordinates from a pre-computed dendrogram layout.
 
 Returns a `NamedTuple` with fields:
 - `vertices::Vector{Int}` — leaf vertex indices into `tree.graph`
@@ -351,15 +351,15 @@ All four vectors are the same length and are aligned by index.
 ```julia
 using PaleobiologyDB, PaleobiologyDB.Taxonomy
 using CairoMakie
-using PaleobiologyDB.TaxonomyTreeMakie
+using PaleobiologyDB.TaxonomyMakie
 
 tree = taxon_subtree("Panthera")
 fig, ax, plt = taxonomytreeplot(tree)
-tips = tip_positions(plt)   # convenience overload
-# tips.names, tips.x, tips.y  — one entry per leaf
+leaves = leaf_positions(plt)   # convenience overload
+# leaves.names, leaves.x, leaves.y  — one entry per leaf
 ```
 
-See also [`augment_tip_phylopic!`](@ref).
+See also [`augment_leaf_phylopic!`](@ref).
 """
 function _leaf_positions(
         tree::TaxonomyTree,
@@ -376,7 +376,7 @@ function _leaf_positions(
     )
 end
 
-function tip_positions(
+function leaf_positions(
         tree::TaxonomyTree,
         xs::AbstractVector{<:Real},
         ys::AbstractVector{<:Real},

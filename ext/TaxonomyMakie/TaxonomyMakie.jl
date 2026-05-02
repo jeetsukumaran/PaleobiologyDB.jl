@@ -2,9 +2,8 @@
     TaxonomyMakie
 
 Package extension for PaleobiologyDB.jl that activates when both Makie and
-PhyloPicMakie are loaded.  Provides the full tree-visualization API (moved from
-the former TaxonomyTreeMakie source submodule) and the PBDB–PhyloPic bridge
-(vendored from the former PhyloPic source submodule).
+PhyloPicMakie are loaded.  Provides the full tree-visualization API and the
+PBDB–PhyloPic bridge (vendored from the former PhyloPic source submodule).
 
 Activated by:
 
@@ -19,8 +18,8 @@ Public API — tree visualization:
 | `taxonomytreeplot` | Standalone figure; returns `Makie.FigureAxisPlot` |
 | `taxonomytreeplot!` | Add dendrogram to existing axis |
 | `set_rank_axis_ticks!` | Label x-axis with rank names |
-| `tip_positions` | Leaf-tip coordinates from a tree or plot |
-| `augment_tip_phylopic!` | PhyloPic silhouettes at leaf tips |
+| `leaf_positions` | Leaf-node coordinates from a tree or plot |
+| `augment_leaf_phylopic!` | PhyloPic silhouettes anchored at leaves or leaf labels |
 
 Public API — PBDB–PhyloPic bridge (re-exported from PhyloPic):
 
@@ -54,9 +53,9 @@ include("_leaf_overlay.jl")
 include("_recipe.jl")
 include("_augment.jl")
 
-# Tree-visualization exports (formerly TaxonomyTreeMakie).
+# Tree-visualization exports.
 export TaxonomyTreePlot, taxonomytreeplot, taxonomytreeplot!, set_rank_axis_ticks!
-export tip_positions, augment_tip_phylopic!
+export leaf_positions, augment_leaf_phylopic!
 
 # PBDB–PhyloPic bridge exports (re-exported from PhyloPic for flat API surface).
 export acquire_phylopic

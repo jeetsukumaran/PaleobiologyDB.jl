@@ -23,7 +23,7 @@ using DataFrames
 using PaleobiologyDB
 
 # ---------------------------------------------------------------------------
-# Load CairoMakie to activate the TaxonomyTreeMakie extension and provide a
+# Load CairoMakie to activate the TaxonomyMakie extension and provide a
 # Makie backend.  PhyloPicMakie is a hard dep — always available.
 # ---------------------------------------------------------------------------
 

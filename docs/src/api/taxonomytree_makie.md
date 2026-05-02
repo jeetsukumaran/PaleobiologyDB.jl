@@ -42,6 +42,6 @@ set_rank_axis_ticks!
 ## PhyloPic augmentation
 
 ```@docs
-augment_tip_phylopic!
-tip_positions
+augment_leaf_phylopic!
+leaf_positions
 ```

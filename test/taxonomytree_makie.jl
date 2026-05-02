@@ -1,5 +1,5 @@
 # test/taxonomytree_makie.jl
-# Tests for PaleobiologyDB.TaxonomyTreeMakie extension.
+# Tests for PaleobiologyDB.TaxonomyMakie extension.
 #
 # Structure:
 #   1. Mock tree construction (shared fixture)
@@ -25,7 +25,11 @@ const _CAIRO_TTM_AVAILABLE = !isnothing(Base.find_package("CairoMakie"))
 
 if _CAIRO_TTM_AVAILABLE
     @eval using CairoMakie
+    @eval using PaleobiologyDB.TaxonomyMakie
 end
+
+const _LIVE_TAXONOMYMAKIE = isdefined(@__MODULE__, :LIVE) ? getfield(@__MODULE__, :LIVE) :
+    get(ENV, "PBDB_LIVE", "") == "1"
 
 # ---------------------------------------------------------------------------
 # Shared fixture: mock Carnivora subtree (6 vertices)
@@ -102,7 +106,7 @@ if _CAIRO_TTM_AVAILABLE
     const _layout  = PaleobiologyDB.TaxonomyMakie._compute_dendrogram_layout
     const _segpairs = PaleobiologyDB.TaxonomyMakie._dendrogram_segment_pairs
     const _leaf_positions_fn = PaleobiologyDB.TaxonomyMakie._leaf_positions
-    const _plan_leaf_tip_overlay = PaleobiologyDB.TaxonomyMakie._plan_leaf_tip_phylopic_overlay
+    const _plan_leaf_node_overlay = PaleobiologyDB.TaxonomyMakie._plan_leaf_node_phylopic_overlay
     const _plan_leaf_label_overlay = PaleobiologyDB.TaxonomyMakie._plan_leaf_label_phylopic_overlay
     const _plan_leaf_plot_overlay = PaleobiologyDB.TaxonomyMakie._plan_leaf_plot_phylopic_overlay
     const _leaf_text_plots_for_plot = PaleobiologyDB.TaxonomyMakie._leaf_text_plots
@@ -112,7 +116,14 @@ if _CAIRO_TTM_AVAILABLE
 
     _materialize_tree_overlay!(fig) = CairoMakie.Makie.update_state_before_display!(fig)
 
-    function _leaf_text_plots!(ax, tree, xs, ys; tip_xoffset = 0.1, tip_yoffset = 0.0)
+    function _leaf_text_plots!(
+            ax,
+            tree,
+            xs,
+            ys;
+            leaf_label_xoffset = 0.1,
+            leaf_label_yoffset = 0.0,
+        )
         leaves = _leaf_positions_fn(tree, xs, ys)
         text_plots = Any[]
         sizehint!(text_plots, length(leaves.vertices))
@@ -122,8 +133,8 @@ if _CAIRO_TTM_AVAILABLE
                 Makie.text!(
                     ax,
                     Makie.Point2f(
-                        leaves.x[i] + Float64(tip_xoffset),
-                        leaves.y[i] + Float64(tip_yoffset),
+                        leaves.x[i] + Float64(leaf_label_xoffset),
+                        leaves.y[i] + Float64(leaf_label_yoffset),
                     );
                     text = leaves.names[i],
                     align = (:left, :center),
@@ -166,7 +177,7 @@ if _CAIRO_TTM_AVAILABLE
         end
     end
 
-    @testset "TaxonomyTreeMakie — _rank_depth" begin
+    @testset "TaxonomyMakie — _rank_depth" begin
 
         @testset "known ranks" begin
             @test _rd_fn("kingdom")    == 0
@@ -192,7 +203,7 @@ if _CAIRO_TTM_AVAILABLE
         end
     end
 
-    @testset "TaxonomyTreeMakie — _compute_dendrogram_layout" begin
+    @testset "TaxonomyMakie — _compute_dendrogram_layout" begin
         tree = _mock_carnivora_tree()
         xs, ys = _layout(tree)
 
@@ -229,7 +240,7 @@ if _CAIRO_TTM_AVAILABLE
         end
     end
 
-    @testset "TaxonomyTreeMakie — _compute_dendrogram_layout ladderize" begin
+    @testset "TaxonomyMakie — _compute_dendrogram_layout ladderize" begin
         # Build a tree with one large subtree (2 leaves) and one small (1 leaf)
         # so ladderize ordering is deterministic.
         tree = _mock_carnivora_tree()
@@ -255,7 +266,7 @@ if _CAIRO_TTM_AVAILABLE
         end
     end
 
-    @testset "TaxonomyTreeMakie — _compute_dendrogram_layout single-node tree" begin
+    @testset "TaxonomyMakie — _compute_dendrogram_layout single-node tree" begin
         tree = _mock_single_node_tree()
         xs, ys = _layout(tree)
 
@@ -265,7 +276,7 @@ if _CAIRO_TTM_AVAILABLE
         @test ys[1] == 1.0    # single leaf → y = 1
     end
 
-    @testset "TaxonomyTreeMakie — _dendrogram_segment_pairs" begin
+    @testset "TaxonomyMakie — _dendrogram_segment_pairs" begin
         tree = _mock_carnivora_tree()
         xs, ys = _layout(tree)
         segs = _segpairs(tree, xs, ys)
@@ -295,19 +306,19 @@ if _CAIRO_TTM_AVAILABLE
         end
     end
 
-    @testset "TaxonomyTreeMakie — leaf overlay planning" begin
+    @testset "TaxonomyMakie — leaf overlay planning" begin
         tree = _mock_carnivora_tree()
         xs, ys = _layout(tree)
 
         leaves = _leaf_positions_fn(tree, xs, ys)
-        @test leaves == tip_positions(tree, xs, ys)
+        @test leaves == PaleobiologyDB.TaxonomyMakie.leaf_positions(tree, xs, ys)
 
-        plan = _plan_leaf_tip_overlay(
+        plan = _plan_leaf_node_overlay(
             tree,
             xs,
             ys;
-            anchor = :tip_label_origin,
-            tip_xoffset = 0.25,
+            anchor = :leaf_label_origin,
+            leaf_label_xoffset = 0.25,
             align = true,
         )
         @test plan.leaf_names == leaves.names
@@ -316,14 +327,15 @@ if _CAIRO_TTM_AVAILABLE
         @test [pos[2] for pos in plan.anchor_positions] ≈ leaves.y
     end
 
-    @testset "TaxonomyTreeMakie — tip_positions(p) respects row_spacing" begin
+    @testset "TaxonomyMakie — leaf_positions(p) respects row_spacing" begin
         tree = _mock_carnivora_tree()
         fig, ax, plt = taxonomytreeplot(tree; row_spacing = 3.0, show_phylopic = false)
         xs, ys = _layout(tree; row_spacing = 3.0)
-        @test tip_positions(plt) == tip_positions(tree, xs, ys)
+        @test PaleobiologyDB.TaxonomyMakie.leaf_positions(plt) ==
+            PaleobiologyDB.TaxonomyMakie.leaf_positions(tree, xs, ys)
     end
 
-    @testset "TaxonomyTreeMakie — shared label-aware overlay reacts to relimit and resize" begin
+    @testset "TaxonomyMakie — shared label-aware overlay reacts to relimit and resize" begin
         tree = _mock_carnivora_tree()
         xs, ys = _layout(tree)
 
@@ -332,14 +344,20 @@ if _CAIRO_TTM_AVAILABLE
         xlims!(ax, 0, 20)
         ylims!(ax, 0, 8)
 
-        leaves, leaf_text_plots = _leaf_text_plots!(ax, tree, xs, ys; tip_xoffset = 0.1)
+        leaves, leaf_text_plots = _leaf_text_plots!(
+            ax,
+            tree,
+            xs,
+            ys;
+            leaf_label_xoffset = 0.1,
+        )
         plan = _plan_leaf_label_overlay(
             ax,
             tree,
             xs,
             ys;
             leaf_text_plots = leaf_text_plots,
-            tip_xoffset = 0.1,
+            leaf_label_xoffset = 0.1,
             phylopic_xoffset = 0.65,
             phylopic_yoffset = 0.3,
             align = false,
@@ -388,19 +406,19 @@ if _CAIRO_TTM_AVAILABLE
         @test left_edge_4 > label_right_4
     end
 
-    @testset "TaxonomyTreeMakie — plot-backed explicit overlay shares the integrated plan" begin
+    @testset "TaxonomyMakie — plot-backed explicit overlay shares the integrated plan" begin
         tree = _mock_longlabel_carnivora_tree()
         xs, ys = _layout(tree)
         fig, ax, plt = taxonomytreeplot(
             tree;
             show_phylopic = false,
-            tip_xoffset = 0.1,
+            leaf_label_xoffset = 0.1,
         )
 
         planning = _plan_leaf_plot_overlay(
             plt;
-            anchor = :tip_label_origin,
-            tip_xoffset = 0.1,
+            anchor = :leaf_label_origin,
+            leaf_label_xoffset = 0.1,
             xoffset = 0.65,
             yoffset = 0.3,
             align = false,
@@ -411,39 +429,39 @@ if _CAIRO_TTM_AVAILABLE
             xs,
             ys;
             leaf_text_plots = _leaf_text_plots_for_plot(plt),
-            tip_xoffset = 0.1,
-            tip_yoffset = plt[:tip_yoffset][],
+            leaf_label_xoffset = 0.1,
+            leaf_label_yoffset = plt[:leaf_label_yoffset][],
             phylopic_xoffset = 0.65,
             phylopic_yoffset = 0.3,
             align = false,
         )
-        raw_tip_plan = _plan_leaf_tip_overlay(
+        raw_leaf_plan = _plan_leaf_node_overlay(
             tree,
             xs,
             ys;
-            anchor = :tip_label_origin,
-            tip_xoffset = 0.1,
+            anchor = :leaf_label_origin,
+            leaf_label_xoffset = 0.1,
             align = false,
         )
 
         _materialize_tree_overlay!(fig)
         explicit_xs = [Float64(pos[1]) for pos in planning.plan.anchor_positions[]]
         integrated_xs = [Float64(pos[1]) for pos in integrated_plan.anchor_positions[]]
-        raw_tip_xs = [Float64(pos[1]) for pos in raw_tip_plan.anchor_positions]
+        raw_leaf_xs = [Float64(pos[1]) for pos in raw_leaf_plan.anchor_positions]
 
         @test explicit_xs ≈ integrated_xs
-        @test explicit_xs != raw_tip_xs
+        @test explicit_xs != raw_leaf_xs
     end
 
-    @testset "TaxonomyTreeMakie — deleting the tree plot removes overlay support plots" begin
+    @testset "TaxonomyMakie — deleting the tree plot removes overlay support plots" begin
         tree = _mock_carnivora_tree()
         fig, ax, plt = taxonomytreeplot(tree; show_phylopic = false)
         @test isempty(_managed_overlay_atomic_plots(ax.scene))
 
         planning = _plan_leaf_plot_overlay(
             plt;
-            anchor = :tip_label_origin,
-            tip_xoffset = plt[:tip_xoffset][],
+            anchor = :leaf_label_origin,
+            leaf_label_xoffset = plt[:leaf_label_xoffset][],
             xoffset = 0.65,
             yoffset = 0.3,
             align = false,
@@ -468,7 +486,7 @@ if _CAIRO_TTM_AVAILABLE
         @test isempty(_managed_overlay_atomic_plots(ax.scene))
     end
 
-    @testset "TaxonomyTreeMakie — tree overlay missing-image policy uses shared adapter" begin
+    @testset "TaxonomyMakie — tree overlay missing-image policy uses shared adapter" begin
         fig = Figure()
         ax = Axis(fig[1, 1])
         plan = _LeafOverlayPlan(
@@ -512,7 +530,7 @@ if _CAIRO_TTM_AVAILABLE
     end
 
 else
-    @info "CairoMakie not available — skipping TaxonomyTreeMakie offline layout tests"
+    @info "CairoMakie not available — skipping TaxonomyMakie offline layout tests"
 end
 
 # ---------------------------------------------------------------------------
@@ -520,8 +538,8 @@ end
 # ---------------------------------------------------------------------------
 
 if _CAIRO_TTM_AVAILABLE
-    if LIVE
-        @testset "TaxonomyTreeMakie — taxonomytreeplot smoke" begin
+    if _LIVE_TAXONOMYMAKIE
+        @testset "TaxonomyMakie — taxonomytreeplot smoke" begin
             tree = _mock_carnivora_tree()
 
             @testset "taxonomytreeplot returns FigureAxisPlot" begin
@@ -533,8 +551,8 @@ if _CAIRO_TTM_AVAILABLE
                 @test plt isa TaxonomyTreePlot
             end
 
-            @testset "showtips = false does not error" begin
-                @test_nowarn taxonomytreeplot(tree; showtips = false)
+            @testset "show_leaf_labels = false does not error" begin
+                @test_nowarn taxonomytreeplot(tree; show_leaf_labels = false)
             end
 
             @testset "color_by_rank = true does not error" begin
@@ -569,19 +587,19 @@ if _CAIRO_TTM_AVAILABLE
             end
         end
 
-        @testset "TaxonomyTreeMakie — taxonomytreeplot! into existing axis" begin
+        @testset "TaxonomyMakie — taxonomytreeplot! into existing axis" begin
             tree = _mock_carnivora_tree()
             fig  = CairoMakie.Figure()
             ax   = CairoMakie.Axis(fig[1, 1])
 
-            p = taxonomytreeplot!(ax, tree; showtips = true, ladderize = true)
+            p = taxonomytreeplot!(ax, tree; show_leaf_labels = true, ladderize = true)
             @test p isa TaxonomyTreePlot
 
             # set_rank_axis_ticks! must run without error
             @test_nowarn set_rank_axis_ticks!(ax, tree)
         end
 
-        @testset "TaxonomyTreeMakie — single-node tree (placeholder)" begin
+        @testset "TaxonomyMakie — single-node tree (placeholder)" begin
             tree = _mock_single_node_tree()
             @test_nowarn taxonomytreeplot(tree)
         end
@@ -596,7 +614,7 @@ if _CAIRO_TTM_AVAILABLE
     # render-aware shared-owner tests above stay offline by injecting a test
     # glyph directly into the internal tree-overlay adapter.
 
-    @testset "TaxonomyTreeMakie — PhyloPic silhouette attributes (offline)" begin
+    @testset "TaxonomyMakie — PhyloPic silhouette attributes (offline)" begin
         tree = _mock_carnivora_tree()
 
         @testset "show_phylopic = false (default) does not trigger network or error" begin
@@ -624,8 +642,8 @@ if _CAIRO_TTM_AVAILABLE
     # PhyloPic APIs.  They are disabled by default to avoid network stalls
     # in CI.  Run with: PBDB_LIVE=1 julia --project=test test/runtests.jl
 
-    @testset "TaxonomyTreeMakie — PhyloPic silhouettes (live)" begin
-        if !LIVE
+    @testset "TaxonomyMakie — PhyloPic silhouettes (live)" begin
+        if !_LIVE_TAXONOMYMAKIE
             @info "Live PhyloPic-in-tree tests disabled. Set ENV[\"PBDB_LIVE\"]=\"1\" to enable."
         else
             tree = _mock_carnivora_tree()
@@ -688,8 +706,8 @@ if _CAIRO_TTM_AVAILABLE
         end
     end
 
-    if LIVE
-        @testset "TaxonomyTreeMakie — set_rank_axis_ticks!" begin
+    if _LIVE_TAXONOMYMAKIE
+        @testset "TaxonomyMakie — set_rank_axis_ticks!" begin
             tree = _mock_carnivora_tree()
             fig, ax, plt = taxonomytreeplot(tree; show_rank_ticks = false)
             set_rank_axis_ticks!(ax, tree)
@@ -702,5 +720,5 @@ if _CAIRO_TTM_AVAILABLE
     end
 
 else
-    @info "CairoMakie not available — skipping TaxonomyTreeMakie recipe smoke tests"
+    @info "CairoMakie not available — skipping TaxonomyMakie recipe smoke tests"
 end

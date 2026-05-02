@@ -197,14 +197,14 @@ using PaleobiologyDB: taxonomytreeplot, taxonomytreeplot!, set_rank_axis_ticks!
 
 # Build a subtree and render it — branches and nodes coloured by taxonomic rank
 tree = taxon_subtree("Carnivora"; leaf_rank = "family")
-fig, ax, plt = taxonomytreeplot(tree; showtips = true, color_by_rank = true, ladderize = true)
+fig, ax, plt = taxonomytreeplot(tree; show_leaf_labels = true, color_by_rank = true, ladderize = true)
 save("carnivora_families.png", fig)
 
 # Compose into an existing axis
 fig2 = Figure(size = (1000, 700))
 ax2  = Axis(fig2[1, 1]; title = "Canidae genera")
 tree2 = taxon_subtree("Canidae"; leaf_rank = "genus")
-taxonomytreeplot!(ax2, tree2; showtips = true, ladderize = true)
+taxonomytreeplot!(ax2, tree2; show_leaf_labels = true, ladderize = true)
 set_rank_axis_ticks!(ax2, tree2)
 display(fig2)
 ```
@@ -212,13 +212,13 @@ display(fig2)
 ```julia
 using CairoMakie: Figure, Axis, save
 using PaleobiologyDB.Taxonomy: taxon_subtree
-using PaleobiologyDB: taxonomytreeplot, augment_tip_phylopic!
+using PaleobiologyDB: taxonomytreeplot, augment_leaf_phylopic!
 
 tree = taxon_subtree("Carnivora"; leaf_rank = "family")
-fig, ax, plt = taxonomytreeplot(tree; showtips = true, color_by_rank = true, ladderize = true)
+fig, ax, plt = taxonomytreeplot(tree; show_leaf_labels = true, color_by_rank = true, ladderize = true)
 
-# Overlay PhyloPic silhouettes at each leaf tip
-augment_tip_phylopic!(ax, plt; xoffset = 0.5)
+# Overlay PhyloPic silhouettes beside each leaf label
+augment_leaf_phylopic!(ax, plt; xoffset = 0.5)
 save("carnivora_phylopic.png", fig)
 ```
 
@@ -307,15 +307,15 @@ Use `pbdb_count` to count records without downloading them.
 | `taxonomytreeplot` | Standalone figure; returns `Makie.FigureAxisPlot` |
 | `taxonomytreeplot!` | Add dendrogram to an existing axis |
 | `set_rank_axis_ticks!` | Label x-axis with rank names at their depth positions |
-| `tip_positions` | Extract leaf-tip coordinates from a tree or plot |
-| `augment_tip_phylopic!` | Add PhyloPic silhouettes at each leaf tip |
+| `leaf_positions` | Extract leaf-node coordinates from a tree or plot |
+| `augment_leaf_phylopic!` | Add PhyloPic silhouettes at leaves or leaf labels |
 | `TaxonomyTreePlot` | Plot type (for dispatch and attribute access) |
 
 ## Documentation
 
 - [Quick Start](https://jeetsukumaran.github.io/PaleobiologyDB.jl/dev/guide/quickstart/) — examples for all endpoint types, advanced query options
 - [Caching](https://jeetsukumaran.github.io/PaleobiologyDB.jl/dev/guide/caching/) — file, memory, and autocaching; classroom pre-fetch patterns
-- [TaxonomyTreeMakie](https://jeetsukumaran.github.io/PaleobiologyDB.jl/dev/guide/taxonomytree_makie/) — dendrogram visualisation guide and attribute reference
+- [TaxonomyMakie](https://jeetsukumaran.github.io/PaleobiologyDB.jl/dev/guide/taxonomytree_makie/) — dendrogram visualisation guide and attribute reference
 - [PhyloPic](https://jeetsukumaran.github.io/PaleobiologyDB.jl/dev/guide/phylopic_makie/) — PhyloPic overlay and gallery guide
 - [Contributing](https://jeetsukumaran.github.io/PaleobiologyDB.jl/dev/guide/contributing/) — testing, development, and external resources
 
@@ -332,7 +332,7 @@ Use `pbdb_count` to count records without downloading them.
 - [Taxonomy — search](https://jeetsukumaran.github.io/PaleobiologyDB.jl/dev/api/taxonomy_search/)
 - [PhyloPic acquisition](https://jeetsukumaran.github.io/PaleobiologyDB.jl/dev/api/phylopic_acquire/)
 - [PhyloPic Makie API](https://jeetsukumaran.github.io/PaleobiologyDB.jl/dev/api/phylopic_makie/)
-- [TaxonomyTreeMakie API](https://jeetsukumaran.github.io/PaleobiologyDB.jl/dev/api/taxonomytree_makie/)
+- [TaxonomyMakie API](https://jeetsukumaran.github.io/PaleobiologyDB.jl/dev/api/taxonomytree_makie/)
 - [Interactive Help](https://jeetsukumaran.github.io/PaleobiologyDB.jl/dev/api/apihelp/) — REPL-based parameter and field discovery
 - [Depot](https://jeetsukumaran.github.io/PaleobiologyDB.jl/dev/api/depot/) — local data snapshot management
 

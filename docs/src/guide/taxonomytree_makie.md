@@ -15,7 +15,7 @@ pkg> add CairoMakie PhyloPicMakie
 ```julia
 using CairoMakie   # or GLMakie, WGLMakie, …
 using PaleobiologyDB
-# TaxonomyMakie exports (taxonomytreeplot, augment_tip_phylopic!, etc.) are now in scope
+# TaxonomyMakie exports (taxonomytreeplot, augment_leaf_phylopic!, etc.) are now in scope
 ```
 
 ## Quick start — basic dendrogram
@@ -28,7 +28,7 @@ using PaleobiologyDB, PaleobiologyDB.Taxonomy
 
 tree = taxon_subtree("Carnivora"; leaf_rank = "family")
 
-fig, ax, plt = taxonomytreeplot(tree; showtips = true)
+fig, ax, plt = taxonomytreeplot(tree; show_leaf_labels = true)
 display(fig)
 ```
 
@@ -44,7 +44,7 @@ its taxonomic rank:
 ```julia
 fig, ax, plt = taxonomytreeplot(tree;
     color_by_rank = true,
-    showtips      = true,
+    show_leaf_labels = true,
 )
 display(fig)
 ```
@@ -62,7 +62,7 @@ palette = Dict(
 fig, ax, plt = taxonomytreeplot(tree;
     color_by_rank = true,
     rank_palette  = palette,
-    showtips      = true,
+    show_leaf_labels = true,
 )
 ```
 
@@ -76,7 +76,7 @@ branching:
 ```julia
 fig, ax, plt = taxonomytreeplot(tree;
     ladderize = true,
-    showtips  = true,
+    show_leaf_labels = true,
 )
 ```
 
@@ -89,7 +89,7 @@ fig, ax, plt = taxonomytreeplot(tree;
     showinternal      = true,
     internal_fontsize = 7,
     internal_color    = :gray50,
-    showtips          = true,
+    show_leaf_labels  = true,
 )
 ```
 
@@ -107,7 +107,7 @@ tree = taxon_subtree("Canidae"; leaf_rank = "genus")
 fig = Figure(size = (1000, 700))
 ax  = Axis(fig[1, 1]; title = "Canidae genera")
 
-taxonomytreeplot!(ax, tree; showtips = true, ladderize = true)
+taxonomytreeplot!(ax, tree; show_leaf_labels = true, ladderize = true)
 set_rank_axis_ticks!(ax, tree)
 
 display(fig)
@@ -129,20 +129,20 @@ t_gen = taxon_subtree("Canidae";   leaf_rank = "genus")
 fig = Figure(size = (1400, 600))
 
 ax1 = Axis(fig[1, 1]; title = "Carnivora — families")
-taxonomytreeplot!(ax1, t_fam; showtips = true, color_by_rank = true)
+taxonomytreeplot!(ax1, t_fam; show_leaf_labels = true, color_by_rank = true)
 set_rank_axis_ticks!(ax1, t_fam)
 
 ax2 = Axis(fig[1, 2]; title = "Canidae — genera")
-taxonomytreeplot!(ax2, t_gen; showtips = true, ladderize = true)
+taxonomytreeplot!(ax2, t_gen; show_leaf_labels = true, ladderize = true)
 set_rank_axis_ticks!(ax2, t_gen)
 
 display(fig)
 ```
 
-## PhyloPic silhouettes at leaf tips
+## PhyloPic silhouettes beside leaf labels
 
 `taxonomytreeplot` can overlay [PhyloPic](https://www.phylopic.org/) silhouette
-images to the right of each leaf-tip label.  This requires `FileIO` to be
+images to the right of each leaf label.  This requires `FileIO` to be
 loaded in the same session (which also activates `PhyloPicMakie`):
 
 ```julia
@@ -159,7 +159,7 @@ The horizontal gap is controlled by `phylopic_xoffset` (in data units):
 tree = taxon_subtree("Carnivora"; leaf_rank = "family")
 
 fig, ax, plt = taxonomytreeplot(tree;
-    showtips         = true,
+    show_leaf_labels = true,
     show_phylopic    = true,
     phylopic_xoffset = 0.5,
 )
@@ -181,7 +181,7 @@ the column's distance from the deepest rank:
 
 ```julia
 fig, ax, plt = taxonomytreeplot(tree;
-    showtips         = true,
+    show_leaf_labels = true,
     show_phylopic    = true,
     phylopic_align   = true,
     phylopic_xoffset = 2.0,
@@ -207,7 +207,7 @@ original image proportions:
 
 ```julia
 fig, ax, plt = taxonomytreeplot(tree;
-    showtips             = true,
+    show_leaf_labels     = true,
     show_phylopic        = true,
     phylopic_glyph_size  = 0.35,
     phylopic_aspect      = :preserve,   # default — maintains original proportions
@@ -222,7 +222,7 @@ what happens:
 | Value | Behaviour |
 |---|---|
 | `:skip` (default) | Silently omit the glyph |
-| `:placeholder` | Draw a translucent grey rectangle in place of the image |
+| `:placeholder` | Draw a placeholder glyph image in place of the missing silhouette |
 | `:error` | Throw an `ErrorException` |
 
 ```julia
@@ -254,7 +254,7 @@ and is always available once the package is installed.
 Makie's standard `save` function works with any output format:
 
 ```julia
-fig, ax, plt = taxonomytreeplot(tree; showtips = true)
+fig, ax, plt = taxonomytreeplot(tree; show_leaf_labels = true)
 
 save("carnivora_families.png", fig)
 save("carnivora_families.svg", fig)
@@ -275,7 +275,7 @@ fig, ax, plt = taxonomytreeplot(tree;
         xlabel          = "Rank depth",
         xticklabelsize  = 11,
     ),
-    showtips      = true,
+    show_leaf_labels = true,
     color_by_rank = true,
 )
 ```
@@ -295,20 +295,21 @@ All attributes can be passed as keyword arguments to `taxonomytreeplot` or
 | `node_size` | `5` | Node marker size in points |
 | `color_by_rank` | `false` | Colour branches and nodes by taxonomic rank |
 | `rank_palette` | `nothing` | `Dict{String,Any}` mapping rank → colour; `nothing` uses the built-in cycle |
-| `showtips` | `true` | Show leaf taxon-name labels |
-| `tip_fontsize` | `9` | Leaf label font size in points |
-| `tip_color` | `:black` | Leaf label colour |
-| `tip_xoffset` | `0.5` | Rightward offset for leaf labels in data units |
+| `show_leaf_labels` | `true` | Show leaf taxon-name labels |
+| `leaf_label_fontsize` | `9` | Leaf label font size in points |
+| `leaf_label_color` | `:black` | Leaf label colour |
+| `leaf_label_xoffset` | `0.1` | Rightward offset for leaf labels in data units |
+| `leaf_label_yoffset` | `0.0` | Vertical offset for leaf labels in data units (positive = upward) |
 | `showinternal` | `false` | Show internal node name labels |
 | `internal_fontsize` | `7` | Internal label font size in points |
 | `internal_color` | `:gray40` | Internal label colour |
 | `row_spacing` | `2.0` | Vertical gap between consecutive leaf rows in data units |
-| `show_phylopic` | `false` | Draw a PhyloPic silhouette to the right of each leaf tip (requires `FileIO`) |
+| `show_phylopic` | `false` | Draw a PhyloPic silhouette to the right of each leaf label (requires `FileIO`) |
 | `phylopic_glyph_size` | `1.0` | Half-height of each silhouette in data units |
 | `phylopic_align` | `false` | Place all silhouettes in a single right-hand column |
-| `phylopic_xoffset` | `0.65` | Rightward gap in data units beyond the tip-label start position |
+| `phylopic_xoffset` | `0.65` | Rightward gap in data units beyond the leaf-label origin |
 | `phylopic_yoffset` | `0.3` | Vertical offset for PhyloPic silhouettes in data units (positive = upward) |
-| `phylopic_on_missing` | `:skip` | Policy when no image is found: `:skip`, `:placeholder`, `:error` |
+| `phylopic_on_missing` | `:skip` | Policy when no image is found: `:skip`, `:placeholder` (placeholder glyph image), `:error` |
 | `phylopic_aspect` | `:preserve` | `:preserve` (original proportions) or `:stretch` (square) |
 
 The following keywords are consumed by `taxonomytreeplot` (standalone) and are

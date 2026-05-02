@@ -1,5 +1,5 @@
 # ---------------------------------------------------------------------------
-# TaxonomyTreeMakie — @recipe definition, Makie.plot! implementation, and
+# TaxonomyMakie — @recipe definition, Makie.plot! implementation, and
 # convenience wrappers.
 #
 # Call graph:
@@ -163,21 +163,21 @@ dendrogram.  Produced by [`taxonomytreeplot`](@ref) (standalone figure) or
 | `node_size` | `5` | Node marker size in points |
 | `color_by_rank` | `false` | Colour branches and nodes by taxonomic rank |
 | `rank_palette` | `nothing` | `Dict{String,Any}` mapping rank name → colour; `nothing` uses the built-in cycle |
-| `showtips` | `true` | Show leaf taxon-name labels |
-| `tip_fontsize` | `9` | Leaf label font size in points |
-| `tip_color` | `:black` | Leaf label colour |
+| `show_leaf_labels` | `true` | Show leaf taxon-name labels |
+| `leaf_label_fontsize` | `9` | Leaf label font size in points |
+| `leaf_label_color` | `:black` | Leaf label colour |
 | `row_spacing` | `2.0` | Vertical gap between consecutive leaf rows in data units; `2.0` gives double-spaced positions, `1.0` uses unit spacing |
-| `tip_xoffset` | `0.1` | Rightward offset for leaf labels in data units |
-| `tip_yoffset` | `0.0` | Vertical offset for leaf labels in data units (positive = upward) |
+| `leaf_label_xoffset` | `0.1` | Rightward offset for leaf labels in data units |
+| `leaf_label_yoffset` | `0.0` | Vertical offset for leaf labels in data units (positive = upward) |
 | `showinternal` | `false` | Show internal node name labels |
 | `internal_fontsize` | `7` | Internal label font size in points |
 | `internal_color` | `:gray40` | Internal label colour |
-| `show_phylopic` | `false` | Draw a PhyloPic silhouette to the right of each leaf tip label|
+| `show_phylopic` | `false` | Draw a PhyloPic silhouette to the right of each leaf label |
 | `phylopic_glyph_size` | `1.0` | Half-height of each silhouette glyph in data units (total height = `2 × phylopic_glyph_size`) |
 | `phylopic_align` | `false` | When `true`, all silhouettes are placed at a single right-hand column; when `false`, each appears immediately right of its label |
-| `phylopic_xoffset` | `0.65` | Additional rightward gap in data units beyond the tip-label start position |
-| `phylopic_yoffset` | `0.3` | Vertical offset for PhyloPic silhouettes in data units (positive = upward); applied independently of `tip_yoffset` |
-| `phylopic_on_missing` | `:skip` | Policy when no PhyloPic image is found: `:skip` (omit), `:placeholder` (grey box), `:error` (throw) |
+| `phylopic_xoffset` | `0.65` | Additional rightward gap in data units beyond the leaf-label origin |
+| `phylopic_yoffset` | `0.3` | Vertical offset for PhyloPic silhouettes in data units (positive = upward); applied independently of `leaf_label_yoffset` |
+| `phylopic_on_missing` | `:skip` | Policy when no PhyloPic image is found: `:skip` (omit), `:placeholder` (placeholder glyph image), `:error` (throw) |
 | `phylopic_aspect` | `:preserve` | `:preserve` maintains the original image aspect ratio; `:stretch` renders as a square |
 | `phylopic_image_rendering` | `:thumbnail` | Image URL to fetch: `:thumbnail` (PNG thumbnail), `:raster` (PNG full-res), `:og_image` (PNG Open Graph), `:vector` (SVG — requires FileIO SVG plugin), `:source_file` (SVG or raster); see `PhyloPicDB.PHYLOPIC_IMAGE_RENDERINGS` |
 
@@ -186,14 +186,14 @@ dendrogram.  Produced by [`taxonomytreeplot`](@ref) (standalone figure) or
 ```julia
 using PaleobiologyDB, PaleobiologyDB.Taxonomy
 using CairoMakie
-using PaleobiologyDB.TaxonomyTreeMakie
+using PaleobiologyDB.TaxonomyMakie
 
 tree = taxon_subtree("Carnivora"; leaf_rank = "family")
 
 # Add to an existing Makie axis
 fig = Figure(size = (900, 600))
 ax  = Axis(fig[1, 1])
-taxonomytreeplot!(ax, tree; showtips = true, color_by_rank = true)
+taxonomytreeplot!(ax, tree; show_leaf_labels = true, color_by_rank = true)
 set_rank_axis_ticks!(ax, tree)
 display(fig)
 ```
@@ -218,16 +218,16 @@ See also [`taxonomytreeplot`](@ref), `taxonomytreeplot!`,
         color_by_rank = false,
         rank_palette = nothing,
         # Leaf labels
-        showtips = true,
-        tip_fontsize = 9,
-        tip_color = :black,
-        tip_xoffset = 0.1,
-        tip_yoffset = 0.0,
+        show_leaf_labels = true,
+        leaf_label_fontsize = 9,
+        leaf_label_color = :black,
+        leaf_label_xoffset = 0.1,
+        leaf_label_yoffset = 0.0,
         # Internal labels
         showinternal = false,
         internal_fontsize = 7,
         internal_color = :gray40,
-        # PhyloPic silhouettes at leaf tips
+        # PhyloPic silhouettes beside leaf labels
         show_phylopic = false,
         phylopic_glyph_size = 1.0,
         phylopic_align = false,
@@ -256,10 +256,10 @@ end
 
 function _plan_leaf_plot_phylopic_overlay(
         p::TaxonomyTreePlot;
-        anchor::Symbol = :tip_label_origin,
+        anchor::Symbol = :leaf_label_origin,
         align::Bool = false,
         column_x::Union{Nothing, Real} = nothing,
-        tip_xoffset::Real = p[:tip_xoffset][],
+        leaf_label_xoffset::Real = p[:leaf_label_xoffset][],
         xoffset::Real = 0.0,
         yoffset::Real = 0.0,
     )
@@ -270,15 +270,15 @@ function _plan_leaf_plot_phylopic_overlay(
         row_spacing = p[:row_spacing][],
     )
 
-    if anchor === :tip_label_origin && !(align && !isnothing(column_x))
+    if anchor === :leaf_label_origin && !(align && !isnothing(column_x))
         plan = _plan_leaf_label_phylopic_overlay(
             p,
             tree,
             xs,
             ys;
             leaf_text_plots = _leaf_text_plots(p),
-            tip_xoffset = tip_xoffset,
-            tip_yoffset = p[:tip_yoffset][],
+            leaf_label_xoffset = leaf_label_xoffset,
+            leaf_label_yoffset = p[:leaf_label_yoffset][],
             phylopic_xoffset = xoffset,
             phylopic_yoffset = yoffset,
             align = align,
@@ -286,14 +286,14 @@ function _plan_leaf_plot_phylopic_overlay(
         return (plan = plan, render_xoffset = 0.0, render_yoffset = 0.0)
     end
 
-    plan = _plan_leaf_tip_phylopic_overlay(
+    plan = _plan_leaf_node_phylopic_overlay(
         tree,
         xs,
         ys;
         anchor = anchor,
         align = align,
         column_x = column_x,
-        tip_xoffset = tip_xoffset,
+        leaf_label_xoffset = leaf_label_xoffset,
     )
     return (plan = plan, render_xoffset = xoffset, render_yoffset = yoffset)
 end
@@ -383,17 +383,17 @@ function Makie.plot!(p::TaxonomyTreePlot{<:Tuple{TaxonomyTree}})
     sizehint!(leaf_text_plots, length(leaf_vertices))
     for v in leaf_vertices
         leaf_point = Makie.Point2f(
-            layout_obs[][1][v] + p[:tip_xoffset][],
-            layout_obs[][2][v] + p[:tip_yoffset][],
+            layout_obs[][1][v] + p[:leaf_label_xoffset][],
+            layout_obs[][2][v] + p[:leaf_label_yoffset][],
         )
         leaf_text_plot = Makie.text!(
             p,
             leaf_point;
             text = tree_obs[].taxa[v].name,
-            fontsize = p[:tip_fontsize],
-            color = p[:tip_color],
+            fontsize = p[:leaf_label_fontsize],
+            color = p[:leaf_label_color],
             align = (:left, :center),
-            visible = p[:showtips],
+            visible = p[:show_leaf_labels],
             clip_planes = Makie.Plane3f[],
         )
         push!(leaf_text_plots, leaf_text_plot)
@@ -423,7 +423,7 @@ function Makie.plot!(p::TaxonomyTreePlot{<:Tuple{TaxonomyTree}})
         clip_planes = Makie.Plane3f[],
     )
 
-    # ── PhyloPic tip silhouettes ──────────────────────────────────────────
+    # ── PhyloPic leaf silhouettes ─────────────────────────────────────────
     # Images are resolved once at plot-creation time (network results cached).
     # The shared overlay substrate keeps glyph size and label-relative
     # placement reactive under relimit and resize. Changing the tree or the
@@ -431,9 +431,9 @@ function Makie.plot!(p::TaxonomyTreePlot{<:Tuple{TaxonomyTree}})
     if p[:show_phylopic][]
         planning = _plan_leaf_plot_phylopic_overlay(
             p;
-            anchor = :tip_label_origin,
+            anchor = :leaf_label_origin,
             align = p[:phylopic_align][],
-            tip_xoffset = p[:tip_xoffset][],
+            leaf_label_xoffset = p[:leaf_label_xoffset][],
             xoffset = p[:phylopic_xoffset][],
             yoffset = p[:phylopic_yoffset][],
         )
@@ -478,7 +478,7 @@ overlap.
 Typically called immediately after `taxonomytreeplot!`:
 
 ```julia
-p = taxonomytreeplot!(ax, tree; showtips = true)
+p = taxonomytreeplot!(ax, tree; show_leaf_labels = true)
 set_rank_axis_ticks!(ax, tree)
 ```
 
@@ -525,7 +525,7 @@ Create a standalone Makie figure containing a dendrogram of `tree`.
 Returns a `Makie.FigureAxisPlot` object containing the figure, axis, and plot:
 
 ```julia
-fig, ax, plt = taxonomytreeplot(tree; showtips = true)
+fig, ax, plt = taxonomytreeplot(tree; show_leaf_labels = true)
 display(fig)
 save("tree.png", fig)
 ```
@@ -545,19 +545,19 @@ save("tree.png", fig)
 ```julia
 using PaleobiologyDB, PaleobiologyDB.Taxonomy
 using CairoMakie
-using PaleobiologyDB.TaxonomyTreeMakie
+using PaleobiologyDB.TaxonomyMakie
 
 tree = taxon_subtree("Carnivora"; leaf_rank = "family")
 
-# Basic dendrogram with tip labels
-fig, ax, plt = taxonomytreeplot(tree; showtips = true)
+# Basic dendrogram with leaf labels
+fig, ax, plt = taxonomytreeplot(tree; show_leaf_labels = true)
 save("carnivora_families.png", fig)
 
 # Coloured by rank, ladderized
 fig2, ax2, plt2 = taxonomytreeplot(tree;
     color_by_rank = true,
     ladderize     = true,
-    showtips      = true,
+    show_leaf_labels = true,
 )
 
 # Custom figure and axis sizes
@@ -585,7 +585,7 @@ function taxonomytreeplot(
     default_height = max(400, n_leaves * 18)
 
     effective_figure_kwargs = merge((; size = (900, default_height)), figure_kwargs)
-    # Right margin: 30% for tip labels alone; 50% when PhyloPic silhouettes
+    # Right margin: 30% for leaf labels alone; 50% when PhyloPic silhouettes
     # are also requested (images extend further right than text).
     # clip_planes = Plane3f[] on text! and image! calls ensures glyphs that
     # extend beyond the axis edge are still shown.
@@ -620,9 +620,9 @@ render it as a dendrogram in a standalone figure.
 
 Calls [`taxon_subtree`](@ref) with `leaf_rank` and `strict_leaf_rank`, then
 delegates to [`taxonomytreeplot`](@ref).  All remaining keyword
-arguments (recipe attributes such as `ladderize`, `showtips`, `row_spacing`,
-`show_phylopic`, etc.) are forwarded unchanged.  See `TaxonomyTreePlot` for the
-full attribute reference.
+arguments (recipe attributes such as `ladderize`, `show_leaf_labels`,
+`row_spacing`, `show_phylopic`, etc.) are forwarded unchanged.  See
+`TaxonomyTreePlot` for the full attribute reference.
 
 ## Arguments
 
@@ -639,7 +639,7 @@ full attribute reference.
 
 ```julia
 using PaleobiologyDB, CairoMakie
-using PaleobiologyDB.Taxonomy.TaxonomyTreeMakie
+using PaleobiologyDB.TaxonomyMakie
 
 fig, ax, plt = taxonomytreeplot("Carnivora"; leaf_rank = "family")
 save("carnivora.png", fig)

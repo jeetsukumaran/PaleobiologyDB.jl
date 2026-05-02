@@ -58,7 +58,7 @@ function Base.delete!(scene::Makie.Scene, overlay::_ManagedLeafOverlay)
     return overlay
 end
 
-const VALID_LEAF_OVERLAY_ANCHORS = (:tip, :tip_label_origin)
+const VALID_LEAF_OVERLAY_ANCHORS = (:leaf, :leaf_label_origin)
 
 function _leaf_overlay_probe_scatter!(scene_like, positions)
     return Makie.scatter!(
@@ -124,25 +124,25 @@ function _text_bbox_metrics_px(text_plot)
     )
 end
 
-function _plan_leaf_tip_phylopic_overlay(
+function _plan_leaf_node_phylopic_overlay(
         tree::TaxonomyTree,
         xs::AbstractVector{<:Real},
         ys::AbstractVector{<:Real};
-        anchor::Symbol = :tip,
+        anchor::Symbol = :leaf,
         align::Bool = false,
         column_x::Union{Nothing, Real} = nothing,
-        tip_xoffset::Real = 0.0,
+        leaf_label_xoffset::Real = 0.0,
     )::_LeafOverlayPlan
     anchor ∈ VALID_LEAF_OVERLAY_ANCHORS || throw(
         ArgumentError(
-            "_plan_leaf_tip_phylopic_overlay: unknown `anchor` value `:$anchor`. " *
+            "_plan_leaf_node_phylopic_overlay: unknown `anchor` value `:$anchor`. " *
                 "Valid values: $(join(string.(':', VALID_LEAF_OVERLAY_ANCHORS), ", "))."
         )
     )
 
     leaves = _leaf_positions(tree, xs, ys)
     x_anchors = Float64[
-        anchor === :tip ? leaves.x[i] : leaves.x[i] + Float64(tip_xoffset)
+        anchor === :leaf ? leaves.x[i] : leaves.x[i] + Float64(leaf_label_xoffset)
         for i in eachindex(leaves.vertices)
     ]
 
@@ -164,8 +164,8 @@ function _plan_leaf_label_phylopic_overlay(
         xs::AbstractVector{<:Real},
         ys::AbstractVector{<:Real};
         leaf_text_plots::AbstractVector,
-        tip_xoffset::Real = 0.0,
-        tip_yoffset::Real = 0.0,
+        leaf_label_xoffset::Real = 0.0,
+        leaf_label_yoffset::Real = 0.0,
         phylopic_xoffset::Real = 0.0,
         phylopic_yoffset::Real = 0.0,
         align::Bool = false,
@@ -185,8 +185,8 @@ function _plan_leaf_label_phylopic_overlay(
 
     label_origin_points = Makie.Point2f[
         Makie.Point2f(
-            Float32(leaves.x[i] + Float64(tip_xoffset)),
-            Float32(leaves.y[i] + Float64(tip_yoffset)),
+            Float32(leaves.x[i] + Float64(leaf_label_xoffset)),
+            Float32(leaves.y[i] + Float64(leaf_label_yoffset)),
         )
         for i in eachindex(leaves.vertices)
     ]
@@ -209,7 +209,9 @@ function _plan_leaf_label_phylopic_overlay(
         output_space = :pixel,
     )
 
-    label_origin_xs = Float64[leaves.x[i] + Float64(tip_xoffset) for i in eachindex(leaves.vertices)]
+    label_origin_xs = Float64[
+        leaves.x[i] + Float64(leaf_label_xoffset) for i in eachindex(leaves.vertices)
+    ]
     anchor_positions = Makie.lift(label_origin_pixels, label_unit_pixels) do origins, units
         bbox_metrics = [_text_bbox_metrics_px(tp) for tp in leaf_text_plots]
         global_right_px = isempty(bbox_metrics) ? 0.0 : maximum(tm.right for tm in bbox_metrics)
