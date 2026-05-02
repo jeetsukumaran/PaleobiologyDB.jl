@@ -240,6 +240,65 @@ See also [`taxonomytreeplot`](@ref), `taxonomytreeplot!`,
 end
 
 # ---------------------------------------------------------------------------
+# Tree-overlay helpers
+# ---------------------------------------------------------------------------
+
+function _leaf_text_plots(p::TaxonomyTreePlot)::Vector{Any}
+    return Any[
+        plot for plot in p.plots
+        if hasproperty(plot, :text) &&
+            hasproperty(plot, :align) &&
+            plot.text[] isa AbstractVector{<:AbstractString} &&
+            length(plot.text[]) == 1 &&
+            plot.align[] == (:left, :center)
+    ]
+end
+
+function _plan_leaf_plot_phylopic_overlay(
+        p::TaxonomyTreePlot;
+        anchor::Symbol = :tip_label_origin,
+        align::Bool = false,
+        column_x::Union{Nothing, Real} = nothing,
+        tip_xoffset::Real = p[:tip_xoffset][],
+        xoffset::Real = 0.0,
+        yoffset::Real = 0.0,
+    )
+    tree = p[:taxonomytree][]
+    xs, ys = _compute_dendrogram_layout(
+        tree;
+        ladderize = p[:ladderize][],
+        row_spacing = p[:row_spacing][],
+    )
+
+    if anchor === :tip_label_origin && !(align && !isnothing(column_x))
+        plan = _plan_leaf_label_phylopic_overlay(
+            p,
+            tree,
+            xs,
+            ys;
+            leaf_text_plots = _leaf_text_plots(p),
+            tip_xoffset = tip_xoffset,
+            tip_yoffset = p[:tip_yoffset][],
+            phylopic_xoffset = xoffset,
+            phylopic_yoffset = yoffset,
+            align = align,
+        )
+        return (plan = plan, render_xoffset = 0.0, render_yoffset = 0.0)
+    end
+
+    plan = _plan_leaf_tip_phylopic_overlay(
+        tree,
+        xs,
+        ys;
+        anchor = anchor,
+        align = align,
+        column_x = column_x,
+        tip_xoffset = tip_xoffset,
+    )
+    return (plan = plan, render_xoffset = xoffset, render_yoffset = yoffset)
+end
+
+# ---------------------------------------------------------------------------
 # plot! implementation
 # ---------------------------------------------------------------------------
 
@@ -370,29 +429,20 @@ function Makie.plot!(p::TaxonomyTreePlot{<:Tuple{TaxonomyTree}})
     # placement reactive under relimit and resize. Changing the tree or the
     # overlay-policy attributes still requires recreating the plot.
     if p[:show_phylopic][]
-        ax = Makie.current_axis()
-        isnothing(ax) && throw(
-            ArgumentError(
-                "TaxonomyTreePlot: no current Makie.Axis was available while planning the integrated PhyloPic overlay."
-            )
-        )
-        plan = _plan_leaf_label_phylopic_overlay(
-            ax,
-            tree_obs[],
-            layout_obs[]...;
-            leaf_text_plots = leaf_text_plots,
-            tip_xoffset = p[:tip_xoffset][],
-            tip_yoffset = p[:tip_yoffset][],
-            phylopic_xoffset = p[:phylopic_xoffset][],
-            phylopic_yoffset = p[:phylopic_yoffset][],
+        planning = _plan_leaf_plot_phylopic_overlay(
+            p;
+            anchor = :tip_label_origin,
             align = p[:phylopic_align][],
+            tip_xoffset = p[:tip_xoffset][],
+            xoffset = p[:phylopic_xoffset][],
+            yoffset = p[:phylopic_yoffset][],
         )
         overlay = _augment_leaf_phylopic!(
-            ax,
-            plan;
+            p,
+            planning.plan;
             placement = :left,
-            xoffset = 0.0,
-            yoffset = 0.0,
+            xoffset = planning.render_xoffset,
+            yoffset = planning.render_yoffset,
             glyph_size = p[:phylopic_glyph_size][],
             on_missing = p[:phylopic_on_missing][],
             aspect = p[:phylopic_aspect][],

@@ -4,6 +4,11 @@
 # All public functions resolve images via _resolve_images (from _resolve.jl)
 # and then delegate to PhyloPicMakie.augment_phylopic!.
 #
+# Tree-overlay entry points also use _augment_taxon_phylopic_anchored!, which
+# resolves PBDB taxon names here and then forwards generic missing-image,
+# rotation, mirroring, and anchored-overlay preparation to
+# PhyloPicMakie._augment_resolved_phylopic_anchored!.
+#
 # _extract_column lives in PhyloPicMakie._augment_api and is accessed as
 # PhyloPicMakie._extract_column here.
 #
@@ -26,82 +31,8 @@
 # Public: core vector API
 # ---------------------------------------------------------------------------
 
-function _prepared_anchor_positions(anchor_positions, kept_indices::AbstractVector{<:Integer})
-    anchor_positions isa AbstractVector && return anchor_positions[kept_indices]
-    return Makie.lift(pos -> pos[kept_indices], anchor_positions)
-end
-
-function _augment_resolved_phylopic_anchored!(
-        ax::Makie.Axis,
-        anchor_positions,
-        images::AbstractVector;
-        anchor_space::Symbol,
-        glyph_size_space::Symbol,
-        glyph_size::Real,
-        aspect::Symbol,
-        placement::Symbol,
-        xoffset::Real,
-        yoffset::Real,
-        rotation::Real,
-        mirror::Bool,
-        on_missing::Symbol,
-    )
-    on_missing ∈ PhyloPicMakie.VALID_ON_MISSING || throw(
-        ArgumentError(
-            "augment_phylopic: unknown `on_missing` value `$on_missing`. " *
-                "Valid values: $(join(PhyloPicMakie.VALID_ON_MISSING, ", "))."
-        )
-    )
-
-    kept_indices = Int[]
-    rendered_images = AbstractMatrix[]
-    sizehint!(kept_indices, length(images))
-    sizehint!(rendered_images, length(images))
-
-    for i in eachindex(images)
-        img = images[i]
-        if isnothing(img)
-            if on_missing === :error
-                throw(
-                    ErrorException(
-                        "augment_phylopic: missing image for data point $i " *
-                            "(on_missing = :error)."
-                    )
-                )
-            elseif on_missing === :placeholder
-                push!(kept_indices, i)
-                push!(rendered_images, PhyloPicMakie._placeholder_glyph())
-            end
-            continue
-        end
-
-        rendered = PhyloPicMakie._apply_rotation(img, rotation)
-        if mirror
-            rendered = rendered[:, end:-1:1]
-        end
-
-        push!(kept_indices, i)
-        push!(rendered_images, rendered)
-    end
-
-    isempty(rendered_images) && return nothing
-    prepared_positions = _prepared_anchor_positions(anchor_positions, kept_indices)
-    return PhyloPicMakie._augment_phylopic_anchored!(
-        ax,
-        prepared_positions,
-        rendered_images;
-        anchor_space = anchor_space,
-        glyph_size_space = glyph_size_space,
-        glyph_size = glyph_size,
-        aspect = aspect,
-        placement = placement,
-        xoffset = xoffset,
-        yoffset = yoffset,
-    )
-end
-
 function _augment_taxon_phylopic_anchored!(
-        ax::Makie.Axis,
+        parent,
         anchor_positions;
         taxon::Union{AbstractVector, Nothing} = nothing,
         glyph::Union{AbstractMatrix, Nothing} = nothing,
@@ -119,8 +50,8 @@ function _augment_taxon_phylopic_anchored!(
     )
     n = anchor_positions isa AbstractVector ? length(anchor_positions) : length(anchor_positions[])
     images = _resolve_images(taxon, glyph, n; image_rendering)
-    return _augment_resolved_phylopic_anchored!(
-        ax,
+    return PhyloPicMakie._augment_resolved_phylopic_anchored!(
+        parent,
         anchor_positions,
         images;
         anchor_space = anchor_space,

@@ -57,6 +57,34 @@ function _mock_carnivora_tree()
     TaxonomyTree(g, taxa, vertex_of, 1)
 end
 
+function _mock_longlabel_carnivora_tree()
+    g = Graphs.SimpleDiGraph(6)
+    Graphs.add_edge!(g, 1, 2)
+    Graphs.add_edge!(g, 1, 5)
+    Graphs.add_edge!(g, 2, 3)
+    Graphs.add_edge!(g, 2, 4)
+    Graphs.add_edge!(g, 5, 6)
+    taxa = [
+        TaxonNode("Carnivora", "order", 1, 1, missing),
+        TaxonNode("Canidae", "family", 2, 2, 1),
+        TaxonNode("ExtremelyLongCanisLabel", "genus", 3, 3, 2),
+        TaxonNode("Short", "genus", 4, 4, 2),
+        TaxonNode("AnotherVeryLongFelisLabel", "genus", 6, 6, 5),
+        TaxonNode("Felidae", "family", 5, 5, 1),
+    ]
+    # Reorder taxa to match vertex ids after the long-label substitutions.
+    taxa = [
+        taxa[1],
+        taxa[2],
+        taxa[3],
+        taxa[4],
+        taxa[6],
+        taxa[5],
+    ]
+    vertex_of = Dict(1 => 1, 2 => 2, 3 => 3, 4 => 4, 5 => 5, 6 => 6)
+    TaxonomyTree(g, taxa, vertex_of, 1)
+end
+
 # Single-node placeholder tree (mimics taxon_subtree("INVALID"))
 function _mock_single_node_tree()
     g = Graphs.SimpleDiGraph(1)
@@ -76,6 +104,8 @@ if _CAIRO_TTM_AVAILABLE
     const _leaf_positions_fn = PaleobiologyDB.TaxonomyMakie._leaf_positions
     const _plan_leaf_tip_overlay = PaleobiologyDB.TaxonomyMakie._plan_leaf_tip_phylopic_overlay
     const _plan_leaf_label_overlay = PaleobiologyDB.TaxonomyMakie._plan_leaf_label_phylopic_overlay
+    const _plan_leaf_plot_overlay = PaleobiologyDB.TaxonomyMakie._plan_leaf_plot_phylopic_overlay
+    const _leaf_text_plots_for_plot = PaleobiologyDB.TaxonomyMakie._leaf_text_plots
     const _augment_leaf_overlay = PaleobiologyDB.TaxonomyMakie._augment_leaf_phylopic!
     const _LeafOverlayPlan = PaleobiologyDB.TaxonomyMakie._LeafOverlayPlan
     const _TEST_GLYPH = fill(Makie.RGBA{Makie.N0f8}(0, 0, 0, 1), 16, 32)
@@ -109,6 +139,31 @@ if _CAIRO_TTM_AVAILABLE
         offset = overlay.marker_offset[][i]
         size = overlay.markersize[][i]
         return Float64(pos[1] + offset[1] - 0.5f0 * size[1])
+    end
+
+    function _managed_overlay_atomic_plots(scene)
+        return filter(Makie.collect_atomic_plots(scene)) do plot
+            if hasproperty(plot, :marker)
+                marker = try
+                    plot.marker[]
+                catch
+                    nothing
+                end
+                if marker isa AbstractVector && !isempty(marker) && first(marker) isa AbstractMatrix
+                    return true
+                end
+            end
+
+            if !(hasproperty(plot, :markersize) && hasproperty(plot, :visible))
+                return false
+            end
+            markersize = try
+                plot.markersize[]
+            catch
+                nothing
+            end
+            return markersize == 0 && plot.visible[] == false
+        end
     end
 
     @testset "TaxonomyTreeMakie — _rank_depth" begin
@@ -261,6 +316,13 @@ if _CAIRO_TTM_AVAILABLE
         @test [pos[2] for pos in plan.anchor_positions] ≈ leaves.y
     end
 
+    @testset "TaxonomyTreeMakie — tip_positions(p) respects row_spacing" begin
+        tree = _mock_carnivora_tree()
+        fig, ax, plt = taxonomytreeplot(tree; row_spacing = 3.0, show_phylopic = false)
+        xs, ys = _layout(tree; row_spacing = 3.0)
+        @test tip_positions(plt) == tip_positions(tree, xs, ys)
+    end
+
     @testset "TaxonomyTreeMakie — shared label-aware overlay reacts to relimit and resize" begin
         tree = _mock_carnivora_tree()
         xs, ys = _layout(tree)
@@ -326,6 +388,86 @@ if _CAIRO_TTM_AVAILABLE
         @test left_edge_4 > label_right_4
     end
 
+    @testset "TaxonomyTreeMakie — plot-backed explicit overlay shares the integrated plan" begin
+        tree = _mock_longlabel_carnivora_tree()
+        xs, ys = _layout(tree)
+        fig, ax, plt = taxonomytreeplot(
+            tree;
+            show_phylopic = false,
+            tip_xoffset = 0.1,
+        )
+
+        planning = _plan_leaf_plot_overlay(
+            plt;
+            anchor = :tip_label_origin,
+            tip_xoffset = 0.1,
+            xoffset = 0.65,
+            yoffset = 0.3,
+            align = false,
+        )
+        integrated_plan = _plan_leaf_label_overlay(
+            plt,
+            tree,
+            xs,
+            ys;
+            leaf_text_plots = _leaf_text_plots_for_plot(plt),
+            tip_xoffset = 0.1,
+            tip_yoffset = plt[:tip_yoffset][],
+            phylopic_xoffset = 0.65,
+            phylopic_yoffset = 0.3,
+            align = false,
+        )
+        raw_tip_plan = _plan_leaf_tip_overlay(
+            tree,
+            xs,
+            ys;
+            anchor = :tip_label_origin,
+            tip_xoffset = 0.1,
+            align = false,
+        )
+
+        _materialize_tree_overlay!(fig)
+        explicit_xs = [Float64(pos[1]) for pos in planning.plan.anchor_positions[]]
+        integrated_xs = [Float64(pos[1]) for pos in integrated_plan.anchor_positions[]]
+        raw_tip_xs = [Float64(pos[1]) for pos in raw_tip_plan.anchor_positions]
+
+        @test explicit_xs ≈ integrated_xs
+        @test explicit_xs != raw_tip_xs
+    end
+
+    @testset "TaxonomyTreeMakie — deleting the tree plot removes overlay support plots" begin
+        tree = _mock_carnivora_tree()
+        fig, ax, plt = taxonomytreeplot(tree; show_phylopic = false)
+        @test isempty(_managed_overlay_atomic_plots(ax.scene))
+
+        planning = _plan_leaf_plot_overlay(
+            plt;
+            anchor = :tip_label_origin,
+            tip_xoffset = plt[:tip_xoffset][],
+            xoffset = 0.65,
+            yoffset = 0.3,
+            align = false,
+        )
+        overlay = _augment_leaf_overlay(
+            plt,
+            planning.plan;
+            glyph = _TEST_GLYPH,
+            placement = :left,
+            glyph_size = 1.0,
+            aspect = :preserve,
+            on_missing = :skip,
+        )
+
+        _materialize_tree_overlay!(fig)
+        @test !isnothing(overlay)
+        @test length(overlay.probe_plots) == 6
+        @test !isempty(_managed_overlay_atomic_plots(ax.scene))
+
+        delete!(ax.scene, plt)
+        _materialize_tree_overlay!(fig)
+        @test isempty(_managed_overlay_atomic_plots(ax.scene))
+    end
+
     @testset "TaxonomyTreeMakie — tree overlay missing-image policy uses shared adapter" begin
         fig = Figure()
         ax = Axis(fig[1, 1])
@@ -333,6 +475,7 @@ if _CAIRO_TTM_AVAILABLE
             [1],
             [""],
             [Makie.Point2f(1.0f0, 1.0f0)],
+            (),
         )
 
         @test isnothing(

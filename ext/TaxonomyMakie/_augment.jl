@@ -27,7 +27,8 @@ const VALID_TIP_ANCHORS = VALID_LEAF_OVERLAY_ANCHORS
 Extract leaf-tip coordinates from a `TaxonomyTreePlot` object.
 
 Convenience overload of [`tip_positions`](@ref) that reads the
-tree and `ladderize` attribute from `p` and recomputes the dendrogram layout.
+tree, `ladderize`, and `row_spacing` attributes from `p` and recomputes the
+dendrogram layout.
 
 Returns a `NamedTuple` with fields:
 - `vertices::Vector{Int}` — leaf vertex indices into `p[:taxonomytree][].graph`
@@ -53,7 +54,11 @@ See also [`tip_positions`](@ref), [`augment_tip_phylopic!`](@ref).
 """
 function tip_positions(p::TaxonomyTreePlot)::NamedTuple
     tree = p[:taxonomytree][]
-    xs, ys = _compute_dendrogram_layout(tree; ladderize = p[:ladderize][])
+    xs, ys = _compute_dendrogram_layout(
+        tree;
+        ladderize = p[:ladderize][],
+        row_spacing = p[:row_spacing][],
+    )
     return tip_positions(tree, xs, ys)
 end
 
@@ -107,7 +112,7 @@ which reads tree and layout directly from a `TaxonomyTreePlot`.
   - `:tip_label_origin` — `xs[v] + tip_xoffset`
 - `tip_xoffset` (default `0.0`) — label-start offset used when
   `anchor = :tip_label_origin`.  Set to match the `tip_xoffset` attribute of
-  the corresponding `TaxonomyTreePlot` (recipe default `0.2`).
+  the corresponding `TaxonomyTreePlot` (recipe default `0.1`).
 
 ### Alignment
 
@@ -157,7 +162,7 @@ augment_tip_phylopic!(ax, plt; xoffset = 1.0)
 # Anchor at tip-label origin so silhouettes appear after the text
 augment_tip_phylopic!(ax, plt;
     anchor      = :tip_label_origin,
-    tip_xoffset = 0.2,   # match recipe tip_xoffset attribute
+    tip_xoffset = 0.1,   # match recipe tip_xoffset attribute
     xoffset     = 0.5,
 )
 
@@ -221,7 +226,10 @@ end
     augment_tip_phylopic!(ax::Makie.Axis, p::TaxonomyTreePlot; kwargs...) -> Nothing
 
 Convenience overload of [`augment_tip_phylopic!`](@ref) that reads tree and
-layout from a `TaxonomyTreePlot`.
+layout from a `TaxonomyTreePlot`. When `anchor = :tip_label_origin` and no
+fixed `column_x` override is requested, this overload reuses the plotted leaf
+labels so the explicit two-step overlay follows the same label-aware placement
+contract as `show_phylopic = true`.
 
 All keyword arguments are forwarded unchanged to the primary method.  See
 [`augment_tip_phylopic!`](@ref) for full documentation.
@@ -234,12 +242,45 @@ augment_tip_phylopic!(ax, plt; xoffset = 1.0)
 ```
 """
 function augment_tip_phylopic!(
-        ax::Makie.Axis,
+        _ax::Makie.Axis,
         p::TaxonomyTreePlot;
-        kwargs...,
+        anchor::Symbol = :tip,
+        align::Bool = false,
+        column_x::Union{Nothing, Real} = nothing,
+        tip_xoffset::Real = p[:tip_xoffset][],
+        placement::Symbol = :left,
+        xoffset::Real = 0.0,
+        yoffset::Real = 0.0,
+        glyph_size::Real = 0.4,
+        aspect::Symbol = :preserve,
+        rotation::Real = 0.0,
+        mirror::Bool = false,
+        image_rendering::Symbol = :thumbnail,
+        on_missing::Symbol = :skip,
     )::Nothing
-    tree = p[:taxonomytree][]
-    xs, ys = _compute_dendrogram_layout(tree; ladderize = p[:ladderize][])
-    augment_tip_phylopic!(ax, tree, xs, ys; kwargs...)
+    planning = _plan_leaf_plot_phylopic_overlay(
+        p;
+        anchor = anchor,
+        align = align,
+        column_x = column_x,
+        tip_xoffset = tip_xoffset,
+        xoffset = xoffset,
+        yoffset = yoffset,
+    )
+    isempty(planning.plan.leaf_vertices) && return nothing
+
+    _augment_leaf_phylopic!(
+        p,
+        planning.plan;
+        placement = placement,
+        xoffset = planning.render_xoffset,
+        yoffset = planning.render_yoffset,
+        glyph_size = glyph_size,
+        aspect = aspect,
+        rotation = rotation,
+        mirror = mirror,
+        image_rendering = image_rendering,
+        on_missing = on_missing,
+    )
     return nothing
 end

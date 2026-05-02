@@ -6,10 +6,56 @@
 # the PBDB bridge and the shared PhyloPicMakie anchored-overlay substrate.
 # ---------------------------------------------------------------------------
 
-struct _LeafOverlayPlan{P}
+struct _LeafOverlayPlan{P, S}
     leaf_vertices::Vector{Int}
     leaf_names::Vector{String}
     anchor_positions::P
+    support_plots::S
+end
+
+struct _ManagedLeafOverlay{O, S}
+    overlay::O
+    support_plots::S
+end
+
+function Base.getproperty(overlay::_ManagedLeafOverlay, name::Symbol)
+    if name === :overlay || name === :support_plots
+        return getfield(overlay, name)
+    elseif name === :probe_plots
+        base_overlay = getfield(overlay, :overlay)
+        return (base_overlay.probe_plots..., getfield(overlay, :support_plots)...)
+    end
+    return getproperty(getfield(overlay, :overlay), name)
+end
+
+function Base.propertynames(overlay::_ManagedLeafOverlay, private::Bool = false)
+    return (
+        :overlay,
+        :support_plots,
+        :probe_plots,
+        propertynames(getfield(overlay, :overlay), private)...,
+    )
+end
+
+function _delete_overlay_artifact!(plot)
+    plot_parent = parent(plot)
+    parent_owns_plot = plot_parent isa Makie.Plot && any(child -> child === plot, plot_parent.plots)
+    if parent_owns_plot
+        filter!(child -> child !== plot, plot_parent.plots)
+    end
+
+    scene = Makie.parent_scene(plot)
+    (parent_owns_plot || any(p -> p === plot, scene.plots)) || return nothing
+    delete!(scene, plot)
+    return nothing
+end
+
+function Base.delete!(scene::Makie.Scene, overlay::_ManagedLeafOverlay)
+    for plot in reverse(overlay.support_plots)
+        _delete_overlay_artifact!(plot)
+    end
+    delete!(scene, overlay.overlay)
+    return overlay
 end
 
 const VALID_LEAF_OVERLAY_ANCHORS = (:tip, :tip_label_origin)
@@ -109,11 +155,11 @@ function _plan_leaf_tip_phylopic_overlay(
         Makie.Point2f(Float32(x_anchors[i]), Float32(leaves.y[i]))
         for i in eachindex(leaves.vertices)
     ]
-    return _LeafOverlayPlan(leaves.vertices, leaves.names, anchor_positions)
+    return _LeafOverlayPlan(leaves.vertices, leaves.names, anchor_positions, ())
 end
 
 function _plan_leaf_label_phylopic_overlay(
-        ax::Makie.Axis,
+        parent,
         tree::TaxonomyTree,
         xs::AbstractVector{<:Real},
         ys::AbstractVector{<:Real};
@@ -130,7 +176,12 @@ function _plan_leaf_label_phylopic_overlay(
             "_plan_leaf_label_phylopic_overlay: `leaf_text_plots` must match the number of leaves."
         )
     )
-    isempty(leaves.vertices) && return _LeafOverlayPlan(leaves.vertices, leaves.names, Makie.Point2f[])
+    isempty(leaves.vertices) && return _LeafOverlayPlan(
+        leaves.vertices,
+        leaves.names,
+        Makie.Point2f[],
+        (),
+    )
 
     label_origin_points = Makie.Point2f[
         Makie.Point2f(
@@ -143,8 +194,8 @@ function _plan_leaf_label_phylopic_overlay(
         Makie.Point2f(p[1] + 1.0f0, p[2]) for p in label_origin_points
     ]
 
-    label_origin_source = _leaf_overlay_probe_scatter!(ax, label_origin_points)
-    label_unit_source = _leaf_overlay_probe_scatter!(ax, label_unit_points)
+    label_origin_source = _leaf_overlay_probe_scatter!(parent, label_origin_points)
+    label_unit_source = _leaf_overlay_probe_scatter!(parent, label_unit_points)
     label_origin_pixels = Makie.register_projected_positions!(
         label_origin_source;
         input_name = :positions,
@@ -178,11 +229,16 @@ function _plan_leaf_label_phylopic_overlay(
         return planned
     end
 
-    return _LeafOverlayPlan(leaves.vertices, leaves.names, anchor_positions)
+    return _LeafOverlayPlan(
+        leaves.vertices,
+        leaves.names,
+        anchor_positions,
+        (label_origin_source, label_unit_source),
+    )
 end
 
 function _augment_leaf_phylopic!(
-        ax::Makie.Axis,
+        parent,
         plan::_LeafOverlayPlan;
         taxon::Union{AbstractVector, Nothing} = nothing,
         glyph::Union{AbstractMatrix, Nothing} = nothing,
@@ -197,8 +253,8 @@ function _augment_leaf_phylopic!(
         on_missing::Symbol = :skip,
     )
     resolved_taxa = isnothing(taxon) ? plan.leaf_names : taxon
-    return PhyloPic._augment_taxon_phylopic_anchored!(
-        ax,
+    overlay = PhyloPic._augment_taxon_phylopic_anchored!(
+        parent,
         plan.anchor_positions;
         taxon = resolved_taxa,
         glyph = glyph,
@@ -214,4 +270,12 @@ function _augment_leaf_phylopic!(
         image_rendering = image_rendering,
         on_missing = on_missing,
     )
+    if isnothing(overlay)
+        for plot in reverse(plan.support_plots)
+            _delete_overlay_artifact!(plot)
+        end
+        return nothing
+    end
+    isempty(plan.support_plots) && return overlay
+    return _ManagedLeafOverlay(overlay, plan.support_plots)
 end
