@@ -73,6 +73,43 @@ if _CAIRO_TTM_AVAILABLE
     const _rd_fn   = PaleobiologyDB.TaxonomyMakie._rank_depth
     const _layout  = PaleobiologyDB.TaxonomyMakie._compute_dendrogram_layout
     const _segpairs = PaleobiologyDB.TaxonomyMakie._dendrogram_segment_pairs
+    const _leaf_positions_fn = PaleobiologyDB.TaxonomyMakie._leaf_positions
+    const _plan_leaf_tip_overlay = PaleobiologyDB.TaxonomyMakie._plan_leaf_tip_phylopic_overlay
+    const _plan_leaf_label_overlay = PaleobiologyDB.TaxonomyMakie._plan_leaf_label_phylopic_overlay
+    const _augment_leaf_overlay = PaleobiologyDB.TaxonomyMakie._augment_leaf_phylopic!
+    const _LeafOverlayPlan = PaleobiologyDB.TaxonomyMakie._LeafOverlayPlan
+    const _TEST_GLYPH = fill(Makie.RGBA{Makie.N0f8}(0, 0, 0, 1), 16, 32)
+
+    _materialize_tree_overlay!(fig) = CairoMakie.Makie.update_state_before_display!(fig)
+
+    function _leaf_text_plots!(ax, tree, xs, ys; tip_xoffset = 0.1, tip_yoffset = 0.0)
+        leaves = _leaf_positions_fn(tree, xs, ys)
+        text_plots = Any[]
+        sizehint!(text_plots, length(leaves.vertices))
+        for i in eachindex(leaves.vertices)
+            push!(
+                text_plots,
+                Makie.text!(
+                    ax,
+                    Makie.Point2f(
+                        leaves.x[i] + Float64(tip_xoffset),
+                        leaves.y[i] + Float64(tip_yoffset),
+                    );
+                    text = leaves.names[i],
+                    align = (:left, :center),
+                    clip_planes = Makie.Plane3f[],
+                ),
+            )
+        end
+        return leaves, text_plots
+    end
+
+    function _overlay_left_edge_px(overlay, i::Integer = 1)
+        pos = overlay.positions[][i]
+        offset = overlay.marker_offset[][i]
+        size = overlay.markersize[][i]
+        return Float64(pos[1] + offset[1] - 0.5f0 * size[1])
+    end
 
     @testset "TaxonomyTreeMakie — _rank_depth" begin
 
@@ -203,6 +240,134 @@ if _CAIRO_TTM_AVAILABLE
         end
     end
 
+    @testset "TaxonomyTreeMakie — leaf overlay planning" begin
+        tree = _mock_carnivora_tree()
+        xs, ys = _layout(tree)
+
+        leaves = _leaf_positions_fn(tree, xs, ys)
+        @test leaves == tip_positions(tree, xs, ys)
+
+        plan = _plan_leaf_tip_overlay(
+            tree,
+            xs,
+            ys;
+            anchor = :tip_label_origin,
+            tip_xoffset = 0.25,
+            align = true,
+        )
+        @test plan.leaf_names == leaves.names
+        @test length(plan.anchor_positions) == length(leaves.vertices)
+        @test all(pos -> pos[1] ≈ maximum(leaves.x .+ 0.25), plan.anchor_positions)
+        @test [pos[2] for pos in plan.anchor_positions] ≈ leaves.y
+    end
+
+    @testset "TaxonomyTreeMakie — shared label-aware overlay reacts to relimit and resize" begin
+        tree = _mock_carnivora_tree()
+        xs, ys = _layout(tree)
+
+        fig = Figure(size = (600, 400))
+        ax = Axis(fig[1, 1])
+        xlims!(ax, 0, 20)
+        ylims!(ax, 0, 8)
+
+        leaves, leaf_text_plots = _leaf_text_plots!(ax, tree, xs, ys; tip_xoffset = 0.1)
+        plan = _plan_leaf_label_overlay(
+            ax,
+            tree,
+            xs,
+            ys;
+            leaf_text_plots = leaf_text_plots,
+            tip_xoffset = 0.1,
+            phylopic_xoffset = 0.65,
+            phylopic_yoffset = 0.3,
+            align = false,
+        )
+        overlay = _augment_leaf_overlay(
+            ax,
+            plan;
+            glyph = _TEST_GLYPH,
+            placement = :left,
+            glyph_size = 1.0,
+            aspect = :preserve,
+            on_missing = :skip,
+        )
+
+        _materialize_tree_overlay!(fig)
+        anchor_x_1 = first(plan.anchor_positions[])[1]
+        size_1 = first(overlay.markersize[])
+        left_edge_1 = _overlay_left_edge_px(overlay)
+        label_right_1 = Float64(Makie.maximum(Makie.boundingbox(first(leaf_text_plots), :pixel))[1])
+        @test size_1[2] > 0.0f0
+        @test left_edge_1 > label_right_1
+
+        xlims!(ax, 0, 40)
+        _materialize_tree_overlay!(fig)
+        anchor_x_2 = first(plan.anchor_positions[])[1]
+        size_2 = first(overlay.markersize[])
+        left_edge_2 = _overlay_left_edge_px(overlay)
+        label_right_2 = Float64(Makie.maximum(Makie.boundingbox(first(leaf_text_plots), :pixel))[1])
+        @test anchor_x_2 > anchor_x_1
+        @test left_edge_2 > label_right_2
+
+        ylims!(ax, 0, 16)
+        _materialize_tree_overlay!(fig)
+        size_3 = first(overlay.markersize[])
+        left_edge_3 = _overlay_left_edge_px(overlay)
+        label_right_3 = Float64(Makie.maximum(Makie.boundingbox(first(leaf_text_plots), :pixel))[1])
+        @test size_3[2] < size_2[2]
+        @test left_edge_3 > label_right_3
+
+        resize!(fig.scene, 900, 700)
+        _materialize_tree_overlay!(fig)
+        size_4 = first(overlay.markersize[])
+        left_edge_4 = _overlay_left_edge_px(overlay)
+        label_right_4 = Float64(Makie.maximum(Makie.boundingbox(first(leaf_text_plots), :pixel))[1])
+        @test size_4[2] > size_3[2]
+        @test left_edge_4 > label_right_4
+    end
+
+    @testset "TaxonomyTreeMakie — tree overlay missing-image policy uses shared adapter" begin
+        fig = Figure()
+        ax = Axis(fig[1, 1])
+        plan = _LeafOverlayPlan(
+            [1],
+            [""],
+            [Makie.Point2f(1.0f0, 1.0f0)],
+        )
+
+        @test isnothing(
+            _augment_leaf_overlay(
+                ax,
+                plan;
+                taxon = [""],
+                placement = :left,
+                glyph_size = 1.0,
+                aspect = :preserve,
+                on_missing = :skip,
+            )
+        )
+
+        placeholder = _augment_leaf_overlay(
+            ax,
+            plan;
+            taxon = [""],
+            placement = :left,
+            glyph_size = 1.0,
+            aspect = :preserve,
+            on_missing = :placeholder,
+        )
+        @test !isnothing(placeholder)
+        @test_throws ErrorException _augment_leaf_overlay(
+            ax,
+            plan;
+            taxon = [""],
+            placement = :left,
+            glyph_size = 1.0,
+            aspect = :preserve,
+            on_missing = :error,
+        )
+    end
+
 else
     @info "CairoMakie not available — skipping TaxonomyTreeMakie offline layout tests"
 end
@@ -283,10 +448,10 @@ if _CAIRO_TTM_AVAILABLE
 
     # ── PhyloPic silhouette attribute tests (offline — no network) ───────────
     #
-    # Any test with show_phylopic = true triggers _render_tip_phylopic! which
-    # calls acquire_phylopic per leaf — a live network operation.  Only the
-    # attribute-registration check below runs unconditionally; all rendering
-    # tests are gated on LIVE (see the @testset block below).
+    # The public show_phylopic path still resolves live PBDB + PhyloPic data,
+    # so only attribute-registration checks run unconditionally. The stronger
+    # render-aware shared-owner tests above stay offline by injecting a test
+    # glyph directly into the internal tree-overlay adapter.
 
     @testset "TaxonomyTreeMakie — PhyloPic silhouette attributes (offline)" begin
         tree = _mock_carnivora_tree()
@@ -349,8 +514,8 @@ if _CAIRO_TTM_AVAILABLE
             end
 
             @testset "show_phylopic = true, on_missing = :error raises ErrorException for unresolvable taxon" begin
-                # "INVALID" cannot resolve through PBDB / PhyloPic;
-                # _load_tip_phylopic_image returns nothing → :error fires.
+                # "INVALID" cannot resolve through PBDB / PhyloPic, so the
+                # shared tree-overlay adapter receives no image and :error fires.
                 tree_unresolvable = _mock_single_node_tree()
                 @test_throws ErrorException taxonomytreeplot(
                     tree_unresolvable;

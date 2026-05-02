@@ -236,8 +236,11 @@ fig, ax, plt = taxonomytreeplot(tree;
 
 PhyloPic images are loaded **once** when the plot is created.  Toggling
 `p[:show_phylopic][] = false` after creation hides/shows the existing images
-without re-downloading.  Changing `phylopic_glyph_size`, `phylopic_align`, or
-the tree itself requires recreating the plot with `taxonomytreeplot`.
+without re-downloading.  After creation, resize and relimit changes keep the
+glyphs visibly sized and anchored to the intended label policy through the
+shared overlay substrate.  Changing `phylopic_glyph_size`, `phylopic_align`,
+or the tree itself still requires recreating the plot with
+`taxonomytreeplot`.
 
 ### Note on extension activation
 

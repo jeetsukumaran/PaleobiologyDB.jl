@@ -50,8 +50,8 @@ using .PhyloPic  # bring PhyloPic exports into TaxonomyMakie's scope for re-expo
 
 # Tree-visualization implementation files.
 include("_layout.jl")
+include("_leaf_overlay.jl")
 include("_recipe.jl")
-include("_phylopic.jl")
 include("_augment.jl")
 
 # Tree-visualization exports (formerly TaxonomyTreeMakie).

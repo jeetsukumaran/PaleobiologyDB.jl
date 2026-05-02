@@ -68,8 +68,24 @@ end
 # Synthetic 4-row × 8-column opaque grey RGBA image for offline render tests.
 const _TEST_IMG = fill(RGBA{N0f8}(0.5, 0.5, 0.5, 1.0), 4, 8)
 
-# Convenience: count Image plots added to an axis.
-_count_images(ax) = count(p -> p isa Image, ax.scene.plots)
+# Convenience: count rendered PhyloPic glyph markers added to an axis.
+function _count_images(ax)
+    n = 0
+    for plot in ax.scene.plots
+        plot isa Image && (n += 1)
+        marker = try
+            plot.marker[]
+        catch
+            nothing
+        end
+        if marker isa AbstractVector && !isempty(marker) && all(m -> m isa AbstractMatrix, marker)
+            n += length(marker)
+        elseif marker isa AbstractMatrix
+            n += 1
+        end
+    end
+    return n
+end
 
 @testset "PhyloPic — augment_phylopic! vector API" begin
 

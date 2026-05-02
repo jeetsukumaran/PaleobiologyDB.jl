@@ -2,9 +2,9 @@
 # TaxonomyMakie — tree-aware PhyloPic overlay API
 #
 # Provides a composable overlay API that separates tree geometry extraction
-# from glyph rendering.  All rendering is delegated to
-# augment_phylopic! (from PhyloPic) so that placement math,
-# reactive axis-scale correction, and image caching are handled in one place.
+# from glyph rendering. Tree-specific planning stays in TaxonomyMakie;
+# glyph rendering is delegated through the PBDB bridge into the shared
+# PhyloPicMakie anchored-overlay substrate.
 #
 # Public:
 #   tip_positions(p::TaxonomyTreePlot) → NamedTuple
@@ -15,7 +15,7 @@
 """
 Valid `anchor` symbols for `augment_tip_phylopic!`.
 """
-const VALID_TIP_ANCHORS = (:tip, :tip_label_origin)
+const VALID_TIP_ANCHORS = VALID_LEAF_OVERLAY_ANCHORS
 
 # ---------------------------------------------------------------------------
 # tip_positions — TaxonomyTreePlot convenience overload
@@ -186,29 +186,20 @@ function augment_tip_phylopic!(
         image_rendering::Symbol = :thumbnail,
         on_missing::Symbol = :skip,
     )::Nothing
-    anchor ∈ VALID_TIP_ANCHORS || throw(
-        ArgumentError(
-            "augment_tip_phylopic!: unknown `anchor` value `:$anchor`. " *
-                "Valid values: $(join(string.(':', VALID_TIP_ANCHORS), ", "))."
-        )
+    plan = _plan_leaf_tip_phylopic_overlay(
+        tree,
+        xs,
+        ys;
+        anchor = anchor,
+        align = align,
+        column_x = column_x,
+        tip_xoffset = tip_xoffset,
     )
+    isempty(plan.leaf_vertices) && return nothing
 
-    tips = tip_positions(tree, xs, ys)
-    isempty(tips.vertices) && return nothing
-
-    x_anchors = Float64[
-        anchor === :tip ? Float64(xs[v]) : Float64(xs[v]) + Float64(tip_xoffset)
-            for v in tips.vertices
-    ]
-
-    if align
-        xcol = isnothing(column_x) ? maximum(x_anchors) : Float64(column_x)
-        fill!(x_anchors, xcol)
-    end
-
-    PhyloPic.augment_phylopic!(
-        ax, x_anchors, tips.y;
-        taxon = tips.names,
+    _augment_leaf_phylopic!(
+        ax,
+        plan;
         placement = placement,
         xoffset = xoffset,
         yoffset = yoffset,

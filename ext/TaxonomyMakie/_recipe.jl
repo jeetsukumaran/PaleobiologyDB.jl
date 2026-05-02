@@ -365,26 +365,47 @@ function Makie.plot!(p::TaxonomyTreePlot{<:Tuple{TaxonomyTree}})
     )
 
     # ── PhyloPic tip silhouettes ──────────────────────────────────────────
-    # Images are loaded once at plot-creation time (network results cached).
-    # Toggling show_phylopic after creation changes visibility without
-    # re-fetching.  Changing glyph_size, phylopic_align, the tree, or other
-    # layout attributes requires recreating the plot.
+    # Images are resolved once at plot-creation time (network results cached).
+    # The shared overlay substrate keeps glyph size and label-relative
+    # placement reactive under relimit and resize. Changing the tree or the
+    # overlay-policy attributes still requires recreating the plot.
     if p[:show_phylopic][]
-        _render_tip_phylopic!(
-            p,
+        ax = Makie.current_axis()
+        isnothing(ax) && throw(
+            ArgumentError(
+                "TaxonomyTreePlot: no current Makie.Axis was available while planning the integrated PhyloPic overlay."
+            )
+        )
+        plan = _plan_leaf_label_phylopic_overlay(
+            ax,
             tree_obs[],
             layout_obs[]...;
-            leaf_vertices = leaf_vertices,
             leaf_text_plots = leaf_text_plots,
-            glyph_size = p[:phylopic_glyph_size][],
-            do_align = p[:phylopic_align][],
+            tip_xoffset = p[:tip_xoffset][],
+            tip_yoffset = p[:tip_yoffset][],
             phylopic_xoffset = p[:phylopic_xoffset][],
             phylopic_yoffset = p[:phylopic_yoffset][],
-            tip_xoffset = p[:tip_xoffset][],
+            align = p[:phylopic_align][],
+        )
+        overlay = _augment_leaf_phylopic!(
+            ax,
+            plan;
+            placement = :left,
+            xoffset = 0.0,
+            yoffset = 0.0,
+            glyph_size = p[:phylopic_glyph_size][],
             on_missing = p[:phylopic_on_missing][],
             aspect = p[:phylopic_aspect][],
+            rotation = 0.0,
+            mirror = false,
             image_rendering = p[:phylopic_image_rendering][],
         )
+        if !isnothing(overlay)
+            Makie.on(p, p[:show_phylopic], update = true) do is_visible
+                overlay.visible[] = is_visible
+                return Makie.Consume(false)
+            end
+        end
     end
 
     return p

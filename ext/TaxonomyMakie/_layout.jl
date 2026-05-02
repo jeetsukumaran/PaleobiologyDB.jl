@@ -361,7 +361,7 @@ tips = tip_positions(plt)   # convenience overload
 
 See also [`augment_tip_phylopic!`](@ref).
 """
-function tip_positions(
+function _leaf_positions(
         tree::TaxonomyTree,
         xs::AbstractVector{<:Real},
         ys::AbstractVector{<:Real},
@@ -374,4 +374,12 @@ function tip_positions(
         x = [Float64(xs[v]) for v in lvs],
         y = [Float64(ys[v]) for v in lvs],
     )
+end
+
+function tip_positions(
+        tree::TaxonomyTree,
+        xs::AbstractVector{<:Real},
+        ys::AbstractVector{<:Real},
+    )::NamedTuple
+    return _leaf_positions(tree, xs, ys)
 end
