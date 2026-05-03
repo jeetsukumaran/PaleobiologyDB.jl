@@ -74,6 +74,18 @@ responsibilities:
 
 This is exactly the coupling the user wants removed.
 
+Additional current-state caution for downstream implementation:
+
+- the current gallery already has polished visuals, so a bad implementation can
+  look superficially successful while still preserving the wrong ownership
+  model.
+- this reset is not authorized to replace smoke ownership with new test
+  ownership over docs prose, CI YAML text, example command strings, or build
+  directory naming.
+- the desired outcome is positive and user-facing: the examples should become
+  direct, legible, runnable examples again. A cleanup that mainly adds new
+  anti-goal assertions or keeps the scripts as artifact writers is a failure.
+
 ## Non-negotiable execution rules
 
 - Do not replace `examples/smoke.jl` with a renamed smoke harness that keeps examples in CI.
@@ -82,6 +94,14 @@ This is exactly the coupling the user wants removed.
 - Do not keep tracked gallery-output files merely because the old smoke flow wrote them.
 - Do not let cross-repo references to `PaleobiologyDB.jl` creep back into the examples story except where public docs explicitly need to point to a separate integrating client.
 - Do not add new CI or test coupling around examples while removing the current one.
+- Do not replace deleted smoke ownership with new source-text assertions over
+  README wording, docs command strings, CI YAML text, or `examples/build/`
+  references.
+- Do not move example logic, drawing logic, or “truth of the examples story”
+  policing into package tests or docs-build helper code.
+- Do not preserve the “script returns a saved PNG path” contract unless that
+  behavior is recast as an obviously user-facing convenience rather than
+  infrastructure ownership.
 
 ## Concrete anti-patterns or removal targets
 
@@ -106,6 +126,10 @@ The final implementation must include checks that would fail if the bad gallery 
 - the example scripts must be readable as direct user examples rather than helper modules whose main job is writing output files.
 - the examples directory must still offer a coherent manual run story after the cleanup.
 - if tracked build artifacts are removed, the gallery must remain understandable and runnable without them.
+- the example scripts must produce a positive user-facing result when run
+  manually: a visible figure in an interactive session or a clearly
+  user-directed saved result, not merely a returned artifact path or a silent
+  no-op.
 
 ## Tasks
 
@@ -123,7 +147,12 @@ Re-read the current examples, README, docs, CI workflow, and examples environmen
 **Output**: `PhyloPicMakie.jl` CI no longer treats the examples gallery as a smoke-verification owner.  
 **Depends on**: 1
 
-Remove the examples-driven smoke step from `.github/workflows/CI.yml`. If any docs or adjacent verification text in the repo exists only to justify or mirror that CI step, remove or rewrite it rather than renaming the smoke flow. The result should be that package verification stands on tests and docs, not on the user-facing examples gallery.
+Remove the examples-driven smoke step from `.github/workflows/CI.yml`. If any
+docs or adjacent verification text in the repo exists only to justify or mirror
+that CI step, remove or rewrite it rather than renaming the smoke flow. Do not
+replace the deleted coupling with new assertions over docs prose, YAML text, or
+example command strings. The result should be that package verification stands
+on tests and docs, not on the user-facing examples gallery.
 
 ### 3. Delete `examples/smoke.jl` and purge smoke-oriented gallery scaffolding
 
@@ -131,7 +160,12 @@ Remove the examples-driven smoke step from `.github/workflows/CI.yml`. If any do
 **Output**: `examples/smoke.jl` is gone, and the gallery no longer owns a deterministic smoke-entrypoint contract.  
 **Depends on**: 2
 
-Delete `examples/smoke.jl`. Remove any gallery-wide wording, helper structure, or file-level assumption that exists only because that smoke entrypoint existed. If any tracked gallery outputs or artifact-oriented references survive only because of the smoke story, delete or demote them too. The bad structure must actually disappear, not merely move into another helper file.
+Delete `examples/smoke.jl`. Remove any gallery-wide wording, helper structure,
+or file-level assumption that exists only because that smoke entrypoint
+existed. If any tracked gallery outputs or artifact-oriented references survive
+only because of the smoke story, delete or demote them too. The bad structure
+must actually disappear, not merely move into another helper file or into
+package tests.
 
 ### 4. Rewrite the gallery scripts as idiomatic user-facing examples
 
@@ -139,7 +173,17 @@ Delete `examples/smoke.jl`. Remove any gallery-wide wording, helper structure, o
 **Output**: The example scripts in `examples/src` read as direct, runnable user examples rather than moduleized artifact writers.  
 **Depends on**: 3
 
-Rewrite `examples/src/explicit_overlays.jl`, `examples/src/thumbnail_gallery.jl`, and `examples/src/graph_anchors.jl` so they primarily serve as human-readable examples. Shared visual helper code in `_common.jl` may survive if it still deepens the example surface rather than turning the gallery back into infrastructure. Remove unnecessary module wrapping, “return saved path” shaped APIs, and output-pipeline ownership if those remain only because of the old smoke architecture. Keep the examples coherent as a gallery, but optimize for clarity and direct run experience.
+Rewrite `examples/src/explicit_overlays.jl`,
+`examples/src/thumbnail_gallery.jl`, and `examples/src/graph_anchors.jl` so
+they primarily serve as human-readable examples. Shared visual helper code in
+`_common.jl` may survive if it still deepens the example surface rather than
+turning the gallery back into infrastructure. Remove unnecessary module
+wrapping, “return saved path” shaped APIs, and output-pipeline ownership if
+those remain only because of the old smoke architecture. Keep the examples
+coherent as a gallery, but optimize for clarity and direct run experience.
+Positive acceptance matters here: each script must be manually runnable and
+must give the user a genuinely useful outcome, not merely create an internal
+artifact and print its path.
 
 ### 5. Re-scope the examples environment, tracked gallery outputs, and surrounding prose
 
@@ -147,7 +191,16 @@ Rewrite `examples/src/explicit_overlays.jl`, `examples/src/thumbnail_gallery.jl`
 **Output**: The examples environment and gallery docs support user-facing examples rather than artifact-pipeline ownership.  
 **Depends on**: 4
 
-Audit `examples/Project.toml`, `examples/Manifest.toml`, `examples/README.md`, `README.md`, and `docs/src/examples.md` from the perspective of a user running examples. Remove references to smoke verification, deterministic CI artifact generation, and `examples/build/` if those are no longer part of the supported story. If tracked gallery PNGs in `examples/build/` exist only to support the old smoke pipeline, remove them and keep only what is necessary for a clean user-facing examples directory. Keep any environment files only if they are justified by the new examples story rather than by old CI needs.
+Audit `examples/Project.toml`, `examples/Manifest.toml`, `examples/README.md`,
+`README.md`, and `docs/src/examples.md` from the perspective of a user running
+examples. Remove references to smoke verification, deterministic CI artifact
+generation, and `examples/build/` if those are no longer part of the supported
+story. If tracked gallery PNGs in `examples/build/` exist only to support the
+old smoke pipeline, remove them and keep only what is necessary for a clean
+user-facing examples directory. Keep any environment files only if they are
+justified by the new examples story rather than by old CI needs. Do not turn
+this into a docs-policing exercise; the prose should follow the new examples
+surface, not become a new object of test ownership.
 
 ### 6. Close with user-facing verification rather than gallery-as-smoke-harness
 
@@ -155,5 +208,12 @@ Audit `examples/Project.toml`, `examples/Manifest.toml`, `examples/README.md`, `
 **Output**: A truthful closeout showing that `PhyloPicMakie.jl` examples are decoupled from CI smoke ownership and still runnable as user examples.  
 **Depends on**: 5
 
-Run the package’s real verification paths without any examples smoke gate. Then manually verify the intended user-facing example commands in the examples environment. Confirm that CI no longer invokes the gallery, docs no longer present the examples directory as deterministic verification infrastructure, and the gallery now reads and behaves like a user-facing examples surface rather than a hybrid showcase/test harness system.
-
+Run the package’s real verification paths without any examples smoke gate. Then
+manually verify the intended user-facing example commands in the examples
+environment and confirm that the results are actually useful to a human user,
+not blank or noop-like. Confirm that CI no longer invokes the gallery, docs no
+longer present the examples directory as deterministic verification
+infrastructure, and the gallery now reads and behaves like a user-facing
+examples surface rather than a hybrid showcase/test harness system. This reset
+fails if it mainly swaps one kind of examples coupling for string-policing or
+artifact-path-printing under a friendlier name.
