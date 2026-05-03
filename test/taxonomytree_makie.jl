@@ -16,6 +16,7 @@ using Test
 using PaleobiologyDB
 using PaleobiologyDB.Taxonomy: TaxonomyTree, TaxonNode
 import Graphs
+import PhyloPicMakie
 
 # ---------------------------------------------------------------------------
 # Trigger extension
@@ -30,6 +31,12 @@ end
 
 const _LIVE_TAXONOMYMAKIE = isdefined(@__MODULE__, :LIVE) ? getfield(@__MODULE__, :LIVE) :
     get(ENV, "PBDB_LIVE", "") == "1"
+
+const _REPO_ROOT = dirname(@__DIR__)
+
+function _read_repo_file(parts::Vararg{AbstractString})::String
+    return read(joinpath(_REPO_ROOT, parts...), String)
+end
 
 # ---------------------------------------------------------------------------
 # Shared fixture: mock Carnivora subtree (6 vertices)
@@ -174,6 +181,54 @@ if _CAIRO_TTM_AVAILABLE
                 nothing
             end
             return markersize == 0 && plot.visible[] == false
+        end
+    end
+
+    @testset "TaxonomyMakie — extension import contract" begin
+        @test isdefined(PaleobiologyDB, :TaxonomyMakie)
+        @test PaleobiologyDB.TaxonomyMakie === TaxonomyMakie
+        @test !isdefined(PaleobiologyDB, :taxonomytreeplot)
+        @test !isdefined(PaleobiologyDB, :taxonomytreeplot!)
+        @test !isdefined(PaleobiologyDB, :set_rank_axis_ticks!)
+        @test !isdefined(PaleobiologyDB, :leaf_positions)
+        @test !isdefined(PaleobiologyDB, :augment_leaf_phylopic!)
+    end
+
+    @testset "TaxonomyMakie — docs tell the extension import truth" begin
+        readme = _read_repo_file("README.md")
+        guide = _read_repo_file("docs", "src", "guide", "taxonomytree_makie.md")
+        api_doc = _read_repo_file("docs", "src", "api", "taxonomytree_makie.md")
+
+        @test occursin("using PaleobiologyDB.TaxonomyMakie", readme)
+        @test occursin("using PaleobiologyDB.TaxonomyMakie", guide)
+        @test occursin("using PaleobiologyDB.TaxonomyMakie", api_doc)
+
+        @test !occursin("using PaleobiologyDB: taxonomytreeplot", readme)
+        @test !occursin("using PaleobiologyDB: taxonomytreeplot", guide)
+        @test !occursin("using PaleobiologyDB: taxonomytreeplot", api_doc)
+        @test !occursin("using PaleobiologyDB: taxonomytreeplot, augment_leaf_phylopic!", readme)
+        @test !occursin("TaxonomyMakie exports (taxonomytreeplot, augment_leaf_phylopic!, etc.) are now in scope", guide)
+    end
+
+    @testset "TaxonomyMakie — PBDB bridge delegates anchored overlays to PhyloPicMakie" begin
+        render_source = _read_repo_file("ext", "TaxonomyMakie", "PhyloPic", "src", "_render.jl")
+
+        @test isdefined(PhyloPicMakie, :_augment_resolved_phylopic_anchored!)
+        @test occursin("PhyloPicMakie._augment_resolved_phylopic_anchored!", render_source)
+        @test occursin("placeholder glyph image", render_source)
+        @test !occursin("grey rectangle", render_source)
+        @test !occursin("older mainline surface", render_source)
+
+        for forbidden in (
+                "_VALID_ANCHORED_ON_MISSING",
+                "_HAS_SCENE_LIKE_ANCHORED_INTERNALS",
+                "_prepared_anchor_positions",
+                "_prepare_resolved_anchor_overlay",
+                "_transparent_anchored_probe_scatter!",
+                "_projected_anchor_positions_scene_like!",
+                "_augment_phylopic_anchored_scene_like!",
+            )
+            @test !occursin(forbidden, render_source)
         end
     end
 

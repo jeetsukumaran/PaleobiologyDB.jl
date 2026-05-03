@@ -39,9 +39,10 @@ Returns a `NamedTuple` with fields:
 ## Examples
 
 ```julia
-using PaleobiologyDB, PaleobiologyDB.Taxonomy, CairoMakie
 using CairoMakie
 using PaleobiologyDB
+using PaleobiologyDB.Taxonomy
+using PaleobiologyDB.TaxonomyMakie
 
 fig, ax, plt = taxonomytreeplot(taxon_subtree("Panthera"))
 leaves = leaf_positions(plt)
@@ -149,9 +150,10 @@ which reads tree and layout directly from a `TaxonomyTreePlot`.
 ## Examples
 
 ```julia
-using PaleobiologyDB, PaleobiologyDB.Taxonomy, CairoMakie
 using CairoMakie
 using PaleobiologyDB
+using PaleobiologyDB.Taxonomy
+using PaleobiologyDB.TaxonomyMakie
 
 tree = taxon_subtree("Panthera")
 fig, ax, plt = taxonomytreeplot(tree)

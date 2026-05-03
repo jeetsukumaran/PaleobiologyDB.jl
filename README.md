@@ -193,7 +193,7 @@ See the [TaxonomyMakie PhyloPic guide](https://jeetsukumaran.github.io/Paleobiol
 ```julia
 using CairoMakie: Figure, Axis, save, display
 using PaleobiologyDB.Taxonomy: taxon_subtree
-using PaleobiologyDB: taxonomytreeplot, taxonomytreeplot!, set_rank_axis_ticks!
+using PaleobiologyDB.TaxonomyMakie: taxonomytreeplot, taxonomytreeplot!, set_rank_axis_ticks!
 
 # Build a subtree and render it — branches and nodes coloured by taxonomic rank
 tree = taxon_subtree("Carnivora"; leaf_rank = "family")
@@ -212,7 +212,7 @@ display(fig2)
 ```julia
 using CairoMakie: Figure, Axis, save
 using PaleobiologyDB.Taxonomy: taxon_subtree
-using PaleobiologyDB: taxonomytreeplot, augment_leaf_phylopic!
+using PaleobiologyDB.TaxonomyMakie: taxonomytreeplot, augment_leaf_phylopic!
 
 tree = taxon_subtree("Carnivora"; leaf_rank = "family")
 fig, ax, plt = taxonomytreeplot(tree; show_leaf_labels = true, color_by_rank = true, ladderize = true)

@@ -9,6 +9,7 @@ Activated by:
 
     using CairoMakie  # or any Makie backend
     using PaleobiologyDB
+    using PaleobiologyDB.TaxonomyMakie
 
 Public API — tree visualization:
 
