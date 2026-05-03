@@ -38,6 +38,18 @@ function _read_repo_file(parts::Vararg{AbstractString})::String
     return read(joinpath(_REPO_ROOT, parts...), String)
 end
 
+function _repo_path_is_tracked(relpath::AbstractString)::Bool
+    return success(pipeline(
+        `git -C $_REPO_ROOT ls-files --error-unmatch -- $relpath`;
+        stdout = devnull,
+        stderr = devnull,
+    ))
+end
+
+if _CAIRO_TTM_AVAILABLE
+    include(joinpath(_REPO_ROOT, "examples", "src", "taxonomytree.jl"))
+end
+
 # ---------------------------------------------------------------------------
 # Shared fixture: mock Carnivora subtree (6 vertices)
 #
@@ -194,6 +206,11 @@ if _CAIRO_TTM_AVAILABLE
         @test !isdefined(PaleobiologyDB, :augment_leaf_phylopic!)
     end
 
+    @testset "TaxonomyMakie — manifest policy remains untracked" begin
+        @test !_repo_path_is_tracked("Manifest.toml")
+        @test !_repo_path_is_tracked("test/Manifest.toml")
+    end
+
     @testset "TaxonomyMakie — docs tell the extension import truth" begin
         readme = _read_repo_file("README.md")
         guide = _read_repo_file("docs", "src", "guide", "taxonomytree_makie.md")
@@ -208,6 +225,9 @@ if _CAIRO_TTM_AVAILABLE
         @test !occursin("using PaleobiologyDB: taxonomytreeplot", api_doc)
         @test !occursin("using PaleobiologyDB: taxonomytreeplot, augment_leaf_phylopic!", readme)
         @test !occursin("TaxonomyMakie exports (taxonomytreeplot, augment_leaf_phylopic!, etc.) are now in scope", guide)
+        @test !occursin("requires `FileIO`", guide)
+        @test occursin("julia --project=test examples/smoke.jl", guide)
+        @test occursin("placeholder glyph image", guide)
     end
 
     @testset "TaxonomyMakie — PBDB bridge delegates anchored overlays to PhyloPicMakie" begin
@@ -584,6 +604,16 @@ if _CAIRO_TTM_AVAILABLE
         )
     end
 
+    @testset "TaxonomyMakie — deterministic tree artifact smoke path" begin
+        output_dir = mktempdir()
+        output_paths = TaxonomyTreeExample.smoke_main(; output_dir)
+        @test length(output_paths) == 2
+        @test all(isfile, output_paths)
+        @test all(path -> filesize(path) > 0, output_paths)
+        @test any(path -> occursin("taxonomytree_one_step_placeholder", path), output_paths)
+        @test any(path -> occursin("taxonomytree_two_step_placeholder", path), output_paths)
+    end
+
 else
     @info "CairoMakie not available — skipping TaxonomyMakie offline layout tests"
 end
@@ -685,6 +715,7 @@ if _CAIRO_TTM_AVAILABLE
             @test plt[:phylopic_align][]      == false
             @test plt[:phylopic_xoffset][]    ≈ 0.65
             @test plt[:phylopic_yoffset][]    ≈ 0.3
+            @test plt[:phylopic_image_rendering][] == :thumbnail
             @test plt[:phylopic_on_missing][] == :skip
             @test plt[:phylopic_aspect][]     == :preserve
             @test plt[:row_spacing][]         ≈ 2.0

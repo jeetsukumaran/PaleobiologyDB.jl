@@ -150,14 +150,19 @@ display(fig)
 ## PhyloPic silhouettes beside leaf labels
 
 `taxonomytreeplot` can overlay [PhyloPic](https://www.phylopic.org/) silhouette
-images to the right of each leaf label.  This requires `FileIO` to be
-loaded in the same session (which also activates `PhyloPicMakie`):
+images to the right of each leaf label. The default thumbnail-backed render
+path works once a Makie backend and `PaleobiologyDB.TaxonomyMakie` are loaded:
 
 ```julia
 using CairoMakie
 using PaleobiologyDB
 using PaleobiologyDB.TaxonomyMakie: taxonomytreeplot
 ```
+
+The default `phylopic_image_rendering = :thumbnail` path uses PNG thumbnails
+through the hard dependency `PhyloPicMakie`. SVG-backed `:vector` or
+`:source_file` cases still require an SVG-capable `FileIO` plugin in the
+active environment.
 
 ### Inline mode (default)
 
@@ -273,6 +278,22 @@ save("carnivora_families.svg", fig)
 save("carnivora_families.pdf", fig)
 ```
 
+## Example scripts
+
+`examples/src/taxonomytree.jl` is the live cached example for manual
+inspection. It enables `set_autocaching!(true)` and renders an Elephantidae
+tree through the public `show_phylopic = true` path.
+
+`examples/smoke.jl` is the deterministic artifact harness for stabilization
+work. It renders two offline placeholder-backed PNG artifacts into
+`examples/build/`: one integrated `show_phylopic = true` tree overlay and one
+explicit two-step `augment_leaf_phylopic!` overlay. Run it from a development
+checkout with:
+
+```julia
+julia --project=test examples/smoke.jl
+```
+
 ## Custom figure and axis options
 
 Pass `figure_kwargs` and `axis_kwargs` (named tuples) to control the
@@ -316,11 +337,12 @@ All attributes can be passed as keyword arguments to `taxonomytreeplot` or
 | `internal_fontsize` | `7` | Internal label font size in points |
 | `internal_color` | `:gray40` | Internal label colour |
 | `row_spacing` | `2.0` | Vertical gap between consecutive leaf rows in data units |
-| `show_phylopic` | `false` | Draw a PhyloPic silhouette to the right of each leaf label (requires `FileIO`) |
+| `show_phylopic` | `false` | Draw a PhyloPic silhouette to the right of each leaf label |
 | `phylopic_glyph_size` | `1.0` | Half-height of each silhouette in data units |
 | `phylopic_align` | `false` | Place all silhouettes in a single right-hand column |
 | `phylopic_xoffset` | `0.65` | Rightward gap in data units beyond the leaf-label origin |
 | `phylopic_yoffset` | `0.3` | Vertical offset for PhyloPic silhouettes in data units (positive = upward) |
+| `phylopic_image_rendering` | `:thumbnail` | Image URL to fetch: `:thumbnail`, `:raster`, `:og_image`, `:vector`, or `:source_file` |
 | `phylopic_on_missing` | `:skip` | Policy when no image is found: `:skip`, `:placeholder` (placeholder glyph image), `:error` |
 | `phylopic_aspect` | `:preserve` | `:preserve` (original proportions) or `:stretch` (square) |
 
