@@ -341,9 +341,36 @@ This is the stabilization tranche. It should:
 - ensure automated coverage would have caught the original tiny-glyph failure,
 - harden resize, relimit, and anchor-relationship checks,
 - ensure docs and examples describe the approved final surface exactly,
+- ensure verification would also catch the reviewed contract regressions, not just visual happy-path failures,
 - keep the standalone `PhyloPicMakie.jl` examples environment healthy and aligned with the finalized public overlay interface,
 - produce at least one rendered tree plus PhyloPic artifact and one explicit two-step overlay artifact,
-- keep live verification practical by using `set_autocaching!(true)` for slow PBDB and PhyloPic-heavy checks.
+- keep live verification practical by using `set_autocaching!(true)` for slow PBDB and PhyloPic-heavy checks,
+- preserve the repaired owner boundary and truthful import or docs contract rather than broadening API surface or reintroducing compatibility scaffolding during stabilization.
+
+This tranche must not be treated as a loose polish pass. It is the final guard against regressions that would recreate removed owners, stale docs contracts, or environment-policy drift while still reporting a superficial green state.
+
+### Legacy artifacts and regression classes that must stay retired
+
+- PBDB-side shadow generic anchored-overlay owners or compatibility fallbacks that regrow retired `PhyloPicMakie` responsibilities
+- stale docs or README import guidance that implies `using PaleobiologyDB: taxonomytreeplot` works or that `TaxonomyMakie` exports automatically enter scope after `using PaleobiologyDB`
+- stale public wording that claims `:placeholder` draws a grey rectangle rather than a placeholder glyph image
+- reintroduction of committed `Manifest.toml` or `test/Manifest.toml` in `PaleobiologyDB.jl`
+- reintroduction of committed `examples/Manifest.toml` in `PhyloPicMakie.jl`, which should remain `Project.toml`-driven
+- manual-only artifact inspection paths that are not backed by any automated or scripted regression signal
+
+### Forbidden regressions
+
+- shadow implementations, compatibility shims, or private-internal reach-ins added merely to make verification pass
+- docs fixes that silently broaden public API surface instead of keeping docs truthful to the approved final contract
+- example or smoke paths that depend on `PaleobiologyDB.jl` from inside the standalone `PhyloPicMakie.jl` examples gallery
+- stabilization work that weakens the already-approved contract checks instead of encoding them more robustly
+
+### Environment and dependency baseline
+
+- In `PaleobiologyDB.jl`, `Manifest.toml` and `test/Manifest.toml` are intentionally absent unless the user later changes that policy.
+- In `PhyloPicMakie.jl`, the `examples` environment should remain `Project.toml`-driven without a tracked `examples/Manifest.toml`.
+- Docs must continue to reflect the extension-module import story for `TaxonomyMakie`; stabilization must not assume a new top-level export policy unless a later explicit user decision changes that contract.
+- Verification may instantiate fresh transient manifests locally, but the tranche must not close with those manifests committed contrary to the approved baseline.
 
 ### How to verify
 
@@ -353,16 +380,21 @@ This is the stabilization tranche. It should:
   3. Run the final `examples/src/taxonomytree.jl` flow and inspect the rendered artifact.
   4. Run one explicit two-step leaf overlay example and inspect the rendered artifact.
   5. Perform at least one resize or relimit scenario and confirm the artifact remains visually correct.
+  6. Inspect the final docs or README snippets that demonstrate tree plotting and confirm they use the truthful `PaleobiologyDB.TaxonomyMakie` import path rather than a false top-level `PaleobiologyDB` import story.
 - **Automated**:
   - In `PaleobiologyDB.jl`, run `julia --project=test test/runtests.jl`.
   - In `PaleobiologyDB.jl`, run `julia --project=docs docs/make.jl`.
   - If this tranche changes `PhyloPicMakie.jl` verification or docs assets, run `julia --project=. -e 'import Pkg; Pkg.test()'` and `julia --project=docs docs/make.jl` in `PhyloPicMakie.jl`.
   - Ensure the standalone `PhyloPicMakie.jl` examples environment and the rendered-artifact generation path are part of tranche verification, not optional manual afterthoughts.
+  - Include at least one automated check that would fail if shadow-owner helpers, false import docs, stale placeholder wording, or manifest-policy drift were reintroduced.
+  - If transient manifests are generated during verification, ensure the repository closes the tranche without those manifests becoming part of the committed end state unless the user later changes policy.
 
 ### Acceptance criteria
 
 - [ ] Given the approved final tree and generic overlay surfaces, when tests, docs builds, and example or artifact checks run, then they produce a visible correctly placed standalone `PhyloPicMakie.jl` happy path, a tree-plus-PhyloPic happy path, and an explicit two-step overlay happy path that match the documented behavior.
 - [ ] Given resize, relimit, or slow live lookup conditions, then the verification suite and cached example workflow catch regressions without depending on uncached ad hoc manual probing.
+- [ ] Given the reviewed failure classes from earlier tranches, when verification runs, then it fails rather than reporting green if shadow owner logic, false import docs, stale placeholder wording, or manifest-policy drift reappears.
+- [ ] Given the finalized docs and examples surface, when a user follows the documented import and example flow, then it reflects the approved extension-module contract and standalone examples policy without smuggling in a broader API or a tracked-manifest requirement.
 
 ### User stories addressed
 
