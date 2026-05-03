@@ -206,6 +206,9 @@ See also [`taxonomytreeplot`](@ref), `taxonomytreeplot!`,
         # Layout
         ladderize = false,
         row_spacing = 2.0,
+        # Internal registry of axis-scene-owned overlay artifacts created on
+        # behalf of this plot.
+        axis_overlay_handles = Any[],
         # Branches
         branch_color = :black,
         branch_linewidth = 1.5,
@@ -296,6 +299,53 @@ function _plan_leaf_plot_phylopic_overlay(
         leaf_label_xoffset = leaf_label_xoffset,
     )
     return (plan = plan, render_xoffset = xoffset, render_yoffset = yoffset)
+end
+
+function _attach_plot_leaf_phylopic_overlay!(
+        overlay_scene::Makie.Scene,
+        p::TaxonomyTreePlot;
+        anchor::Symbol = :leaf,
+        align::Bool = false,
+        column_x::Union{Nothing, Real} = nothing,
+        leaf_label_xoffset::Real = p[:leaf_label_xoffset][],
+        placement::Symbol = :left,
+        xoffset::Real = 0.0,
+        yoffset::Real = 0.0,
+        glyph_size::Real = p[:phylopic_glyph_size][],
+        aspect::Symbol = p[:phylopic_aspect][],
+        rotation::Real = 0.0,
+        mirror::Bool = false,
+        image_rendering::Symbol = p[:phylopic_image_rendering][],
+        on_missing::Symbol = p[:phylopic_on_missing][],
+        glyph::Union{AbstractMatrix, Nothing} = nothing,
+        taxon::Union{AbstractVector, Nothing} = nothing,
+    )::Union{Nothing, _ManagedLeafOverlay, PhyloPicMakie._AnchoredOverlay}
+    planning = _plan_leaf_plot_phylopic_overlay(
+        p;
+        anchor = anchor,
+        align = align,
+        column_x = column_x,
+        leaf_label_xoffset = leaf_label_xoffset,
+        xoffset = xoffset,
+        yoffset = yoffset,
+    )
+    isempty(planning.plan.leaf_vertices) && return nothing
+
+    return _augment_leaf_phylopic!(
+        overlay_scene,
+        planning.plan;
+        taxon = taxon,
+        glyph = glyph,
+        placement = placement,
+        xoffset = planning.render_xoffset,
+        yoffset = planning.render_yoffset,
+        glyph_size = glyph_size,
+        aspect = aspect,
+        rotation = rotation,
+        mirror = mirror,
+        image_rendering = image_rendering,
+        on_missing = on_missing,
+    )
 end
 
 # ---------------------------------------------------------------------------
@@ -429,28 +479,24 @@ function Makie.plot!(p::TaxonomyTreePlot{<:Tuple{TaxonomyTree}})
     # placement reactive under relimit and resize. Changing the tree or the
     # overlay-policy attributes still requires recreating the plot.
     if p[:show_phylopic][]
-        planning = _plan_leaf_plot_phylopic_overlay(
+        overlay = _attach_plot_leaf_phylopic_overlay!(
+            Makie.parent_scene(p),
             p;
             anchor = :leaf_label_origin,
             align = p[:phylopic_align][],
             leaf_label_xoffset = p[:leaf_label_xoffset][],
+            placement = :left,
             xoffset = p[:phylopic_xoffset][],
             yoffset = p[:phylopic_yoffset][],
-        )
-        overlay = _augment_leaf_phylopic!(
-            p,
-            planning.plan;
-            placement = :left,
-            xoffset = planning.render_xoffset,
-            yoffset = planning.render_yoffset,
             glyph_size = p[:phylopic_glyph_size][],
-            on_missing = p[:phylopic_on_missing][],
             aspect = p[:phylopic_aspect][],
             rotation = 0.0,
             mirror = false,
             image_rendering = p[:phylopic_image_rendering][],
+            on_missing = p[:phylopic_on_missing][],
         )
         if !isnothing(overlay)
+            push!(p[:axis_overlay_handles][], overlay)
             Makie.on(p, p[:show_phylopic], update = true) do is_visible
                 overlay.visible[] = is_visible
                 return Makie.Consume(false)
@@ -459,6 +505,16 @@ function Makie.plot!(p::TaxonomyTreePlot{<:Tuple{TaxonomyTree}})
     end
 
     return p
+end
+
+function Base.delete!(scene::Makie.Scene, p::TaxonomyTreePlot)::Nothing
+    overlay_handles = p[:axis_overlay_handles][]
+    for overlay_handle in Iterators.reverse(overlay_handles)
+        delete!(Makie.parent_scene(p), overlay_handle)
+    end
+    empty!(overlay_handles)
+    invoke(Base.delete!, Tuple{Makie.Scene, Makie.AbstractPlot}, scene, p)
+    return nothing
 end
 
 # ---------------------------------------------------------------------------

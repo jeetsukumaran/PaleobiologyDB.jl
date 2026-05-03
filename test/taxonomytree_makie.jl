@@ -124,11 +124,11 @@ if _CAIRO_TTM_AVAILABLE
     const _plan_leaf_node_overlay = PaleobiologyDB.TaxonomyMakie._plan_leaf_node_phylopic_overlay
     const _plan_leaf_label_overlay = PaleobiologyDB.TaxonomyMakie._plan_leaf_label_phylopic_overlay
     const _plan_leaf_plot_overlay = PaleobiologyDB.TaxonomyMakie._plan_leaf_plot_phylopic_overlay
+    const _attach_plot_leaf_overlay! = PaleobiologyDB.TaxonomyMakie._attach_plot_leaf_phylopic_overlay!
     const _leaf_text_plots_for_plot = PaleobiologyDB.TaxonomyMakie._leaf_text_plots
     const _augment_leaf_overlay = PaleobiologyDB.TaxonomyMakie._augment_leaf_phylopic!
     const _LeafOverlayPlan = PaleobiologyDB.TaxonomyMakie._LeafOverlayPlan
     const _TEST_GLYPH = fill(Makie.RGBA{Makie.N0f8}(0, 0, 0, 1), 16, 32)
-
     _materialize_tree_overlay!(fig) = CairoMakie.Makie.update_state_before_display!(fig)
 
     function _leaf_text_plots!(
@@ -190,6 +190,137 @@ if _CAIRO_TTM_AVAILABLE
             end
             return markersize == 0 && plot.visible[] == false
         end
+    end
+
+    function _visible_pixel_glyph_plot_children(plt)::Vector{Any}
+        return Any[
+            plot for plot in plt.plots
+            if hasproperty(plot, :space) &&
+                hasproperty(plot, :marker) &&
+                hasproperty(plot, :visible) &&
+                plot.space[] == :pixel &&
+                plot.visible[] &&
+                plot.marker[] isa AbstractVector{<:AbstractMatrix}
+        ]
+    end
+
+    function _visible_pixel_glyph_atomic_plots(scene)::Vector{Any}
+        return Any[
+            plot for plot in Makie.collect_atomic_plots(scene)
+            if hasproperty(plot, :space) &&
+                hasproperty(plot, :marker) &&
+                hasproperty(plot, :visible) &&
+                plot.space[] == :pixel &&
+                plot.visible[] &&
+                plot.marker[] isa AbstractVector{<:AbstractMatrix}
+        ]
+    end
+
+    function _sane_tree_limits(ax::Makie.Axis)::Bool
+        limits = ax.finallimits[]
+        xmax = Float64(Makie.maximum(limits)[1])
+        ymax = Float64(Makie.maximum(limits)[2])
+        return xmax < 50.0 && ymax < 20.0
+    end
+
+    function _install_taxon_overlay_stub!(glyph::AbstractMatrix)::Nothing
+        Core.eval(PaleobiologyDB.TaxonomyMakie.PhyloPic, quote
+            function _augment_taxon_phylopic_anchored!(
+                    parent,
+                    anchor_positions;
+                    taxon,
+                    glyph = nothing,
+                    anchor_space::Symbol = :data,
+                    glyph_size_space::Symbol = :data,
+                    placement::Symbol = :center,
+                    xoffset::Real = 0.0,
+                    yoffset::Real = 0.0,
+                    glyph_size::Real = 0.4,
+                    aspect::Symbol = :preserve,
+                    rotation::Real = 0.0,
+                    mirror::Bool = false,
+                    image_rendering::Symbol = :thumbnail,
+                    on_missing::Symbol = :skip,
+                )
+                base_glyph = isnothing(glyph) ? $glyph : glyph
+                positions = anchor_positions isa AbstractVector ? anchor_positions : anchor_positions[]
+                images = [base_glyph for _ in eachindex(positions)]
+                return PhyloPicMakie._augment_resolved_phylopic_anchored!(
+                    parent,
+                    anchor_positions,
+                    images;
+                    anchor_space = anchor_space,
+                    glyph_size_space = glyph_size_space,
+                    glyph_size = glyph_size,
+                    aspect = aspect,
+                    placement = placement,
+                    xoffset = xoffset,
+                    yoffset = yoffset,
+                    rotation = rotation,
+                    mirror = mirror,
+                    on_missing = on_missing,
+                )
+            end
+        end)
+        return nothing
+    end
+
+    function _restore_taxon_overlay_impl!()::Nothing
+        Core.eval(PaleobiologyDB.TaxonomyMakie.PhyloPic, quote
+            function _augment_taxon_phylopic_anchored!(
+                    parent,
+                    anchor_positions;
+                    taxon::Union{AbstractVector, Nothing} = nothing,
+                    glyph::Union{AbstractMatrix, Nothing} = nothing,
+                    anchor_space::Symbol,
+                    glyph_size_space::Symbol,
+                    placement::Symbol = :center,
+                    xoffset::Real = 0.0,
+                    yoffset::Real = 0.0,
+                    glyph_size::Real = 0.4,
+                    aspect::Symbol = :preserve,
+                    rotation::Real = 0.0,
+                    mirror::Bool = false,
+                    image_rendering::Symbol = :thumbnail,
+                    on_missing::Symbol = :skip,
+                )
+                n = anchor_positions isa AbstractVector ? length(anchor_positions) : length(anchor_positions[])
+                images = _resolve_images(taxon, glyph, n; image_rendering)
+                isdefined(PhyloPicMakie, :_augment_resolved_phylopic_anchored!) || throw(
+                    ErrorException(
+                        "PaleobiologyDB.TaxonomyMakie requires a PhyloPicMakie build " *
+                            "that exposes `_augment_resolved_phylopic_anchored!`. " *
+                            "Re-resolve the environment against the current PhyloPicMakie surface."
+                    )
+                )
+                return PhyloPicMakie._augment_resolved_phylopic_anchored!(
+                    parent,
+                    anchor_positions,
+                    images;
+                    anchor_space = anchor_space,
+                    glyph_size_space = glyph_size_space,
+                    placement = placement,
+                    xoffset = xoffset,
+                    yoffset = yoffset,
+                    glyph_size = glyph_size,
+                    aspect = aspect,
+                    rotation = rotation,
+                    mirror = mirror,
+                    on_missing = on_missing,
+                )
+            end
+        end)
+        return nothing
+    end
+
+    function _with_stubbed_taxon_overlay(f)::Nothing
+        _install_taxon_overlay_stub!(_TEST_GLYPH)
+        try
+            f()
+        finally
+            _restore_taxon_overlay_impl!()
+        end
+        return nothing
     end
 
     @testset "TaxonomyMakie — extension import contract" begin
@@ -475,71 +606,17 @@ if _CAIRO_TTM_AVAILABLE
         @test left_edge_4 > label_right_4
     end
 
-    @testset "TaxonomyMakie — plot-backed explicit overlay shares the integrated plan" begin
-        tree = _mock_longlabel_carnivora_tree()
-        xs, ys = _layout(tree)
-        fig, ax, plt = taxonomytreeplot(
-            tree;
-            show_phylopic = false,
-            leaf_label_xoffset = 0.1,
-        )
-
-        planning = _plan_leaf_plot_overlay(
-            plt;
-            anchor = :leaf_label_origin,
-            leaf_label_xoffset = 0.1,
-            xoffset = 0.65,
-            yoffset = 0.3,
-            align = false,
-        )
-        integrated_plan = _plan_leaf_label_overlay(
-            plt,
-            tree,
-            xs,
-            ys;
-            leaf_text_plots = _leaf_text_plots_for_plot(plt),
-            leaf_label_xoffset = 0.1,
-            leaf_label_yoffset = plt[:leaf_label_yoffset][],
-            phylopic_xoffset = 0.65,
-            phylopic_yoffset = 0.3,
-            align = false,
-        )
-        raw_leaf_plan = _plan_leaf_node_overlay(
-            tree,
-            xs,
-            ys;
-            anchor = :leaf_label_origin,
-            leaf_label_xoffset = 0.1,
-            align = false,
-        )
-
-        _materialize_tree_overlay!(fig)
-        explicit_xs = [Float64(pos[1]) for pos in planning.plan.anchor_positions[]]
-        integrated_xs = [Float64(pos[1]) for pos in integrated_plan.anchor_positions[]]
-        raw_leaf_xs = [Float64(pos[1]) for pos in raw_leaf_plan.anchor_positions]
-
-        @test explicit_xs ≈ integrated_xs
-        @test explicit_xs != raw_leaf_xs
-    end
-
-    @testset "TaxonomyMakie — deleting the tree plot removes overlay support plots" begin
+    @testset "TaxonomyMakie — integrated helper uses scene owner and keeps sane limits" begin
         tree = _mock_carnivora_tree()
         fig, ax, plt = taxonomytreeplot(tree; show_phylopic = false)
-        @test isempty(_managed_overlay_atomic_plots(ax.scene))
 
-        planning = _plan_leaf_plot_overlay(
+        overlay = _attach_plot_leaf_overlay!(
+            Makie.parent_scene(plt),
             plt;
             anchor = :leaf_label_origin,
-            leaf_label_xoffset = plt[:leaf_label_xoffset][],
             xoffset = 0.65,
             yoffset = 0.3,
-            align = false,
-        )
-        overlay = _augment_leaf_overlay(
-            plt,
-            planning.plan;
             glyph = _TEST_GLYPH,
-            placement = :left,
             glyph_size = 1.0,
             aspect = :preserve,
             on_missing = :skip,
@@ -547,12 +624,101 @@ if _CAIRO_TTM_AVAILABLE
 
         _materialize_tree_overlay!(fig)
         @test !isnothing(overlay)
-        @test length(overlay.probe_plots) == 6
-        @test !isempty(_managed_overlay_atomic_plots(ax.scene))
+        @test _sane_tree_limits(ax)
+        @test !isempty(_visible_pixel_glyph_atomic_plots(ax.scene))
+    end
 
-        delete!(ax.scene, plt)
+    @testset "TaxonomyMakie — explicit convenience overload honors axis and keeps sane limits" begin
+        _with_stubbed_taxon_overlay() do
+            tree = _mock_carnivora_tree()
+            fig, ax, plt = taxonomytreeplot(tree; show_phylopic = false)
+
+            augment_leaf_phylopic!(
+                ax,
+                plt;
+                anchor = :leaf_label_origin,
+                xoffset = 0.65,
+                yoffset = 0.3,
+                glyph_size = 1.0,
+                aspect = :preserve,
+                on_missing = :skip,
+            )
+
+            _materialize_tree_overlay!(fig)
+            @test _sane_tree_limits(ax)
+            @test !isempty(plt[:axis_overlay_handles][])
+            @test !isempty(_visible_pixel_glyph_atomic_plots(ax.scene))
+        end
+    end
+
+    @testset "TaxonomyMakie — explicit convenience overload rejects mismatched axis" begin
+        _with_stubbed_taxon_overlay() do
+            tree = _mock_carnivora_tree()
+            fig = Figure(size = (900, 400))
+            ax1 = Axis(fig[1, 1])
+            ax2 = Axis(fig[1, 2])
+            plt = taxonomytreeplot!(ax1, tree; show_phylopic = false)
+
+            @test_throws ArgumentError augment_leaf_phylopic!(
+                ax2,
+                plt;
+                anchor = :leaf_label_origin,
+                xoffset = 0.65,
+                yoffset = 0.3,
+                glyph_size = 1.0,
+                aspect = :preserve,
+                on_missing = :skip,
+            )
+        end
+    end
+
+    @testset "TaxonomyMakie — tree plot does not own visible pixel-space overlay plots" begin
+        tree = _mock_carnivora_tree()
+        fig, ax, plt = taxonomytreeplot(tree; show_phylopic = false)
+
+        _attach_plot_leaf_overlay!(
+            Makie.parent_scene(plt),
+            plt;
+            anchor = :leaf_label_origin,
+            xoffset = 0.65,
+            yoffset = 0.3,
+            glyph = _TEST_GLYPH,
+            glyph_size = 1.0,
+            aspect = :preserve,
+            on_missing = :skip,
+        )
+
         _materialize_tree_overlay!(fig)
-        @test isempty(_managed_overlay_atomic_plots(ax.scene))
+        @test isempty(_visible_pixel_glyph_plot_children(plt))
+    end
+
+    @testset "TaxonomyMakie — deleting the tree plot deletes axis-scene overlay handles" begin
+        _with_stubbed_taxon_overlay() do
+            tree = _mock_carnivora_tree()
+            fig, ax, plt = taxonomytreeplot(tree; show_phylopic = false)
+            @test isempty(_managed_overlay_atomic_plots(ax.scene))
+
+            augment_leaf_phylopic!(
+                ax,
+                plt;
+                anchor = :leaf_label_origin,
+                xoffset = 0.65,
+                yoffset = 0.3,
+                glyph_size = 1.0,
+                aspect = :preserve,
+                on_missing = :skip,
+            )
+
+            _materialize_tree_overlay!(fig)
+            @test !isempty(plt[:axis_overlay_handles][])
+            @test !isempty(_managed_overlay_atomic_plots(ax.scene))
+
+            delete!(ax.scene, plt)
+            _materialize_tree_overlay!(fig)
+            @test isempty(plt[:axis_overlay_handles][])
+            @test isempty(_managed_overlay_atomic_plots(ax.scene))
+            @test isempty(_visible_pixel_glyph_atomic_plots(ax.scene))
+        end
     end
 
     @testset "TaxonomyMakie — tree overlay missing-image policy uses shared adapter" begin

@@ -233,6 +233,10 @@ fixed `column_x` override is requested, this overload reuses the plotted leaf
 labels so the explicit two-step overlay follows the same label-aware placement
 contract as `show_phylopic = true`.
 
+`ax` must belong to the same Makie parent scene as `p`. If they differ, this
+method throws `ArgumentError` instead of silently attaching the overlay to a
+different scene than the caller requested.
+
 All keyword arguments are forwarded unchanged to the primary method.  See
 [`augment_leaf_phylopic!`](@ref) for full documentation.
 
@@ -244,7 +248,7 @@ augment_leaf_phylopic!(ax, plt; xoffset = 1.0)
 ```
 """
 function augment_leaf_phylopic!(
-        _ax::Makie.Axis,
+        ax::Makie.Axis,
         p::TaxonomyTreePlot;
         anchor::Symbol = :leaf,
         align::Bool = false,
@@ -260,23 +264,23 @@ function augment_leaf_phylopic!(
         image_rendering::Symbol = :thumbnail,
         on_missing::Symbol = :skip,
     )::Nothing
-    planning = _plan_leaf_plot_phylopic_overlay(
+    overlay_scene = Makie.get_scene(ax)
+    overlay_scene === Makie.parent_scene(p) || throw(
+        ArgumentError(
+            "augment_leaf_phylopic!: `ax` must belong to the same parent scene as `p`."
+        )
+    )
+
+    overlay = _attach_plot_leaf_phylopic_overlay!(
+        overlay_scene,
         p;
         anchor = anchor,
         align = align,
         column_x = column_x,
         leaf_label_xoffset = leaf_label_xoffset,
+        placement = placement,
         xoffset = xoffset,
         yoffset = yoffset,
-    )
-    isempty(planning.plan.leaf_vertices) && return nothing
-
-    _augment_leaf_phylopic!(
-        p,
-        planning.plan;
-        placement = placement,
-        xoffset = planning.render_xoffset,
-        yoffset = planning.render_yoffset,
         glyph_size = glyph_size,
         aspect = aspect,
         rotation = rotation,
@@ -284,5 +288,8 @@ function augment_leaf_phylopic!(
         image_rendering = image_rendering,
         on_missing = on_missing,
     )
+    if !isnothing(overlay)
+        push!(p[:axis_overlay_handles][], overlay)
+    end
     return nothing
 end
