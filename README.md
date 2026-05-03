@@ -224,6 +224,13 @@ save("carnivora_phylopic.png", fig)
 
 See the [TaxonomyMakie guide](https://jeetsukumaran.github.io/PaleobiologyDB.jl/dev/guide/taxonomytree_makie/) for the full attribute reference and worked examples.
 
+Runnable examples live in `examples/src/`. From a development checkout:
+
+```bash
+julia --project=examples examples/src/taxonomytree.jl
+julia --project=examples examples/src/phylopicgallery.jl
+```
+
 ## Caching
 
 Teaching workshops and classroom sessions often place dozens of students on a shared network, all querying the same PBDB endpoints simultaneously.

@@ -39,12 +39,6 @@ jobs:
       - uses: julia-actions/cache@v3
       - uses: julia-actions/julia-buildpkg@v1
       - uses: julia-actions/julia-runtest@v1
-      - name: Run taxonomy tree artifact smoke
-        shell: julia --project=test --color=yes {0}
-        run: |
-          include("examples/smoke.jl")
-          paths = main()
-          @info "Rendered taxonomy tree artifacts" paths
   docs:
     name: Documentation
     runs-on: ubuntu-latest

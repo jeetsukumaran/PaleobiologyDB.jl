@@ -280,18 +280,21 @@ save("carnivora_families.pdf", fig)
 
 ## Example scripts
 
-`examples/src/taxonomytree.jl` is the live cached example for manual
-inspection. It enables `set_autocaching!(true)` and renders an Elephantidae
-tree through the public `show_phylopic = true` path.
+`examples/src/taxonomytree.jl` is the direct happy-path tree example. It enables
+`PaleobiologyDB.set_autocaching!(true)`, renders an Elephantidae genus tree
+through the public `show_phylopic = true` path, and displays the resulting
+figure. Run it from a development checkout with:
 
-`examples/smoke.jl` is the deterministic artifact harness for stabilization
-work. It renders two offline placeholder-backed PNG artifacts into
-`examples/build/`: one integrated `show_phylopic = true` tree overlay and one
-explicit two-step `augment_leaf_phylopic!` overlay. Run it from a development
-checkout with:
+```bash
+julia --project=examples examples/src/taxonomytree.jl
+```
 
-```julia
-julia --project=test examples/smoke.jl
+`examples/src/phylopicgallery.jl` is the companion gallery example. It enables
+caching, builds a small multi-taxon PhyloPic gallery with `pbdb_phylopic_grid`,
+and displays the figure:
+
+```bash
+julia --project=examples examples/src/phylopicgallery.jl
 ```
 
 ## Custom figure and axis options

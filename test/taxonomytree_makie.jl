@@ -46,10 +46,6 @@ function _repo_path_is_tracked(relpath::AbstractString)::Bool
     ))
 end
 
-if _CAIRO_TTM_AVAILABLE
-    include(joinpath(_REPO_ROOT, "examples", "src", "taxonomytree.jl"))
-end
-
 # ---------------------------------------------------------------------------
 # Shared fixture: mock Carnivora subtree (6 vertices)
 #
@@ -215,6 +211,7 @@ if _CAIRO_TTM_AVAILABLE
         readme = _read_repo_file("README.md")
         guide = _read_repo_file("docs", "src", "guide", "taxonomytree_makie.md")
         api_doc = _read_repo_file("docs", "src", "api", "taxonomytree_makie.md")
+        ci = _read_repo_file(".github", "workflows", "CI.yml")
 
         @test occursin("using PaleobiologyDB.TaxonomyMakie", readme)
         @test occursin("using PaleobiologyDB.TaxonomyMakie", guide)
@@ -226,8 +223,12 @@ if _CAIRO_TTM_AVAILABLE
         @test !occursin("using PaleobiologyDB: taxonomytreeplot, augment_leaf_phylopic!", readme)
         @test !occursin("TaxonomyMakie exports (taxonomytreeplot, augment_leaf_phylopic!, etc.) are now in scope", guide)
         @test !occursin("requires `FileIO`", guide)
-        @test occursin("julia --project=test examples/smoke.jl", guide)
-        @test occursin("placeholder glyph image", guide)
+        @test occursin("julia --project=examples examples/src/taxonomytree.jl", guide)
+        @test occursin("julia --project=examples examples/src/phylopicgallery.jl", guide)
+        @test !occursin("examples/smoke.jl", guide)
+        @test !occursin("examples/build/", guide)
+        @test !occursin("Run taxonomy tree artifact smoke", ci)
+        @test !occursin("examples/smoke.jl", ci)
     end
 
     @testset "TaxonomyMakie — PBDB bridge delegates anchored overlays to PhyloPicMakie" begin
@@ -602,16 +603,6 @@ if _CAIRO_TTM_AVAILABLE
             aspect = :preserve,
             on_missing = :error,
         )
-    end
-
-    @testset "TaxonomyMakie — deterministic tree artifact smoke path" begin
-        output_dir = mktempdir()
-        output_paths = TaxonomyTreeExample.smoke_main(; output_dir)
-        @test length(output_paths) == 2
-        @test all(isfile, output_paths)
-        @test all(path -> filesize(path) > 0, output_paths)
-        @test any(path -> occursin("taxonomytree_one_step_placeholder", path), output_paths)
-        @test any(path -> occursin("taxonomytree_two_step_placeholder", path), output_paths)
     end
 
 else
