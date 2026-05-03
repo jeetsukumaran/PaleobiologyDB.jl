@@ -14,6 +14,6 @@ fig, ax, plt = taxonomytreeplot(
     axis_kwargs = (; title = "Elephantidae genera"),
 )
 
-output_path = abspath(get(ARGS, 1, "taxonomytree.png"))
+output_path = normpath(joinpath(@__DIR__, "..", "build", "taxonomytree.png"))
 save(output_path, fig)
 println("Saved taxonomy tree example to $(output_path)")
