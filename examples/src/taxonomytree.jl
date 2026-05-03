@@ -14,5 +14,6 @@ fig, ax, plt = taxonomytreeplot(
     axis_kwargs = (; title = "Elephantidae genera"),
 )
 
-display(fig)
-fig
+output_path = abspath(get(ARGS, 1, "taxonomytree.png"))
+save(output_path, fig)
+println("Saved taxonomy tree example to $(output_path)")

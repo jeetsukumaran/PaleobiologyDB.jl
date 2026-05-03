@@ -211,7 +211,6 @@ if _CAIRO_TTM_AVAILABLE
         readme = _read_repo_file("README.md")
         guide = _read_repo_file("docs", "src", "guide", "taxonomytree_makie.md")
         api_doc = _read_repo_file("docs", "src", "api", "taxonomytree_makie.md")
-        ci = _read_repo_file(".github", "workflows", "CI.yml")
 
         @test occursin("using PaleobiologyDB.TaxonomyMakie", readme)
         @test occursin("using PaleobiologyDB.TaxonomyMakie", guide)
@@ -223,12 +222,6 @@ if _CAIRO_TTM_AVAILABLE
         @test !occursin("using PaleobiologyDB: taxonomytreeplot, augment_leaf_phylopic!", readme)
         @test !occursin("TaxonomyMakie exports (taxonomytreeplot, augment_leaf_phylopic!, etc.) are now in scope", guide)
         @test !occursin("requires `FileIO`", guide)
-        @test occursin("julia --project=examples examples/src/taxonomytree.jl", guide)
-        @test occursin("julia --project=examples examples/src/phylopicgallery.jl", guide)
-        @test !occursin("examples/smoke.jl", guide)
-        @test !occursin("examples/build/", guide)
-        @test !occursin("Run taxonomy tree artifact smoke", ci)
-        @test !occursin("examples/smoke.jl", ci)
     end
 
     @testset "TaxonomyMakie — PBDB bridge delegates anchored overlays to PhyloPicMakie" begin

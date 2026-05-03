@@ -224,7 +224,10 @@ save("carnivora_phylopic.png", fig)
 
 See the [TaxonomyMakie guide](https://jeetsukumaran.github.io/PaleobiologyDB.jl/dev/guide/taxonomytree_makie/) for the full attribute reference and worked examples.
 
-Runnable examples live in `examples/src/`. From a development checkout:
+Runnable examples live in `examples/src/`. From a development checkout, the tree
+script saves `taxonomytree.png` in the current working directory by default,
+and the gallery script saves `phylopicgallery.png`. Pass a different output
+path as the first argument if you want the PNG somewhere else:
 
 ```bash
 julia --project=examples examples/src/taxonomytree.jl

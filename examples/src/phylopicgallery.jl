@@ -10,5 +10,6 @@ fig = pbdb_phylopic_grid(
     ncols = 2,
 )
 
-display(fig)
-fig
+output_path = abspath(get(ARGS, 1, "phylopicgallery.png"))
+save(output_path, fig)
+println("Saved PhyloPic gallery example to $(output_path)")

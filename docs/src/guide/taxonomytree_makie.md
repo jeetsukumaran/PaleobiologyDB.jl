@@ -282,8 +282,10 @@ save("carnivora_families.pdf", fig)
 
 `examples/src/taxonomytree.jl` is the direct happy-path tree example. It enables
 `PaleobiologyDB.set_autocaching!(true)`, renders an Elephantidae genus tree
-through the public `show_phylopic = true` path, and displays the resulting
-figure. Run it from a development checkout with:
+through the public `show_phylopic = true` path, saves `taxonomytree.png` in the
+current working directory by default, and prints the output path. Pass a custom
+output path as the first argument if you want the PNG somewhere else. Run it
+from a development checkout with:
 
 ```bash
 julia --project=examples examples/src/taxonomytree.jl
@@ -291,7 +293,8 @@ julia --project=examples examples/src/taxonomytree.jl
 
 `examples/src/phylopicgallery.jl` is the companion gallery example. It enables
 caching, builds a small multi-taxon PhyloPic gallery with `pbdb_phylopic_grid`,
-and displays the figure:
+saves `phylopicgallery.png` in the current working directory by default, and
+prints the output path:
 
 ```bash
 julia --project=examples examples/src/phylopicgallery.jl
