@@ -68,6 +68,12 @@ The current examples surface is split across incompatible responsibilities:
 
 This is exactly the coupling the user wants removed.
 
+Additional current-state caution for downstream implementation:
+
+- `test/taxonomytree_makie.jl` already contains broader extension-contract and docs-truth assertions from earlier tranches. This reset is not authorized to expand that pattern further.
+- The examples reset is about removing coupling, not about creating new test ownership over docs prose, CI YAML text, or example command strings.
+- The desired outcome is positive and user-facing: examples should become obvious, runnable examples again. A cleanup that mainly adds new anti-goal assertions in tests is a failure.
+
 ## Non-negotiable execution rules
 
 - Do not replace the deleted smoke harness with another examples-based CI or test gate under a different name.
@@ -75,7 +81,10 @@ This is exactly the coupling the user wants removed.
 - Do not preserve deterministic placeholder artifact generation inside user-facing examples.
 - Do not make examples responsible for proving rendering correctness in CI.
 - Do not keep docs language that presents examples as stabilization machinery.
-- Do not keep test assertions that codify example smoke commands or artifact names as part of the supported contract.
+- Do not replace deleted example-smoke assertions with new string-search assertions over docs, README, CI YAML, or example command lines.
+- Do not move example or drawing logic into `test/taxonomytree_makie.jl` or any other test file.
+- Do not turn this reset into a generalized docs-truth or import-contract policing pass.
+- Do not keep test assertions that codify example smoke commands, artifact names, or examples-directory prose as part of the supported contract.
 - Do not add new tooling-oriented dependencies to the examples environment without a direct user-facing reason.
 
 ## Concrete anti-patterns or removal targets
@@ -89,16 +98,18 @@ The following items are explicit removal or demotion targets:
 - test assertions in `test/taxonomytree_makie.jl` that enforce `examples/smoke.jl`, placeholder artifact names, or docs wording about deterministic artifact harnesses
 - guide prose in `docs/src/guide/taxonomytree_makie.md` that advertises `examples/smoke.jl`, `examples/build/`, or stabilization-oriented artifact generation as part of the example story
 - any examples-environment dependency whose purpose is documentation or CI plumbing rather than running examples
+- any new source-text assertions in `test/taxonomytree_makie.jl` that exist only to lock in the absence of `examples/smoke.jl`, the absence of `examples/build/`, or the exact example command strings shown in docs
 
 ## Failure-oriented verification
 
 The final implementation must include checks that would fail if the bad example architecture came back:
 
 - CI config must no longer invoke `examples/smoke.jl` or any replacement examples smoke harness.
-- package tests must no longer assert example smoke commands, placeholder artifact filenames, or artifact-harness guide language.
+- package tests must no longer own the examples story by asserting example smoke commands, placeholder artifact filenames, artifact-harness guide language, or exact example command strings.
 - docs must no longer describe the examples directory as a stabilization or artifact-generation system.
 - `examples/src/taxonomytree.jl` must be readable as a short happy-path example rather than a helper module or test harness.
 - the user-facing examples must still be runnable manually in their intended environment after the cleanup.
+- the tree example must succeed as a positive example, meaning it visibly produces the intended plot when run manually rather than merely compiling or ending in a blank/no-op user experience.
 
 ## Tasks
 
@@ -116,7 +127,7 @@ Re-read the current example owners, CI workflow, tests, docs, and examples envir
 **Output**: CI and package tests no longer treat examples as a verification owner or artifact smoke system.  
 **Depends on**: 1
 
-Remove the examples-driven CI hook from `.github/workflows/CI.yml`. Remove or rewrite the corresponding example-smoke assertions from `test/taxonomytree_makie.jl` so the package test suite no longer codifies example harness behavior. If a docs or test assertion only exists to keep `examples/smoke.jl` alive, delete it rather than renaming it. The result should be that package verification stands on tests and docs builds, not on user-facing examples.
+Remove the examples-driven CI hook from `.github/workflows/CI.yml`. Remove the corresponding example-smoke assertions from `test/taxonomytree_makie.jl` rather than replacing them with new docs-string or CI-string policing. If a docs or test assertion only exists to keep `examples/smoke.jl` alive, delete it rather than renaming or inverting it. The result should be that package verification stands on tests and docs builds, not on user-facing examples, and that this reset does not expand test ownership over docs prose.
 
 ### 3. Delete the smoke harness and purge harness-oriented example scaffolding
 
@@ -132,7 +143,7 @@ Delete `examples/smoke.jl`. Remove the harness-only machinery from `examples/src
 **Output**: `examples/src/taxonomytree.jl` is a direct, readable user example for the intended tree-plus-PhyloPic happy path.  
 **Depends on**: 3
 
-Replace the current tree example with a simple example script that a user can run to see the intended experience. It should read like an example, not like infrastructure: load the required backend and extension surface, enable caching if that is part of the happy path, make the plot, and display or return the figure. Keep it short and idiomatic. Do not reintroduce helper modules, fake trees, artifact-writing branches, or dual-purpose smoke entrypoints.
+Replace the current tree example with a simple example script that a user can run to see the intended experience. It should read like an example, not like infrastructure: load the required backend and extension surface, enable caching if that is part of the happy path, make the plot, and present the figure in a way that is actually useful to a user running the script. Keep it short and idiomatic. Do not reintroduce helper modules, fake trees, artifact-writing branches, or dual-purpose smoke entrypoints. Positive acceptance matters here: the example must be manually runnable and must visibly produce the intended tree-plus-PhyloPic happy path, not merely execute without errors.
 
 ### 5. Re-scope the examples environment and surrounding example prose
 
@@ -148,5 +159,4 @@ Audit `examples/Project.toml`, `examples/Manifest.toml`, `README.md`, and `docs/
 **Output**: A truthful closeout showing that examples are decoupled from CI/tests and still runnable as user examples.  
 **Depends on**: 5
 
-Run the package’s real verification paths without any example-smoke gate. Then manually verify the intended user-facing example commands in the examples environment. Confirm that CI no longer invokes examples, tests no longer enforce example harness behavior, and docs no longer present the examples directory as stabilization infrastructure. This effort closes only if the examples surface is simpler, more user-facing, and no longer a Frankenstein blend of showcase and CI harness.
-
+Run the package’s real verification paths without any example-smoke gate. Then manually verify the intended user-facing example commands in the examples environment and confirm that the resulting examples are visibly useful, not blank or noop-like. Confirm that CI no longer invokes examples, tests no longer enforce example harness behavior, and docs no longer present the examples directory as stabilization infrastructure. This effort closes only if the examples surface is simpler, more user-facing, no longer a Frankenstein blend of showcase and CI harness, and has not paid for that simplification by expanding test ownership over docs or CI text.
