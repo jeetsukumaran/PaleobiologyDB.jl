@@ -1,5 +1,5 @@
 # ---------------------------------------------------------------------------
-# TaxonomyMakie — pure dendrogram layout
+# PBDBMakie — pure dendrogram layout
 #
 # All functions here are pure: they depend only on their arguments and produce
 # no side effects.  They can be tested without loading Makie.
@@ -201,8 +201,8 @@ import Graphs
 tree = taxon_subtree("Carnivora"; leaf_rank = "family")
 
 # Access the extension layout function after loading Makie:
-xs, ys = PaleobiologyDB.TaxonomyMakie._compute_dendrogram_layout(tree)
-xs, ys = PaleobiologyDB.TaxonomyMakie._compute_dendrogram_layout(tree; row_spacing = 2.0)
+xs, ys = PaleobiologyDB.PBDBMakie._compute_dendrogram_layout(tree)
+xs, ys = PaleobiologyDB.PBDBMakie._compute_dendrogram_layout(tree; row_spacing = 2.0)
 ```
 """
 function _compute_dendrogram_layout(
@@ -351,7 +351,7 @@ All four vectors are the same length and are aligned by index.
 ```julia
 using PaleobiologyDB, PaleobiologyDB.Taxonomy
 using CairoMakie
-using PaleobiologyDB.TaxonomyMakie
+using PaleobiologyDB.PBDBMakie
 
 tree = taxon_subtree("Panthera")
 fig, ax, plt = taxonomytreeplot(tree)

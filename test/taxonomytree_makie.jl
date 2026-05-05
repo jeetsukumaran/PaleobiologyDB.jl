@@ -1,5 +1,5 @@
 # test/taxonomytree_makie.jl
-# Tests for PaleobiologyDB.TaxonomyMakie extension.
+# Tests for PaleobiologyDB.PBDBMakie extension.
 #
 # Structure:
 #   1. Mock tree construction (shared fixture)
@@ -26,7 +26,7 @@ const _CAIRO_TTM_AVAILABLE = !isnothing(Base.find_package("CairoMakie"))
 
 if _CAIRO_TTM_AVAILABLE
     @eval using CairoMakie
-    @eval using PaleobiologyDB.TaxonomyMakie
+    @eval using PaleobiologyDB.PBDBMakie
 end
 
 const _LIVE_TAXONOMYMAKIE = isdefined(@__MODULE__, :LIVE) ? getfield(@__MODULE__, :LIVE) :
@@ -117,17 +117,17 @@ end
 
 if _CAIRO_TTM_AVAILABLE
     # Access internals through the extension module
-    const _rd_fn   = PaleobiologyDB.TaxonomyMakie._rank_depth
-    const _layout  = PaleobiologyDB.TaxonomyMakie._compute_dendrogram_layout
-    const _segpairs = PaleobiologyDB.TaxonomyMakie._dendrogram_segment_pairs
-    const _leaf_positions_fn = PaleobiologyDB.TaxonomyMakie._leaf_positions
-    const _plan_leaf_node_overlay = PaleobiologyDB.TaxonomyMakie._plan_leaf_node_phylopic_overlay
-    const _plan_leaf_label_overlay = PaleobiologyDB.TaxonomyMakie._plan_leaf_label_phylopic_overlay
-    const _plan_leaf_plot_overlay = PaleobiologyDB.TaxonomyMakie._plan_leaf_plot_phylopic_overlay
-    const _attach_plot_leaf_overlay! = PaleobiologyDB.TaxonomyMakie._attach_plot_leaf_phylopic_overlay!
-    const _leaf_text_plots_for_plot = PaleobiologyDB.TaxonomyMakie._leaf_text_plots
-    const _augment_leaf_overlay = PaleobiologyDB.TaxonomyMakie._augment_leaf_phylopic!
-    const _LeafOverlayPlan = PaleobiologyDB.TaxonomyMakie._LeafOverlayPlan
+    const _rd_fn   = PaleobiologyDB.PBDBMakie._rank_depth
+    const _layout  = PaleobiologyDB.PBDBMakie._compute_dendrogram_layout
+    const _segpairs = PaleobiologyDB.PBDBMakie._dendrogram_segment_pairs
+    const _leaf_positions_fn = PaleobiologyDB.PBDBMakie._leaf_positions
+    const _plan_leaf_node_overlay = PaleobiologyDB.PBDBMakie._plan_leaf_node_phylopic_overlay
+    const _plan_leaf_label_overlay = PaleobiologyDB.PBDBMakie._plan_leaf_label_phylopic_overlay
+    const _plan_leaf_plot_overlay = PaleobiologyDB.PBDBMakie._plan_leaf_plot_phylopic_overlay
+    const _attach_plot_leaf_overlay! = PaleobiologyDB.PBDBMakie._attach_plot_leaf_phylopic_overlay!
+    const _leaf_text_plots_for_plot = PaleobiologyDB.PBDBMakie._leaf_text_plots
+    const _augment_leaf_overlay = PaleobiologyDB.PBDBMakie._augment_leaf_phylopic!
+    const _LeafOverlayPlan = PaleobiologyDB.PBDBMakie._LeafOverlayPlan
     const _TEST_GLYPH = fill(Makie.RGBA{Makie.N0f8}(0, 0, 0, 1), 16, 32)
     _materialize_tree_overlay!(fig) = CairoMakie.Makie.update_state_before_display!(fig)
 
@@ -224,7 +224,7 @@ if _CAIRO_TTM_AVAILABLE
     end
 
     function _install_taxon_overlay_stub!(glyph::AbstractMatrix)::Nothing
-        Core.eval(PaleobiologyDB.TaxonomyMakie.PhyloPic, quote
+        Core.eval(PaleobiologyDB.PBDBMakie.PhyloPic, quote
             function _augment_taxon_phylopic_anchored!(
                     parent,
                     anchor_positions;
@@ -266,7 +266,7 @@ if _CAIRO_TTM_AVAILABLE
     end
 
     function _restore_taxon_overlay_impl!()::Nothing
-        Core.eval(PaleobiologyDB.TaxonomyMakie.PhyloPic, quote
+        Core.eval(PaleobiologyDB.PBDBMakie.PhyloPic, quote
             function _augment_taxon_phylopic_anchored!(
                     parent,
                     anchor_positions;
@@ -288,7 +288,7 @@ if _CAIRO_TTM_AVAILABLE
                 images = _resolve_images(taxon, glyph, n; image_rendering)
                 isdefined(PhyloPicMakie, :_augment_resolved_phylopic_anchored!) || throw(
                     ErrorException(
-                        "PaleobiologyDB.TaxonomyMakie requires a PhyloPicMakie build " *
+                        "PaleobiologyDB.PBDBMakie requires a PhyloPicMakie build " *
                             "that exposes `_augment_resolved_phylopic_anchored!`. " *
                             "Re-resolve the environment against the current PhyloPicMakie surface."
                     )
@@ -323,9 +323,9 @@ if _CAIRO_TTM_AVAILABLE
         return nothing
     end
 
-    @testset "TaxonomyMakie — extension import contract" begin
-        @test isdefined(PaleobiologyDB, :TaxonomyMakie)
-        @test PaleobiologyDB.TaxonomyMakie === TaxonomyMakie
+    @testset "PBDBMakie — extension import contract" begin
+        @test isdefined(PaleobiologyDB, :PBDBMakie)
+        @test PaleobiologyDB.PBDBMakie === PBDBMakie
         @test !isdefined(PaleobiologyDB, :taxonomytreeplot)
         @test !isdefined(PaleobiologyDB, :taxonomytreeplot!)
         @test !isdefined(PaleobiologyDB, :set_rank_axis_ticks!)
@@ -333,30 +333,30 @@ if _CAIRO_TTM_AVAILABLE
         @test !isdefined(PaleobiologyDB, :augment_leaf_phylopic!)
     end
 
-    @testset "TaxonomyMakie — manifest policy remains untracked" begin
+    @testset "PBDBMakie — manifest policy remains untracked" begin
         @test !_repo_path_is_tracked("Manifest.toml")
         @test !_repo_path_is_tracked("test/Manifest.toml")
     end
 
-    @testset "TaxonomyMakie — docs tell the extension import truth" begin
+    @testset "PBDBMakie — docs tell the extension import truth" begin
         readme = _read_repo_file("README.md")
         guide = _read_repo_file("docs", "src", "guide", "taxonomytree_makie.md")
         api_doc = _read_repo_file("docs", "src", "api", "taxonomytree_makie.md")
 
-        @test occursin("using PaleobiologyDB.TaxonomyMakie", readme)
-        @test occursin("using PaleobiologyDB.TaxonomyMakie", guide)
-        @test occursin("using PaleobiologyDB.TaxonomyMakie", api_doc)
+        @test occursin("using PaleobiologyDB.PBDBMakie", readme)
+        @test occursin("using PaleobiologyDB.PBDBMakie", guide)
+        @test occursin("using PaleobiologyDB.PBDBMakie", api_doc)
 
         @test !occursin("using PaleobiologyDB: taxonomytreeplot", readme)
         @test !occursin("using PaleobiologyDB: taxonomytreeplot", guide)
         @test !occursin("using PaleobiologyDB: taxonomytreeplot", api_doc)
         @test !occursin("using PaleobiologyDB: taxonomytreeplot, augment_leaf_phylopic!", readme)
-        @test !occursin("TaxonomyMakie exports (taxonomytreeplot, augment_leaf_phylopic!, etc.) are now in scope", guide)
+        @test !occursin("PBDBMakie exports (taxonomytreeplot, augment_leaf_phylopic!, etc.) are now in scope", guide)
         @test !occursin("requires `FileIO`", guide)
     end
 
-    @testset "TaxonomyMakie — PBDB bridge delegates anchored overlays to PhyloPicMakie" begin
-        render_source = _read_repo_file("ext", "TaxonomyMakie", "PhyloPic", "src", "_render.jl")
+    @testset "PBDBMakie — PBDB bridge delegates anchored overlays to PhyloPicMakie" begin
+        render_source = _read_repo_file("ext", "PBDBMakie", "PhyloPic", "src", "_render.jl")
 
         @test isdefined(PhyloPicMakie, :_augment_resolved_phylopic_anchored!)
         @test occursin("PhyloPicMakie._augment_resolved_phylopic_anchored!", render_source)
@@ -377,7 +377,7 @@ if _CAIRO_TTM_AVAILABLE
         end
     end
 
-    @testset "TaxonomyMakie — _rank_depth" begin
+    @testset "PBDBMakie — _rank_depth" begin
 
         @testset "known ranks" begin
             @test _rd_fn("kingdom")    == 0
@@ -403,7 +403,7 @@ if _CAIRO_TTM_AVAILABLE
         end
     end
 
-    @testset "TaxonomyMakie — _compute_dendrogram_layout" begin
+    @testset "PBDBMakie — _compute_dendrogram_layout" begin
         tree = _mock_carnivora_tree()
         xs, ys = _layout(tree)
 
@@ -440,7 +440,7 @@ if _CAIRO_TTM_AVAILABLE
         end
     end
 
-    @testset "TaxonomyMakie — _compute_dendrogram_layout ladderize" begin
+    @testset "PBDBMakie — _compute_dendrogram_layout ladderize" begin
         # Build a tree with one large subtree (2 leaves) and one small (1 leaf)
         # so ladderize ordering is deterministic.
         tree = _mock_carnivora_tree()
@@ -466,7 +466,7 @@ if _CAIRO_TTM_AVAILABLE
         end
     end
 
-    @testset "TaxonomyMakie — _compute_dendrogram_layout single-node tree" begin
+    @testset "PBDBMakie — _compute_dendrogram_layout single-node tree" begin
         tree = _mock_single_node_tree()
         xs, ys = _layout(tree)
 
@@ -476,7 +476,7 @@ if _CAIRO_TTM_AVAILABLE
         @test ys[1] == 1.0    # single leaf → y = 1
     end
 
-    @testset "TaxonomyMakie — _dendrogram_segment_pairs" begin
+    @testset "PBDBMakie — _dendrogram_segment_pairs" begin
         tree = _mock_carnivora_tree()
         xs, ys = _layout(tree)
         segs = _segpairs(tree, xs, ys)
@@ -506,12 +506,12 @@ if _CAIRO_TTM_AVAILABLE
         end
     end
 
-    @testset "TaxonomyMakie — leaf overlay planning" begin
+    @testset "PBDBMakie — leaf overlay planning" begin
         tree = _mock_carnivora_tree()
         xs, ys = _layout(tree)
 
         leaves = _leaf_positions_fn(tree, xs, ys)
-        @test leaves == PaleobiologyDB.TaxonomyMakie.leaf_positions(tree, xs, ys)
+        @test leaves == PaleobiologyDB.PBDBMakie.leaf_positions(tree, xs, ys)
 
         plan = _plan_leaf_node_overlay(
             tree,
@@ -527,15 +527,15 @@ if _CAIRO_TTM_AVAILABLE
         @test [pos[2] for pos in plan.anchor_positions] ≈ leaves.y
     end
 
-    @testset "TaxonomyMakie — leaf_positions(p) respects row_spacing" begin
+    @testset "PBDBMakie — leaf_positions(p) respects row_spacing" begin
         tree = _mock_carnivora_tree()
         fig, ax, plt = taxonomytreeplot(tree; row_spacing = 3.0, show_phylopic = false)
         xs, ys = _layout(tree; row_spacing = 3.0)
-        @test PaleobiologyDB.TaxonomyMakie.leaf_positions(plt) ==
-            PaleobiologyDB.TaxonomyMakie.leaf_positions(tree, xs, ys)
+        @test PaleobiologyDB.PBDBMakie.leaf_positions(plt) ==
+            PaleobiologyDB.PBDBMakie.leaf_positions(tree, xs, ys)
     end
 
-    @testset "TaxonomyMakie — shared label-aware overlay reacts to relimit and resize" begin
+    @testset "PBDBMakie — shared label-aware overlay reacts to relimit and resize" begin
         tree = _mock_carnivora_tree()
         xs, ys = _layout(tree)
 
@@ -606,7 +606,7 @@ if _CAIRO_TTM_AVAILABLE
         @test left_edge_4 > label_right_4
     end
 
-    @testset "TaxonomyMakie — integrated helper uses scene owner and keeps sane limits" begin
+    @testset "PBDBMakie — integrated helper uses scene owner and keeps sane limits" begin
         tree = _mock_carnivora_tree()
         fig, ax, plt = taxonomytreeplot(tree; show_phylopic = false)
 
@@ -628,7 +628,7 @@ if _CAIRO_TTM_AVAILABLE
         @test !isempty(_visible_pixel_glyph_atomic_plots(ax.scene))
     end
 
-    @testset "TaxonomyMakie — explicit convenience overload honors axis and keeps sane limits" begin
+    @testset "PBDBMakie — explicit convenience overload honors axis and keeps sane limits" begin
         _with_stubbed_taxon_overlay() do
             tree = _mock_carnivora_tree()
             fig, ax, plt = taxonomytreeplot(tree; show_phylopic = false)
@@ -651,7 +651,7 @@ if _CAIRO_TTM_AVAILABLE
         end
     end
 
-    @testset "TaxonomyMakie — explicit convenience overload rejects mismatched axis" begin
+    @testset "PBDBMakie — explicit convenience overload rejects mismatched axis" begin
         _with_stubbed_taxon_overlay() do
             tree = _mock_carnivora_tree()
             fig = Figure(size = (900, 400))
@@ -672,7 +672,7 @@ if _CAIRO_TTM_AVAILABLE
         end
     end
 
-    @testset "TaxonomyMakie — tree plot does not own visible pixel-space overlay plots" begin
+    @testset "PBDBMakie — tree plot does not own visible pixel-space overlay plots" begin
         tree = _mock_carnivora_tree()
         fig, ax, plt = taxonomytreeplot(tree; show_phylopic = false)
 
@@ -692,7 +692,7 @@ if _CAIRO_TTM_AVAILABLE
         @test isempty(_visible_pixel_glyph_plot_children(plt))
     end
 
-    @testset "TaxonomyMakie — deleting the tree plot deletes axis-scene overlay handles" begin
+    @testset "PBDBMakie — deleting the tree plot deletes axis-scene overlay handles" begin
         _with_stubbed_taxon_overlay() do
             tree = _mock_carnivora_tree()
             fig, ax, plt = taxonomytreeplot(tree; show_phylopic = false)
@@ -721,7 +721,7 @@ if _CAIRO_TTM_AVAILABLE
         end
     end
 
-    @testset "TaxonomyMakie — tree overlay missing-image policy uses shared adapter" begin
+    @testset "PBDBMakie — tree overlay missing-image policy uses shared adapter" begin
         fig = Figure()
         ax = Axis(fig[1, 1])
         plan = _LeafOverlayPlan(
@@ -765,7 +765,7 @@ if _CAIRO_TTM_AVAILABLE
     end
 
 else
-    @info "CairoMakie not available — skipping TaxonomyMakie offline layout tests"
+    @info "CairoMakie not available — skipping PBDBMakie offline layout tests"
 end
 
 # ---------------------------------------------------------------------------
@@ -774,7 +774,7 @@ end
 
 if _CAIRO_TTM_AVAILABLE
     if _LIVE_TAXONOMYMAKIE
-        @testset "TaxonomyMakie — taxonomytreeplot smoke" begin
+        @testset "PBDBMakie — taxonomytreeplot smoke" begin
             tree = _mock_carnivora_tree()
 
             @testset "taxonomytreeplot returns FigureAxisPlot" begin
@@ -822,7 +822,7 @@ if _CAIRO_TTM_AVAILABLE
             end
         end
 
-        @testset "TaxonomyMakie — taxonomytreeplot! into existing axis" begin
+        @testset "PBDBMakie — taxonomytreeplot! into existing axis" begin
             tree = _mock_carnivora_tree()
             fig  = CairoMakie.Figure()
             ax   = CairoMakie.Axis(fig[1, 1])
@@ -834,7 +834,7 @@ if _CAIRO_TTM_AVAILABLE
             @test_nowarn set_rank_axis_ticks!(ax, tree)
         end
 
-        @testset "TaxonomyMakie — single-node tree (placeholder)" begin
+        @testset "PBDBMakie — single-node tree (placeholder)" begin
             tree = _mock_single_node_tree()
             @test_nowarn taxonomytreeplot(tree)
         end
@@ -849,7 +849,7 @@ if _CAIRO_TTM_AVAILABLE
     # render-aware shared-owner tests above stay offline by injecting a test
     # glyph directly into the internal tree-overlay adapter.
 
-    @testset "TaxonomyMakie — PhyloPic silhouette attributes (offline)" begin
+    @testset "PBDBMakie — PhyloPic silhouette attributes (offline)" begin
         tree = _mock_carnivora_tree()
 
         @testset "show_phylopic = false (default) does not trigger network or error" begin
@@ -878,7 +878,7 @@ if _CAIRO_TTM_AVAILABLE
     # PhyloPic APIs.  They are disabled by default to avoid network stalls
     # in CI.  Run with: PBDB_LIVE=1 julia --project=test test/runtests.jl
 
-    @testset "TaxonomyMakie — PhyloPic silhouettes (live)" begin
+    @testset "PBDBMakie — PhyloPic silhouettes (live)" begin
         if !_LIVE_TAXONOMYMAKIE
             @info "Live PhyloPic-in-tree tests disabled. Set ENV[\"PBDB_LIVE\"]=\"1\" to enable."
         else
@@ -943,7 +943,7 @@ if _CAIRO_TTM_AVAILABLE
     end
 
     if _LIVE_TAXONOMYMAKIE
-        @testset "TaxonomyMakie — set_rank_axis_ticks!" begin
+        @testset "PBDBMakie — set_rank_axis_ticks!" begin
             tree = _mock_carnivora_tree()
             fig, ax, plt = taxonomytreeplot(tree; show_rank_ticks = false)
             set_rank_axis_ticks!(ax, tree)
@@ -956,5 +956,5 @@ if _CAIRO_TTM_AVAILABLE
     end
 
 else
-    @info "CairoMakie not available — skipping TaxonomyMakie recipe smoke tests"
+    @info "CairoMakie not available — skipping PBDBMakie recipe smoke tests"
 end

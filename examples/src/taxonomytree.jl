@@ -1,6 +1,6 @@
 using CairoMakie
 using PaleobiologyDB
-using PaleobiologyDB.TaxonomyMakie: taxonomytreeplot
+using PaleobiologyDB.PBDBMakie: taxonomytreeplot
 
 PaleobiologyDB.set_autocaching!(true)
 

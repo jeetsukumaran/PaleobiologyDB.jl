@@ -1,8 +1,8 @@
 # ---------------------------------------------------------------------------
-# TaxonomyMakie — tree-aware PhyloPic overlay API
+# PBDBMakie — tree-aware PhyloPic overlay API
 #
 # Provides a composable overlay API that separates tree geometry extraction
-# from glyph rendering. Tree-specific planning stays in TaxonomyMakie;
+# from glyph rendering. Tree-specific planning stays in PBDBMakie;
 # glyph rendering is delegated through the PBDB bridge into the shared
 # PhyloPicMakie anchored-overlay substrate.
 #
@@ -42,7 +42,7 @@ Returns a `NamedTuple` with fields:
 using CairoMakie
 using PaleobiologyDB
 using PaleobiologyDB.Taxonomy
-using PaleobiologyDB.TaxonomyMakie
+using PaleobiologyDB.PBDBMakie
 
 fig, ax, plt = taxonomytreeplot(taxon_subtree("Panthera"))
 leaves = leaf_positions(plt)
@@ -153,7 +153,7 @@ which reads tree and layout directly from a `TaxonomyTreePlot`.
 using CairoMakie
 using PaleobiologyDB
 using PaleobiologyDB.Taxonomy
-using PaleobiologyDB.TaxonomyMakie
+using PaleobiologyDB.PBDBMakie
 
 tree = taxon_subtree("Panthera")
 fig, ax, plt = taxonomytreeplot(tree)

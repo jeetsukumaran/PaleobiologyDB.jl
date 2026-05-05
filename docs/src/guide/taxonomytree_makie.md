@@ -1,9 +1,9 @@
-# TaxonomyMakie — Makie tree visualization
+# PBDBMakie — Makie tree visualization
 
-`PaleobiologyDB.TaxonomyMakie` is a package extension that renders
+`PaleobiologyDB.PBDBMakie` is a package extension that renders
 [`TaxonomyTree`](@ref) objects as rectangular dendrograms in Makie figures.
 It activates when a Makie backend is loaded and is accessed through the
-`PaleobiologyDB.TaxonomyMakie` submodule.
+`PaleobiologyDB.PBDBMakie` submodule.
 
 ## Installation
 
@@ -17,7 +17,7 @@ pkg> add CairoMakie PhyloPicMakie
 using CairoMakie   # or GLMakie, WGLMakie, …
 using PaleobiologyDB
 using PaleobiologyDB.Taxonomy
-using PaleobiologyDB.TaxonomyMakie: taxonomytreeplot, taxonomytreeplot!, set_rank_axis_ticks!, augment_leaf_phylopic!
+using PaleobiologyDB.PBDBMakie: taxonomytreeplot, taxonomytreeplot!, set_rank_axis_ticks!, augment_leaf_phylopic!
 ```
 
 ## Quick start — basic dendrogram
@@ -28,7 +28,7 @@ Build a subtree with [`taxon_subtree`](@ref) then pass it to `taxonomytreeplot`:
 using CairoMakie
 using PaleobiologyDB
 using PaleobiologyDB.Taxonomy
-using PaleobiologyDB.TaxonomyMakie: taxonomytreeplot
+using PaleobiologyDB.PBDBMakie: taxonomytreeplot
 
 tree = taxon_subtree("Carnivora"; leaf_rank = "family")
 
@@ -106,7 +106,7 @@ allowing composition with other Makie plots or multi-panel figures:
 using CairoMakie
 using PaleobiologyDB
 using PaleobiologyDB.Taxonomy
-using PaleobiologyDB.TaxonomyMakie: taxonomytreeplot!, set_rank_axis_ticks!
+using PaleobiologyDB.PBDBMakie: taxonomytreeplot!, set_rank_axis_ticks!
 
 tree = taxon_subtree("Canidae"; leaf_rank = "genus")
 
@@ -129,7 +129,7 @@ using the standalone `taxonomytreeplot`, this is called automatically unless
 using CairoMakie
 using PaleobiologyDB
 using PaleobiologyDB.Taxonomy
-using PaleobiologyDB.TaxonomyMakie: taxonomytreeplot!, set_rank_axis_ticks!
+using PaleobiologyDB.PBDBMakie: taxonomytreeplot!, set_rank_axis_ticks!
 
 t_fam = taxon_subtree("Carnivora"; leaf_rank = "family")
 t_gen = taxon_subtree("Canidae";   leaf_rank = "genus")
@@ -151,12 +151,12 @@ display(fig)
 
 `taxonomytreeplot` can overlay [PhyloPic](https://www.phylopic.org/) silhouette
 images to the right of each leaf label. The default thumbnail-backed render
-path works once a Makie backend and `PaleobiologyDB.TaxonomyMakie` are loaded:
+path works once a Makie backend and `PaleobiologyDB.PBDBMakie` are loaded:
 
 ```julia
 using CairoMakie
 using PaleobiologyDB
-using PaleobiologyDB.TaxonomyMakie: taxonomytreeplot
+using PaleobiologyDB.PBDBMakie: taxonomytreeplot
 ```
 
 The default `phylopic_image_rendering = :thumbnail` path uses PNG thumbnails
@@ -258,11 +258,11 @@ or the tree itself still requires recreating the plot with
 
 ### Note on extension activation
 
-`show_phylopic = true` requires the `TaxonomyMakie` extension to be active,
+`show_phylopic = true` requires the `PBDBMakie` extension to be active,
 which happens automatically when a Makie backend is loaded alongside
 `PaleobiologyDB`. Bring the extension exports into scope with
-`using PaleobiologyDB.TaxonomyMakie` or call them through the
-`PaleobiologyDB.TaxonomyMakie` submodule. `PhyloPicMakie` is a hard
+`using PaleobiologyDB.PBDBMakie` or call them through the
+`PaleobiologyDB.PBDBMakie` submodule. `PhyloPicMakie` is a hard
 dependency of `PaleobiologyDB` and is always available once the package is
 installed.
 

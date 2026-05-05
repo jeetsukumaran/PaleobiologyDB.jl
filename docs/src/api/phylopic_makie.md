@@ -1,10 +1,10 @@
 ```@meta
-CurrentModule = PaleobiologyDB.TaxonomyMakie
+CurrentModule = PaleobiologyDB.PBDBMakie
 ```
 
 # PhyloPic: Rendering — API Reference
 
-`PaleobiologyDB.TaxonomyMakie` overlays
+`PaleobiologyDB.PBDBMakie` overlays
 [PhyloPic](https://www.phylopic.org/) silhouette images on existing Makie axes.
 It is a package extension that activates when both a Makie backend (e.g. `CairoMakie`)
 and `PhyloPicMakie` are loaded.

@@ -1,6 +1,6 @@
-# TaxonomyMakie — PhyloPic Makie plot integration
+# PBDBMakie — PhyloPic Makie plot integration
 
-`PaleobiologyDB.TaxonomyMakie` provides PhyloPic silhouette overlays
+`PaleobiologyDB.PBDBMakie` provides PhyloPic silhouette overlays
 for existing Makie plots.  It is a package extension that activates
 when a Makie backend is loaded.
 

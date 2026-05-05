@@ -52,7 +52,7 @@ function _augment_taxon_phylopic_anchored!(
     images = _resolve_images(taxon, glyph, n; image_rendering)
     isdefined(PhyloPicMakie, :_augment_resolved_phylopic_anchored!) || throw(
         ErrorException(
-            "PaleobiologyDB.TaxonomyMakie requires a PhyloPicMakie build " *
+            "PaleobiologyDB.PBDBMakie requires a PhyloPicMakie build " *
                 "that exposes `_augment_resolved_phylopic_anchored!`. " *
                 "Re-resolve the environment against the current PhyloPicMakie surface."
         )

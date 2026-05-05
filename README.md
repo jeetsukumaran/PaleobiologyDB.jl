@@ -110,7 +110,7 @@ Three functions map PBDB taxon names to [PhyloPic](https://www.phylopic.org/) si
 
 ```julia
 # Enrich an occurrences DataFrame with PhyloPic image columns
-using CairoMakie  # triggers TaxonomyMakie extension
+using CairoMakie  # triggers PBDBMakie extension
 using PaleobiologyDB: pbdb_occurrences, acquire_phylopic, augment_phylopic
 
 df      = pbdb_occurrences(base_name = "Ceratopsia", interval = "Cretaceous", show = "full")
@@ -123,7 +123,7 @@ enriched = augment_phylopic(df)            # original columns + 14 phylopic_ col
 
 ```julia
 # Browse all available images for a taxon or clade
-using CairoMakie  # triggers TaxonomyMakie extension
+using CairoMakie  # triggers PBDBMakie extension
 using PaleobiologyDB: phylopic_images_dataframe
 
 imgs = phylopic_images_dataframe("Carnivora")
@@ -137,7 +137,7 @@ imgs_node = phylopic_images_dataframe("Carnivora"; filter = :node)
 
 
 
-## TaxonomyMakie — PhyloPic taxon visualization
+## PBDBMakie — PhyloPic taxon visualization
 
 ```julia
 # Anchor a PhyloPic glyph at each taxon's first appearance on a range chart
@@ -185,15 +185,15 @@ fig2 = pbdb_phylopic_grid(
 display(fig2)
 ```
 
-See the [TaxonomyMakie PhyloPic guide](https://jeetsukumaran.github.io/PaleobiologyDB.jl/dev/guide/phylopic_makie/) for the full API and layout options.
+See the [PBDBMakie PhyloPic guide](https://jeetsukumaran.github.io/PaleobiologyDB.jl/dev/guide/phylopic_makie/) for the full API and layout options.
 
 
-## TaxonomyMakie — dendrogram visualisation
+## PBDBMakie — dendrogram visualisation
 
 ```julia
 using CairoMakie: Figure, Axis, save, display
 using PaleobiologyDB.Taxonomy: taxon_subtree
-using PaleobiologyDB.TaxonomyMakie: taxonomytreeplot, taxonomytreeplot!, set_rank_axis_ticks!
+using PaleobiologyDB.PBDBMakie: taxonomytreeplot, taxonomytreeplot!, set_rank_axis_ticks!
 
 # Build a subtree and render it — branches and nodes coloured by taxonomic rank
 tree = taxon_subtree("Carnivora"; leaf_rank = "family")
@@ -212,7 +212,7 @@ display(fig2)
 ```julia
 using CairoMakie: Figure, Axis, save
 using PaleobiologyDB.Taxonomy: taxon_subtree
-using PaleobiologyDB.TaxonomyMakie: taxonomytreeplot, augment_leaf_phylopic!
+using PaleobiologyDB.PBDBMakie: taxonomytreeplot, augment_leaf_phylopic!
 
 tree = taxon_subtree("Carnivora"; leaf_rank = "family")
 fig, ax, plt = taxonomytreeplot(tree; show_leaf_labels = true, color_by_rank = true, ladderize = true)
@@ -222,7 +222,7 @@ augment_leaf_phylopic!(ax, plt; xoffset = 0.5)
 save("carnivora_phylopic.png", fig)
 ```
 
-See the [TaxonomyMakie guide](https://jeetsukumaran.github.io/PaleobiologyDB.jl/dev/guide/taxonomytree_makie/) for the full attribute reference and worked examples.
+See the [PBDBMakie guide](https://jeetsukumaran.github.io/PaleobiologyDB.jl/dev/guide/taxonomytree_makie/) for the full attribute reference and worked examples.
 
 Runnable examples live in `examples/src/`. From a development checkout, the tree
 script saves `taxonomytree.png` in the current working directory by default,
@@ -302,7 +302,7 @@ Use `pbdb_count` to count records without downloading them.
 | Tree graphs | `taxon_subtree`, `root_taxon`, `leaf_taxa`, `taxa_at_rank` |
 | Types | `TaxonNode`, `TaxonomyTree` |
 
-### PhyloPic and rendering (`PaleobiologyDB.TaxonomyMakie`)
+### PhyloPic and rendering (`PaleobiologyDB.PBDBMakie`)
 
 | Category | Functions |
 |---|---|
@@ -310,7 +310,7 @@ Use `pbdb_count` to count records without downloading them.
 | Makie overlays | `augment_phylopic!`, `augment_phylopic_ranges!`, `augment_phylopic_ranges` |
 | Gallery | `pbdb_phylopic_grid`, `pbdb_phylopic_grid!` |
 
-### TaxonomyMakie extension (`PaleobiologyDB.TaxonomyMakie`) — tree visualization
+### PBDBMakie extension (`PaleobiologyDB.PBDBMakie`) — tree visualization
 
 | Symbol | Description |
 |---|---|
@@ -325,7 +325,7 @@ Use `pbdb_count` to count records without downloading them.
 
 - [Quick Start](https://jeetsukumaran.github.io/PaleobiologyDB.jl/dev/guide/quickstart/) — examples for all endpoint types, advanced query options
 - [Caching](https://jeetsukumaran.github.io/PaleobiologyDB.jl/dev/guide/caching/) — file, memory, and autocaching; classroom pre-fetch patterns
-- [TaxonomyMakie](https://jeetsukumaran.github.io/PaleobiologyDB.jl/dev/guide/taxonomytree_makie/) — dendrogram visualisation guide and attribute reference
+- [PBDBMakie](https://jeetsukumaran.github.io/PaleobiologyDB.jl/dev/guide/taxonomytree_makie/) — dendrogram visualisation guide and attribute reference
 - [PhyloPic](https://jeetsukumaran.github.io/PaleobiologyDB.jl/dev/guide/phylopic_makie/) — PhyloPic overlay and gallery guide
 - [Contributing](https://jeetsukumaran.github.io/PaleobiologyDB.jl/dev/guide/contributing/) — testing, development, and external resources
 
@@ -342,7 +342,7 @@ Use `pbdb_count` to count records without downloading them.
 - [Taxonomy — search](https://jeetsukumaran.github.io/PaleobiologyDB.jl/dev/api/taxonomy_search/)
 - [PhyloPic acquisition](https://jeetsukumaran.github.io/PaleobiologyDB.jl/dev/api/phylopic_acquire/)
 - [PhyloPic Makie API](https://jeetsukumaran.github.io/PaleobiologyDB.jl/dev/api/phylopic_makie/)
-- [TaxonomyMakie API](https://jeetsukumaran.github.io/PaleobiologyDB.jl/dev/api/taxonomytree_makie/)
+- [PBDBMakie API](https://jeetsukumaran.github.io/PaleobiologyDB.jl/dev/api/taxonomytree_makie/)
 - [Interactive Help](https://jeetsukumaran.github.io/PaleobiologyDB.jl/dev/api/apihelp/) — REPL-based parameter and field discovery
 - [Depot](https://jeetsukumaran.github.io/PaleobiologyDB.jl/dev/api/depot/) — local data snapshot management
 

@@ -1,5 +1,5 @@
 # ---------------------------------------------------------------------------
-# TaxonomyMakie — internal leaf-overlay planning
+# PBDBMakie — internal leaf-overlay planning
 #
 # Owns tree-specific leaf discovery plus translation from tree and label
 # policy into data-space anchor instructions. Rendering remains delegated to

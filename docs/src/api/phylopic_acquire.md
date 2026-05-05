@@ -1,5 +1,5 @@
 ```@meta
-CurrentModule = PaleobiologyDB.TaxonomyMakie
+CurrentModule = PaleobiologyDB.PBDBMakie
 ```
 
 # PhyloPic — Acquisition
@@ -50,7 +50,7 @@ Both functions produce the following fields.  The `fieldname_prefix` argument (d
 ## acquire_phylopic — single taxon
 
 ```julia
-using PaleobiologyDB, PaleobiologyDB.TaxonomyMakie
+using PaleobiologyDB, PaleobiologyDB.PBDBMakie
 
 # Default prefix → :phylopic_uuid, :phylopic_thumbnail, etc.
 rec = acquire_phylopic("Tyrannosaurus")
@@ -68,7 +68,7 @@ ismissing(rec_missing.phylopic_uuid)  # → true
 ## acquire_phylopic — DataFrame (phylopic columns only)
 
 ```julia
-using PaleobiologyDB, PaleobiologyDB.TaxonomyMakie, DataFrames
+using PaleobiologyDB, PaleobiologyDB.PBDBMakie, DataFrames
 
 df   = pbdb_occurrences(base_name = "Ceratopsia", interval = "Cretaceous", show = "full")
 
@@ -105,7 +105,7 @@ you can acquire images at multiple taxonomic levels simultaneously without colum
 conflicts:
 
 ```julia
-using PaleobiologyDB, PaleobiologyDB.TaxonomyMakie, DataFrames
+using PaleobiologyDB, PaleobiologyDB.PBDBMakie, DataFrames
 
 df = pbdb_occurrences(base_name = "Dinosauria", interval = "Cretaceous",
                       show = "full", limit = 100)
@@ -135,7 +135,7 @@ library, no installation required) is all you need to save files to disk:
 
 ```julia
 using Downloads
-using PaleobiologyDB, PaleobiologyDB.TaxonomyMakie
+using PaleobiologyDB, PaleobiologyDB.PBDBMakie
 
 rec = acquire_phylopic("Tyrannosaurus")
 
@@ -147,7 +147,7 @@ Downloads.download(rec.phylopic_thumbnail, "tyrannosaurus_thumb.png")
 
 ## Enhancing Makie plots with PhyloPic silhouettes
 
-The `PaleobiologyDB.TaxonomyMakie` extension provides a high-level API for
+The `PaleobiologyDB.PBDBMakie` extension provides a high-level API for
 overlaying PhyloPic silhouettes on existing Makie axes.  It activates
 when both a Makie backend (e.g. `CairoMakie`) and `PhyloPicMakie` are loaded.
 
@@ -159,7 +159,7 @@ pkg> add CairoMakie PhyloPicMakie
 using PaleobiologyDB
 import PhyloPicMakie
 using CairoMakie
-using PaleobiologyDB.TaxonomyMakie
+using PaleobiologyDB.PBDBMakie
 
 taxa      = ["Tyrannosaurus", "Triceratops", "Ankylosaurus",
              "Pachycephalosaurus", "Edmontosaurus"]
@@ -205,7 +205,7 @@ image** available for the taxon's clade (or just the node, with `filter = :node`
 one row per image.
 
 ```julia
-using PaleobiologyDB, PaleobiologyDB.TaxonomyMakie
+using PaleobiologyDB, PaleobiologyDB.PBDBMakie
 
 # All images within the Carnivora clade (one row per image, hundreds of rows)
 imgs = phylopic_images_dataframe("Carnivora")

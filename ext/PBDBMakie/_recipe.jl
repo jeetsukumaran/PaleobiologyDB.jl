@@ -1,5 +1,5 @@
 # ---------------------------------------------------------------------------
-# TaxonomyMakie — @recipe definition, Makie.plot! implementation, and
+# PBDBMakie — @recipe definition, Makie.plot! implementation, and
 # convenience wrappers.
 #
 # Call graph:
@@ -186,7 +186,7 @@ dendrogram.  Produced by [`taxonomytreeplot`](@ref) (standalone figure) or
 ```julia
 using PaleobiologyDB, PaleobiologyDB.Taxonomy
 using CairoMakie
-using PaleobiologyDB.TaxonomyMakie
+using PaleobiologyDB.PBDBMakie
 
 tree = taxon_subtree("Carnivora"; leaf_rank = "family")
 
@@ -601,7 +601,7 @@ save("tree.png", fig)
 ```julia
 using PaleobiologyDB, PaleobiologyDB.Taxonomy
 using CairoMakie
-using PaleobiologyDB.TaxonomyMakie
+using PaleobiologyDB.PBDBMakie
 
 tree = taxon_subtree("Carnivora"; leaf_rank = "family")
 
@@ -695,7 +695,7 @@ arguments (recipe attributes such as `ladderize`, `show_leaf_labels`,
 
 ```julia
 using PaleobiologyDB, CairoMakie
-using PaleobiologyDB.TaxonomyMakie
+using PaleobiologyDB.PBDBMakie
 
 fig, ax, plt = taxonomytreeplot("Carnivora"; leaf_rank = "family")
 save("carnivora.png", fig)

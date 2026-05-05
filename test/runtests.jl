@@ -20,14 +20,14 @@ include("taxonomy_graphs.jl")
 
 # Load CairoMakie backend for rendering tests.
 # PhyloPicMakie (hard dep of PaleobiologyDB) loads Makie transitively,
-# triggering the TaxonomyMakie extension automatically.
+# triggering the PBDBMakie extension automatically.
 using CairoMakie
 import PhyloPicMakie
 const PhyloPicDB = PhyloPicMakie.PhyloPicDB
 
-# TaxonomyMakie is bound into PaleobiologyDB by the extension's __init__.
-# `using PaleobiologyDB.TaxonomyMakie` brings its exports into test scope.
-using PaleobiologyDB.TaxonomyMakie
+# PBDBMakie is bound into PaleobiologyDB by the extension's __init__.
+# `using PaleobiologyDB.PBDBMakie` brings its exports into test scope.
+using PaleobiologyDB.PBDBMakie
 
 include("taxonomy_phylopic_acquire.jl")
 include("taxonomy_phylopic_images.jl")

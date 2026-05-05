@@ -1,5 +1,5 @@
 """
-    TaxonomyMakie
+    PBDBMakie
 
 Package extension for PaleobiologyDB.jl that activates when both Makie and
 PhyloPicMakie are loaded.  Provides the full tree-visualization API and the
@@ -9,7 +9,7 @@ Activated by:
 
     using CairoMakie  # or any Makie backend
     using PaleobiologyDB
-    using PaleobiologyDB.TaxonomyMakie
+    using PaleobiologyDB.PBDBMakie
 
 Public API — tree visualization:
 
@@ -34,7 +34,7 @@ Public API — PBDB–PhyloPic bridge (re-exported from PhyloPic):
 | `phylopic_images` | PBDB → PhyloPic images |
 | `pbdb_phylopic_grid` / `pbdb_phylopic_grid!` | Gallery figure/axis |
 """
-module TaxonomyMakie
+module PBDBMakie
 
 import Makie
 import PhyloPicMakie
@@ -46,7 +46,7 @@ using PaleobiologyDB.Taxonomy: TaxonomyTree, TaxonNode, taxon_subtree
 
 # Vendored PBDB–PhyloPic bridge submodule.
 include("PhyloPic/src/PhyloPic.jl")
-using .PhyloPic  # bring PhyloPic exports into TaxonomyMakie's scope for re-export
+using .PhyloPic  # bring PhyloPic exports into PBDBMakie's scope for re-export
 
 # Tree-visualization implementation files.
 include("_layout.jl")
@@ -71,13 +71,13 @@ export pbdb_phylopic_grid!
 export pbdb_phylopic_grid
 
 # Julia's extension system does not re-export extension symbols into the parent
-# module's namespace. Without this binding, `using PaleobiologyDB.TaxonomyMakie`
+# module's namespace. Without this binding, `using PaleobiologyDB.PBDBMakie`
 # (the canonical way for users to bring this extension's exports into scope) would
-# not work. This is a deliberate design choice: TaxonomyMakie is exposed as a
+# not work. This is a deliberate design choice: PBDBMakie is exposed as a
 # named sub-module of PaleobiologyDB until it becomes its own registered package,
 # at which point this will be replaced by a normal `using` statement.
 function __init__()
-    Core.eval(PaleobiologyDB, :(TaxonomyMakie = $(@__MODULE__)))
+    Core.eval(PaleobiologyDB, :(PBDBMakie = $(@__MODULE__)))
 end
 
-end # module TaxonomyMakie
+end # module PBDBMakie

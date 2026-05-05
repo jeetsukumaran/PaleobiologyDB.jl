@@ -1,6 +1,6 @@
 using CairoMakie
 using PaleobiologyDB
-using PaleobiologyDB.TaxonomyMakie: pbdb_phylopic_grid
+using PaleobiologyDB.PBDBMakie: pbdb_phylopic_grid
 
 PaleobiologyDB.set_autocaching!(true)
 

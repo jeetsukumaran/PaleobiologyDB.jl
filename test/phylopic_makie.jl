@@ -23,7 +23,7 @@ using DataFrames
 using PaleobiologyDB
 
 # ---------------------------------------------------------------------------
-# Load CairoMakie to activate the TaxonomyMakie extension and provide a
+# Load CairoMakie to activate the PBDBMakie extension and provide a
 # Makie backend.  PhyloPicMakie is a hard dep — always available.
 # ---------------------------------------------------------------------------
 
@@ -50,15 +50,15 @@ else
 using Makie: RGBA, N0f8, Image
 
 @testset "PhyloPic — submodule loaded" begin
-    # PhyloPic is a submodule of the TaxonomyMakie extension.
-    @test isdefined(PaleobiologyDB.TaxonomyMakie, :PhyloPic)
-    @test PaleobiologyDB.TaxonomyMakie.PhyloPic isa Module
-    @test :augment_phylopic!        ∈ names(PaleobiologyDB.TaxonomyMakie.PhyloPic)
-    @test :augment_phylopic         ∈ names(PaleobiologyDB.TaxonomyMakie.PhyloPic)
-    @test :augment_phylopic_ranges! ∈ names(PaleobiologyDB.TaxonomyMakie.PhyloPic)
-    @test :augment_phylopic_ranges  ∈ names(PaleobiologyDB.TaxonomyMakie.PhyloPic)
-    @test :pbdb_phylopic_grid! ∈ names(PaleobiologyDB.TaxonomyMakie.PhyloPic)
-    @test :pbdb_phylopic_grid  ∈ names(PaleobiologyDB.TaxonomyMakie.PhyloPic)
+    # PhyloPic is a submodule of the PBDBMakie extension.
+    @test isdefined(PaleobiologyDB.PBDBMakie, :PhyloPic)
+    @test PaleobiologyDB.PBDBMakie.PhyloPic isa Module
+    @test :augment_phylopic!        ∈ names(PaleobiologyDB.PBDBMakie.PhyloPic)
+    @test :augment_phylopic         ∈ names(PaleobiologyDB.PBDBMakie.PhyloPic)
+    @test :augment_phylopic_ranges! ∈ names(PaleobiologyDB.PBDBMakie.PhyloPic)
+    @test :augment_phylopic_ranges  ∈ names(PaleobiologyDB.PBDBMakie.PhyloPic)
+    @test :pbdb_phylopic_grid! ∈ names(PaleobiologyDB.PBDBMakie.PhyloPic)
+    @test :pbdb_phylopic_grid  ∈ names(PaleobiologyDB.PBDBMakie.PhyloPic)
 
     # PhyloPicMakie is a hard dep of PaleobiologyDB — always available.
     @test PhyloPicMakie isa Module
