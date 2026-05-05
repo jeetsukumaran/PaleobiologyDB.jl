@@ -175,7 +175,7 @@ tree = taxon_subtree("Carnivora"; leaf_rank = "family")
 fig, ax, plt = taxonomytreeplot(tree;
     show_leaf_labels = true,
     show_phylopic    = true,
-    phylopic_xoffset = 0.5,
+    phylopic_xoffset = 0.25,
 )
 display(fig)
 ```

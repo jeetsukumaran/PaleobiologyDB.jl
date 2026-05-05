@@ -863,7 +863,7 @@ if _CAIRO_TTM_AVAILABLE
             @test plt[:show_phylopic][]       == false
             @test plt[:phylopic_glyph_size][] ≈ 1.0
             @test plt[:phylopic_align][]      == false
-            @test plt[:phylopic_xoffset][]    ≈ 0.65
+            @test plt[:phylopic_xoffset][]    ≈ 0.1
             @test plt[:phylopic_yoffset][]    ≈ 0.3
             @test plt[:phylopic_image_rendering][] == :thumbnail
             @test plt[:phylopic_on_missing][] == :skip
