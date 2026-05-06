@@ -51,8 +51,9 @@ R package.
 """
 module PaleobiologyDB
 
-using DataCaches
+import DataCaches
 export DataCaches
+include("dataches.jl")
 
 include("dbapi.jl")
 include("pbdbdocs.jl")

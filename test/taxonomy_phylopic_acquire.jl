@@ -120,6 +120,13 @@ const _apply_prefix       = PaleobiologyDB.PBDBMakie._PhyloPic[]._apply_fieldnam
         @test _PHYLOPIC_BASE_COLS == expected
     end
 
+    @testset "autocaching binding is PBDB-owned and public" begin
+        @test Base.ispublic(PaleobiologyDB, :set_autocaching!)
+        @test !Base.isexported(PaleobiologyDB, :set_autocaching!)
+        @test :set_autocaching! in propertynames(PaleobiologyDB)
+        @test PaleobiologyDB.DataCaches === DataCaches
+    end
+
     @testset "autocaching — acquire_phylopic is a valid func reference for set_autocaching!" begin
         # Structural test: verify the caching machinery accepts acquire_phylopic as
         # the func reference used in _phylopic_lookup_taxon.  Both acquire_phylopic
