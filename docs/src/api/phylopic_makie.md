@@ -15,9 +15,11 @@ For taxon-name resolution and image acquisition, see the
 See the [PhyloPicMakie guide](../guide/phylopic_makie.md) for installation
 instructions, worked examples, and a keyword-argument reference.
 
-```@docs
-PhyloPic
-```
+The vendored `PhyloPic` submodule is an internal implementation detail of
+`PBDBMakieExt`. It provides the PBDB-to-PhyloPic name-resolution pipeline and
+the Makie rendering wrappers used by the exported
+`PaleobiologyDB.PBDBMakie` functions documented below, but it is not itself a
+supported public binding on `PaleobiologyDB.PBDBMakie`.
 
 ## Point placement
 

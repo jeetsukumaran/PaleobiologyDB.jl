@@ -5,7 +5,7 @@ CurrentModule = PaleobiologyDB.PBDBMakie
 # PBDBMakie — API Reference
 
 `PaleobiologyDB.PBDBMakie` is a package extension that renders
-[`TaxonomyTree`](@ref) objects as Makie dendrograms and provides the PBDB–PhyloPic
+[`TaxonomyTree`](@ref PaleobiologyDB.Taxonomy.TaxonomyTree) objects as Makie dendrograms and provides the PBDB–PhyloPic
 bridge.  It activates automatically when both a Makie backend (e.g. `CairoMakie`)
 and `PhyloPicMakie` are loaded. Bring its exports into scope with
 `using PaleobiologyDB.PBDBMakie` or call them through the

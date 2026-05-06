@@ -64,7 +64,7 @@ jobs:
           using PaleobiologyDB
           using CairoMakie
           import PhyloPicMakie
-          using PaleobiologyDB.TaxonomyMakie
+          using PaleobiologyDB.PBDBMakie
           DocMeta.setdocmeta!(PaleobiologyDB, :DocTestSetup, :(using PaleobiologyDB); recursive=true)
-          DocMeta.setdocmeta!(PaleobiologyDB.TaxonomyMakie, :DocTestSetup, :(using PaleobiologyDB; using CairoMakie; import PhyloPicMakie; using PaleobiologyDB.TaxonomyMakie); recursive=true)
+          DocMeta.setdocmeta!(PaleobiologyDB.PBDBMakie, :DocTestSetup, :(using PaleobiologyDB; using CairoMakie; import PhyloPicMakie; using PaleobiologyDB.PBDBMakie); recursive=true)
           doctest(PaleobiologyDB)

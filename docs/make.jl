@@ -9,10 +9,22 @@ using PaleobiologyDB.Depot
 using CairoMakie
 using PaleobiologyDB.PBDBMakie
 
+pbdb_makie_ext = Base.get_extension(PaleobiologyDB, :PBDBMakieExt)
+isnothing(pbdb_makie_ext) && error("PBDBMakieExt did not load after using PaleobiologyDB.PBDBMakie.")
+phylopic_impl = getproperty(pbdb_makie_ext, :PhyloPic)
+
 makedocs(
     sitename = "PaleobiologyDB.jl",
     authors = "Jeet Sukumaran",
-    modules = [PaleobiologyDB, PaleobiologyDB.ApiHelp, PaleobiologyDB.Taxonomy, PaleobiologyDB.Depot, PaleobiologyDB.PBDBMakie],
+    modules = [
+        PaleobiologyDB,
+        PaleobiologyDB.ApiHelp,
+        PaleobiologyDB.Taxonomy,
+        PaleobiologyDB.Depot,
+        PaleobiologyDB.PBDBMakie,
+        pbdb_makie_ext,
+    ],
+    checkdocs_ignored_modules = [phylopic_impl],
     format = Documenter.HTML(
         prettyurls = get(ENV, "CI", nothing) == "true",
         canonical = "https://jeetsukumaran.github.io/PaleobiologyDB.jl",
