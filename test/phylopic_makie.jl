@@ -51,14 +51,14 @@ using Makie: RGBA, N0f8, Image
 
 @testset "PhyloPic — submodule loaded" begin
     # PhyloPic is a submodule of the PBDBMakie extension.
-    @test isdefined(PaleobiologyDB.PBDBMakie, :PhyloPic)
-    @test PaleobiologyDB.PBDBMakie.PhyloPic isa Module
-    @test :augment_phylopic!        ∈ names(PaleobiologyDB.PBDBMakie.PhyloPic)
-    @test :augment_phylopic         ∈ names(PaleobiologyDB.PBDBMakie.PhyloPic)
-    @test :augment_phylopic_ranges! ∈ names(PaleobiologyDB.PBDBMakie.PhyloPic)
-    @test :augment_phylopic_ranges  ∈ names(PaleobiologyDB.PBDBMakie.PhyloPic)
-    @test :pbdb_phylopic_grid! ∈ names(PaleobiologyDB.PBDBMakie.PhyloPic)
-    @test :pbdb_phylopic_grid  ∈ names(PaleobiologyDB.PBDBMakie.PhyloPic)
+    @test isdefined(PaleobiologyDB.PBDBMakie, :_PhyloPic) && !isnothing(PaleobiologyDB.PBDBMakie._PhyloPic[])
+    @test PaleobiologyDB.PBDBMakie._PhyloPic[] isa Module
+    @test :augment_phylopic!        ∈ names(PaleobiologyDB.PBDBMakie._PhyloPic[])
+    @test :augment_phylopic         ∈ names(PaleobiologyDB.PBDBMakie._PhyloPic[])
+    @test :augment_phylopic_ranges! ∈ names(PaleobiologyDB.PBDBMakie._PhyloPic[])
+    @test :augment_phylopic_ranges  ∈ names(PaleobiologyDB.PBDBMakie._PhyloPic[])
+    @test :pbdb_phylopic_grid! ∈ names(PaleobiologyDB.PBDBMakie._PhyloPic[])
+    @test :pbdb_phylopic_grid  ∈ names(PaleobiologyDB.PBDBMakie._PhyloPic[])
 
     # PhyloPicMakie is a hard dep of PaleobiologyDB — always available.
     @test PhyloPicMakie isa Module

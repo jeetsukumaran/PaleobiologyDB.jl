@@ -224,7 +224,7 @@ if _CAIRO_TTM_AVAILABLE
     end
 
     function _install_taxon_overlay_stub!(glyph::AbstractMatrix)::Nothing
-        Core.eval(PaleobiologyDB.PBDBMakie.PhyloPic, quote
+        Core.eval(PaleobiologyDB.PBDBMakie._PhyloPic[], quote
             function _augment_taxon_phylopic_anchored!(
                     parent,
                     anchor_positions;
@@ -266,7 +266,7 @@ if _CAIRO_TTM_AVAILABLE
     end
 
     function _restore_taxon_overlay_impl!()::Nothing
-        Core.eval(PaleobiologyDB.PBDBMakie.PhyloPic, quote
+        Core.eval(PaleobiologyDB.PBDBMakie._PhyloPic[], quote
             function _augment_taxon_phylopic_anchored!(
                     parent,
                     anchor_positions;
@@ -356,7 +356,7 @@ if _CAIRO_TTM_AVAILABLE
     end
 
     @testset "PBDBMakie — PBDB bridge delegates anchored overlays to PhyloPicMakie" begin
-        render_source = _read_repo_file("ext", "PBDBMakie", "PhyloPic", "src", "_render.jl")
+        render_source = _read_repo_file("ext", "PBDBMakieExt", "PhyloPic", "src", "_render.jl")
 
         @test isdefined(PhyloPicMakie, :_augment_resolved_phylopic_anchored!)
         @test occursin("PhyloPicMakie._augment_resolved_phylopic_anchored!", render_source)

@@ -54,6 +54,20 @@ reconstructing or re-enforcing it independently.
 If an invariant seems to be partially enforced in many places, that is a design
 smell and should trigger architectural review.
 
+### One public semantic, one normalization point
+
+If the same public semantic can be supplied from more than one API surface,
+one canonical owner must normalize it once and forward the resolved value
+downstream explicitly.
+
+Consumers may accept the resolved value, but they should not each infer
+independent defaults, precedence rules, or fallback behavior for that same
+semantic.
+
+If a contributor finds the same semantic being reconciled separately in more
+than one layer, that is evidence the ownership boundary is still too weak or
+too implicit.
+
 ### Prefer foundational tranches when ownership is wrong
 
 If several user-visible defects or requested features depend on one unclear or

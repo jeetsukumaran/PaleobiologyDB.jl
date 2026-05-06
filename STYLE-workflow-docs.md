@@ -72,6 +72,13 @@ If the work touches more than one module or layer, the document must identify:
 - the shared contract or invariant
 - whether a foundational tranche is required before user-facing work
 
+If a public semantic is accepted through more than one entry surface, the
+document must also identify:
+
+- the canonical owner that normalizes that semantic
+- each supported public surface through which it may enter
+- which surfaces must be covered by verification
+
 ### Authorization boundary
 
 If disruptive redesign, deep refactor, clean-room replacement, migration, or
@@ -85,6 +92,63 @@ Every workflow document must state what counts as complete for its scope.
 This includes the required verification artifacts and the green-state gates
 that must pass before the work is considered done.
 
+### Handoff packet
+
+Any workflow document that is meant to be consumed downstream by another
+agent, contributor, tranche, review pass, or audit pass must include a concise
+handoff packet.
+
+The handoff packet must not merely point back to the parent document. It must
+extract and restate the concrete execution controls that the downstream actor
+needs in order to succeed honestly.
+
+At minimum, the handoff packet must include, where applicable:
+
+- active authorities
+- parent documents
+- settled decisions and non-negotiables
+- authorization boundary
+- current-state diagnosis
+- primary-goal lock
+- direct red-state repros
+- owner and invariant being repaired or relied on
+- exact files or surfaces in scope
+- exact files or surfaces out of scope
+- required upstream primary sources
+- green-state gates
+- stop conditions or escalate-if conditions
+
+If a field does not apply, say so explicitly or omit it deliberately with a
+clear reason. Do not silently rely on the downstream actor to infer it.
+
+### Primary-goal lock
+
+Any workflow document that turns requirements, findings, tranche goals,
+compatibility boundaries, migration boundaries, or explicit non-negotiables
+into downstream execution must convert each primary goal into an explicit lock
+item.
+
+Each lock item must state:
+
+- the failure mode or forbidden surviving shape
+- the non-completion condition in the form "the work is not complete if..."
+- the direct red-state repro, historical bad behavior, or equivalent observed
+  failure mode
+- the task, tranche subsection, or delegated owner that closes it
+- the verification artifact that must fail the old implementation or fake-fix
+  shape
+
+Do not leave a user-stated primary goal or review finding as descriptive prose
+only.
+
+If multiple lock items share the same owning repair, they may point at the same
+task, but they must still remain separately named if one could survive while
+another is fixed.
+
+Green test suites, docs builds, grep checks, and source-text audits are
+necessary but not sufficient as the only proof for a lock item unless no more
+direct artifact is possible and that limitation is stated explicitly.
+
 ## Revalidation rule
 
 Tasking documents must not blindly operationalize stale or partial diagnoses.
@@ -96,6 +160,10 @@ If the diagnosis no longer matches reality, the contributor or agent must stop
 and rewrite, split, or escalate the workflow document rather than blindly
 continuing.
 
+Receivers of a handoff packet must re-check the packet against the current
+code, tests, docs, outputs, and upstream sources before acting on it. A
+handoff packet does not waive revalidation.
+
 ## Anti-drift rules
 
 Workflow documents must not:
@@ -104,6 +172,13 @@ Workflow documents must not:
 - omit architecture concerns merely to make the tranche look thinner
 - omit upstream references when framework semantics matter
 - omit verification gates when user-visible behavior is changing
+- omit the handoff packet when downstream execution is expected
+- pass only parent links or filenames when a downstream actor needs concrete
+  execution controls
+- leave primary goals, review findings, or compatibility requirements as
+  descriptive intent without explicit lock items
+- let several distinct primary goals collapse into one generic regression if
+  one of those goals could still survive behind a green suite
 - strip governance obligations from downstream documents
 
 If a downstream document is materially weaker than its parent on these points,
@@ -118,5 +193,11 @@ Reviews and audits of workflow documents must ask:
 - did it preserve upstream-reading obligations?
 - did it preserve the correct verification gates?
 - did it create an honest authorization boundary?
+- did it include a usable handoff packet rather than a link-only or
+  context-dump handoff?
+- did every primary goal, review finding, and compatibility boundary become a
+  separate lock item with a direct proof obligation?
+- could a fresh implementing agent still declare success while one of those
+  lock items survives behind a green suite?
 
 If not, the workflow document is not safe for downstream execution.

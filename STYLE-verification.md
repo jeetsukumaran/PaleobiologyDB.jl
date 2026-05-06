@@ -74,6 +74,19 @@ keyword meaning, or docs-described usage, verification should include:
 - example usage tests or rendered examples where relevant
 - documentation updates and successful docs builds
 
+### Multi-surface semantics require multi-surface verification
+
+If a public semantic is available through more than one supported entry
+surface, verification must include at least one regression for each supported
+surface.
+
+Testing only one path is insufficient when the semantic can be supplied
+through constructor attributes, mutating calls, non-mutating convenience
+wrappers, or other public entry points with different ownership boundaries.
+
+When a public example is the clearest artifact for one of those surfaces, keep
+at least one integration or render check aligned with that example shape.
+
 ### Architecture work requires owner-level verification
 
 When a change repairs or establishes an owner, contract, or invariant,

@@ -4,10 +4,10 @@
 # Offline: structural / type tests; invalid filter argument error.
 # Live:    real PBDB + PhyloPic round-trips.
 
-const _phylopic_node         = PaleobiologyDB.PBDBMakie.PhyloPic.phylopic_node
-const _phylopic_images       = PaleobiologyDB.PBDBMakie.PhyloPic.phylopic_images
-const _phylopic_list_images  = PaleobiologyDB.PBDBMakie.PhyloPic.phylopic_images_dataframe
-const _PHYLOPIC_IMG_COLS     = PaleobiologyDB.PBDBMakie.PhyloPic._PHYLOPIC_IMAGE_LIST_COLUMNS
+const _phylopic_node         = PaleobiologyDB.PBDBMakie._PhyloPic[].phylopic_node
+const _phylopic_images       = PaleobiologyDB.PBDBMakie._PhyloPic[].phylopic_images
+const _phylopic_list_images  = PaleobiologyDB.PBDBMakie._PhyloPic[].phylopic_images_dataframe
+const _PHYLOPIC_IMG_COLS     = PaleobiologyDB.PBDBMakie._PhyloPic[]._PHYLOPIC_IMAGE_LIST_COLUMNS
 
 # ---------------------------------------------------------------------------
 # Offline unit tests
