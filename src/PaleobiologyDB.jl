@@ -59,5 +59,6 @@ include("pbdbdocs.jl")
 
 include("pbdbtools/pbdbtools.jl")
 include("PBDBMakie.jl")
+public PBDBMakie
 
 end # module

@@ -17,6 +17,7 @@ include("taxonomy_namevalidation.jl")
 include("taxonomy_queries_basic.jl")
 include("taxonomy_queries_hierarchy.jl")
 include("taxonomy_graphs.jl")
+include("pbdbmakie_stub.jl")
 
 # Load CairoMakie backend for rendering tests.
 # PhyloPicMakie (hard dep of PaleobiologyDB) loads Makie transitively,
@@ -25,8 +26,8 @@ using CairoMakie
 import PhyloPicMakie
 const PhyloPicDB = PhyloPicMakie.PhyloPicDB
 
-# PBDBMakie is bound into PaleobiologyDB by the extension's __init__.
-# `using PaleobiologyDB.PBDBMakie` brings its exports into test scope.
+# PBDBMakie is a compile-time submodule of PaleobiologyDB.
+# Its exports enter test scope only after CairoMakie triggers PBDBMakieExt.
 using PaleobiologyDB.PBDBMakie
 
 include("taxonomy_phylopic_acquire.jl")
