@@ -53,7 +53,7 @@ module PaleobiologyDB
 
 import DataCaches
 export DataCaches
-include("dataches.jl")
+include("datacaches.jl")
 
 include("dbapi.jl")
 include("pbdbdocs.jl")
