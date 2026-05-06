@@ -116,18 +116,22 @@ end
 # ---------------------------------------------------------------------------
 
 if _CAIRO_TTM_AVAILABLE
-    # Access internals through the extension module
-    const _rd_fn   = PaleobiologyDB.PBDBMakie._rank_depth
-    const _layout  = PaleobiologyDB.PBDBMakie._compute_dendrogram_layout
-    const _segpairs = PaleobiologyDB.PBDBMakie._dendrogram_segment_pairs
-    const _leaf_positions_fn = PaleobiologyDB.PBDBMakie._leaf_positions
-    const _plan_leaf_node_overlay = PaleobiologyDB.PBDBMakie._plan_leaf_node_phylopic_overlay
-    const _plan_leaf_label_overlay = PaleobiologyDB.PBDBMakie._plan_leaf_label_phylopic_overlay
-    const _plan_leaf_plot_overlay = PaleobiologyDB.PBDBMakie._plan_leaf_plot_phylopic_overlay
-    const _attach_plot_leaf_overlay! = PaleobiologyDB.PBDBMakie._attach_plot_leaf_phylopic_overlay!
-    const _leaf_text_plots_for_plot = PaleobiologyDB.PBDBMakie._leaf_text_plots
-    const _augment_leaf_overlay = PaleobiologyDB.PBDBMakie._augment_leaf_phylopic!
-    const _LeafOverlayPlan = PaleobiologyDB.PBDBMakie._LeafOverlayPlan
+    # Access internals directly through the loaded extension module.
+    # Base.get_extension is safe here: this block is guarded by
+    # _CAIRO_TTM_AVAILABLE, which implies CairoMakie (and therefore the
+    # PBDBMakieExt extension) is loaded.
+    const _ext = Base.get_extension(PaleobiologyDB, :PBDBMakieExt)
+    const _rd_fn   = _ext._rank_depth
+    const _layout  = _ext._compute_dendrogram_layout
+    const _segpairs = _ext._dendrogram_segment_pairs
+    const _leaf_positions_fn = _ext._leaf_positions
+    const _plan_leaf_node_overlay = _ext._plan_leaf_node_phylopic_overlay
+    const _plan_leaf_label_overlay = _ext._plan_leaf_label_phylopic_overlay
+    const _plan_leaf_plot_overlay = _ext._plan_leaf_plot_phylopic_overlay
+    const _attach_plot_leaf_overlay! = _ext._attach_plot_leaf_phylopic_overlay!
+    const _leaf_text_plots_for_plot = _ext._leaf_text_plots
+    const _augment_leaf_overlay = _ext._augment_leaf_phylopic!
+    const _LeafOverlayPlan = _ext._LeafOverlayPlan
     const _TEST_GLYPH = fill(Makie.RGBA{Makie.N0f8}(0, 0, 0, 1), 16, 32)
     _materialize_tree_overlay!(fig) = CairoMakie.Makie.update_state_before_display!(fig)
 

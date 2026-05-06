@@ -1,4 +1,4 @@
-# STYLE--julia.md 
+# STYLE--julia.md — Julia Functional Design Principles
 
 ## 1. Core principles and their Julia expression
 
