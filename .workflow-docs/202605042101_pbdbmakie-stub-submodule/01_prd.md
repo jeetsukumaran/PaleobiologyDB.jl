@@ -148,8 +148,11 @@ PBDBMakie = "Makie"
 - Declares all 15 public API functions via bare `function f end` syntax
 - Exports the same symbol list as the current extension, excluding
   `TaxonomyTreePlot` (which is `@recipe`-generated and cannot be pre-defined)
-- Declares `const _PhyloPic = Ref{Union{Module, Nothing}}(nothing)` --- a bridge
-  set by the extension to expose the vendored PhyloPic module to tests
+- Declares a `_PhyloPicBridge` type and `const _PhyloPic = _PhyloPicBridge()`
+  whose `[]` operator dynamically resolves the PhyloPic module via
+  `Base.get_extension` at call time (a `Ref` approach fails under precompilation
+  because module-level extension assignments do not persist across cache restore;
+  see implementation decision 8)
 - No Makie import; no dependency on any optional package
 
 **`ext/PBDBMakieExt/PBDBMakieExt.jl`** --- renamed from `ext/PBDBMakie/PBDBMakie.jl`
@@ -161,7 +164,8 @@ PBDBMakie = "Makie"
   `include()` call (critical for correct `@recipe` dispatch binding)
 - Adds concrete method implementations to the declared functions
 - Contains `@recipe` definition for `TaxonomyTreePlot`
-- Sets `PBDBMakie._PhyloPic[] = PhyloPic` after loading the PhyloPic submodule
+- Does NOT set `PBDBMakie._PhyloPic[]` explicitly; the `_PhyloPicBridge` in the
+  submodule resolves `PhyloPic` at call time via `Base.get_extension`
 - Includes same implementation files (`_layout.jl`, `_leaf_overlay.jl`,
   `_recipe.jl`, `_augment.jl`, `PhyloPic/src/`)
 - No `__init__` function; no `Core.eval`
@@ -182,7 +186,7 @@ PBDBMakieExt = "Makie"
 
 | Owner | Owns |
 |---|---|
-| `PBDBMakie` (submodule) | Public API function declarations; `_PhyloPic` Ref; exports |
+| `PBDBMakie` (submodule) | Public API function declarations; `_PhyloPicBridge` dynamic resolver; exports |
 | `PBDBMakieExt` (extension) | Concrete implementations; `@recipe` type; Makie integration; PhyloPic bridge |
 
 ### Shared contracts and invariants
@@ -234,12 +238,33 @@ PBDBMakieExt = "Makie"
    `include`, `@recipe` creates a fresh `PBDBMakieExt.taxonomytreeplot` instead.
    This is confirmed by reading `Makie.jl/src/recipes.jl` lines 180--204.
 
-8. **`_PhyloPic` Ref bridge**: The submodule declares
-   `const _PhyloPic = Ref{Union{Module, Nothing}}(nothing)`. The extension sets
-   `PBDBMakie._PhyloPic[] = PhyloPic` after loading the vendored PhyloPic
-   submodule. This exposes the PhyloPic module to test code without `Core.eval`.
-   Setting the contents of a `Ref` is ordinary mutation, not module-namespace
-   mutation.
+8. **`_PhyloPic` dynamic bridge**: The submodule declares a small bridge type
+   whose `[]` operator dynamically resolves the vendored `PhyloPic` module at
+   call time via `Base.get_extension`:
+
+   ```julia
+   struct _PhyloPicBridge end
+   function Base.getindex(::_PhyloPicBridge)::Union{Module, Nothing}
+       ext = Base.get_extension(parentmodule(@__MODULE__), :PBDBMakieExt)
+       isnothing(ext) && return nothing
+       return getproperty(ext, :PhyloPic)
+   end
+   const _PhyloPic = _PhyloPicBridge()
+   ```
+
+   **Why not a `Ref`:** Julia precompiles packages to `.ji` cache. Module-level
+   code runs once during precompilation; on subsequent loads the serialized state
+   is restored and module-level code does not re-run. Only `__init__` runs on
+   every load. A `Ref` set by module-level code in the extension would be mutated
+   during precompilation of the extension, but when both packages are later loaded
+   from cache, `PaleobiologyDB`'s `_PhyloPic` Ref deserializes to its initial
+   `nothing` value and the extension's mutation is not re-applied. `__init__` was
+   the mechanism that previously re-applied such mutations on every load; it was
+   removed by this migration. `Base.get_extension` is a runtime query that works
+   correctly after cache-restore because it queries the live module registry, not
+   a precompilation-time snapshot.
+
+   The `_PhyloPic` constant is not exported from the submodule.
 
 9. **PhyloPic delegation methods**: The 10 PhyloPic-sourced symbols
    (`acquire_phylopic`, `augment_phylopic`, `augment_phylopic!`,
@@ -286,7 +311,7 @@ PhyloPic bridge:
 
 Not declared (type, requires `@recipe`): `TaxonomyTreePlot`
 
-Internal (not exported): `_PhyloPic` Ref bridge
+Internal (not exported): `_PhyloPic` dynamic bridge (resolves via `Base.get_extension`)
 
 **Tested**: Pre-Makie submodule test (new); post-Makie regression tests verify
 declarations are populated by extension methods.
