@@ -15,7 +15,7 @@ phylopic_impl = getproperty(pbdb_makie_ext, :PhyloPic)
 
 makedocs(
     sitename = "PaleobiologyDB.jl",
-    authors = "Jeet Sukumaran",
+    authors = "Jeet Sukumaran, Deloris Franklin, Lilliana Skilling, and Maritza Sardina",
     modules = [
         PaleobiologyDB,
         PaleobiologyDB.ApiHelp,

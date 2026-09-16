@@ -360,6 +360,10 @@ PBDB_LIVE=1 julia --project -e 'using Pkg; Pkg.test()'
 
 Contributions are welcome. Please fork the repository, add tests for new functionality, and submit a pull request.
 
+## Maintainers
+
+- Jeet Sukumaran <jeetsukumaran@gmail.com>
+
 ## Citation
 
 [![](https://zenodo.org/badge/1046851014.svg)](https://doi.org/10.5281/zenodo.16994488)
@@ -368,7 +372,7 @@ If you use PaleobiologyDB.jl in your research, please cite both this package and
 
 ```bibtex
 @misc{PaleobiologyDB.jl,
-  author = {Jeet Sukumaran},
+  author = {Jeet Sukumaran and Deloris Franklin and Lilliana Skilling and Maritza Sardina},
   title = {PaleobiologyDB.jl: A Julia interface to the Paleobiology Database},
   url = {https://github.com/jeetsukumaran/PaleobiologyDB.jl},
   year = {2025},

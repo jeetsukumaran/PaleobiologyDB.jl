@@ -1,4 +1,4 @@
-# Authors
+# Maintainers
 
 - Jeet Sukumaran <jeetsukumaran@gmail.com>
 

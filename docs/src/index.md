@@ -124,7 +124,7 @@ If you use PaleobiologyDB.jl in your research, please cite both this package and
 
 ```bibtex
 @misc{PaleobiologyDB.jl,
-  author = {Jeet Sukumaran},
+  author = {Jeet Sukumaran and Deloris Franklin and Lilliana Skilling and Maritza Sardina},
   title = {PaleobiologyDB.jl: A Julia interface to the Paleobiology Database},
   url = {https://github.com/jeetsukumaran/PaleobiologyDB.jl},
   year = {2025},

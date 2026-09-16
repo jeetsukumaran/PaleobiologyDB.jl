@@ -12,6 +12,11 @@
 ### Changed
 
 - License changed from MIT to AGPL-3.0-or-later.
+- Added Deloris Franklin, Lilliana Skilling, and Maritza Sardina as project
+  authors and synchronized the package, documentation, and release citation
+  metadata.
+- Renamed `AUTHORS.md` to `MAINTAINERS.md` and separated maintainer contacts
+  from project authorship metadata.
 
 ### Fixed
 

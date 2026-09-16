@@ -117,7 +117,7 @@ To achieve this, we use the role of a "Package Maintainer".
 
 The maintainer(s) for a given package are listed in the package's `README.md`
 file and their contact details (at least their GitHub names) are provided in
-the package's `AUTHORS.md` file.
+the package's `MAINTAINERS.md` file.
 
 The maintainers of a package are responsible for:
 
@@ -379,8 +379,8 @@ git clone https://github.com/<YOUR_GITHUB_USERNAME>/PackageName.jl.git
      the `CHANGELOG.md` file for the package. Use previous entries as an
      example.
 
-   - Optionally, add your name to the "Thanks" section of the repository's
-     `AUTHORS.md` file.
+   - If a contribution warrants authorship, coordinate with the package
+     maintainers before updating project and citation metadata.
 
    - All changes should be compatible with the latest stable version of Julia.
 

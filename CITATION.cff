@@ -1,0 +1,30 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it using the metadata below."
+title: "PaleobiologyDB.jl: A Julia interface to the Paleobiology Database"
+abstract: >-
+  PaleobiologyDB.jl is a Julia package for paleobiological informatics and
+  analysis. It provides an interface to the Paleobiology Database Web API,
+  taxonomy tools, data caching, PhyloPic integration, and Makie-based
+  visualization extensions.
+authors:
+  - given-names: Jeet
+    family-names: Sukumaran
+    email: jeetsukumaran@gmail.com
+  - given-names: Deloris
+    family-names: Franklin
+  - given-names: Lilliana
+    family-names: Skilling
+  - given-names: Maritza
+    family-names: Sardina
+version: "2.0.0"
+type: software
+license: AGPL-3.0-or-later
+repository-code: "https://github.com/jeetsukumaran/PaleobiologyDB.jl"
+url: "https://jeetsukumaran.github.io/PaleobiologyDB.jl/"
+keywords:
+  - Julia
+  - Paleobiology Database
+  - paleobiology
+  - fossil data
+  - taxonomy
+  - scientific visualization
