@@ -12,6 +12,4 @@ PhyloPicMakie = "29f7fcc2-58b8-448e-949b-ed9dd2d8a249"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [sources]
-DataCaches = {url = "https://github.com/JuliaData/DataCaches.jl.git"}
-PhyloPicMakie = {url = "https://github.com/jeetsukumaran/PhyloPicMakie.jl.git"}
 PaleobiologyDB = {path = ".."}

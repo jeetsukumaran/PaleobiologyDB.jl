@@ -5,4 +5,3 @@ PhyloPicMakie = "29f7fcc2-58b8-448e-949b-ed9dd2d8a249"
 
 [sources]
 PaleobiologyDB = {path = ".."}
-PhyloPicMakie = {url = "https://github.com/jeetsukumaran/PhyloPicMakie.jl.git"}
