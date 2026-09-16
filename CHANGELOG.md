@@ -11,7 +11,12 @@
 
 ### Changed
 
-- License changed from MIT to AGPL3.
+- License changed from MIT to AGPL-3.0-or-later.
+
+### Fixed
+
+- Restored compatibility with PhyloPicMakie 0.1 while preserving the
+  documented `Nothing` return value of the PaleobiologyDB rendering wrappers.
 
 ## PaleobiologyDB.jl v1.1.2
 

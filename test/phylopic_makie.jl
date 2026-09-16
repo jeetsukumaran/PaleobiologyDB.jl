@@ -69,30 +69,38 @@ end
 const _TEST_IMG = fill(RGBA{N0f8}(0.5, 0.5, 0.5, 1.0), 4, 8)
 
 # Convenience: count rendered PhyloPic glyph markers added to an axis.
-function _count_images(ax)
-    n = 0
-    for plot in ax.scene.plots
-        plot isa Image && (n += 1)
-        marker = try
-            plot.marker[]
-        catch
-            nothing
-        end
-        if marker isa AbstractVector && !isempty(marker) && all(m -> m isa AbstractMatrix, marker)
-            n += length(marker)
-        elseif marker isa AbstractMatrix
-            n += 1
-        end
+function _count_images_in_plot(plot)
+    n = plot isa Image ? 1 : 0
+    marker = try
+        plot.marker[]
+    catch
+        nothing
+    end
+    if marker isa AbstractVector &&
+            !isempty(marker) &&
+            all(m -> m isa AbstractMatrix, marker)
+        n += length(marker)
+    elseif marker isa AbstractMatrix
+        n += 1
+    end
+    for child in plot.plots
+        n += _count_images_in_plot(child)
     end
     return n
+end
+
+function _count_images(ax)
+    CairoMakie.Makie.update_state_before_display!(ax)
+    return sum(_count_images_in_plot(plot) for plot in ax.scene.plots; init = 0)
 end
 
 @testset "PhyloPic — augment_phylopic! vector API" begin
 
     @testset "glyph broadcast to all data points" begin
         fig = Figure(); ax = Axis(fig[1, 1])
-        augment_phylopic!(ax, [0.0, 1.0, 2.0], [0.0, 1.0, 2.0];
+        result = augment_phylopic!(ax, [0.0, 1.0, 2.0], [0.0, 1.0, 2.0];
             glyph = _TEST_IMG, glyph_size = 1.0)
+        @test isnothing(result)
         @test _count_images(ax) == 3
     end
 

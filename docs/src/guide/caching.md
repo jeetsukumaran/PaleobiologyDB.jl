@@ -2,7 +2,7 @@
 
 PBDB queries make HTTP requests that can be slow or rate-limited.
 PaleobiologyDB.jl provides three complementary caching mechanisms via
-the re-exported [DataCaches.jl](https://github.com/jeetsukumaran/DataCaches.jl) package.
+the re-exported [DataCaches.jl](https://github.com/JuliaData/DataCaches.jl) package.
 
 ## `set_autocaching!` — global automatic caching
 

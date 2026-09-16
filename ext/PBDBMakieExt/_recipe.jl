@@ -319,7 +319,7 @@ function _attach_plot_leaf_phylopic_overlay!(
         on_missing::Symbol = p[:phylopic_on_missing][],
         glyph::Union{AbstractMatrix, Nothing} = nothing,
         taxon::Union{AbstractVector, Nothing} = nothing,
-    )::Union{Nothing, _ManagedLeafOverlay, PhyloPicMakie._AnchoredOverlay}
+    )::Union{Nothing, _ManagedLeafOverlay, PhyloPicMakie.PhyloPicGlyphs}
     planning = _plan_leaf_plot_phylopic_overlay(
         p;
         anchor = anchor,

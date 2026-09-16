@@ -20,12 +20,10 @@ using Pkg
 Pkg.add("PaleobiologyDB")
 ```
 
-Development version (PhyloPicMakie must be added first — it is a required
-dependency of PaleobiologyDB and is not yet in the registry):
+Development version:
 
 ```julia
 using Pkg
-Pkg.add(url = "https://github.com/jeetsukumaran/PhyloPicMakie.jl")
 Pkg.add(url = "https://github.com/jeetsukumaran/PaleobiologyDB.jl")
 ```
 
@@ -238,7 +236,7 @@ julia --project=examples examples/src/phylopicgallery.jl
 
 Teaching workshops and classroom sessions often place dozens of students on a shared network, all querying the same PBDB endpoints simultaneously.
 Research workflows repeatedly re-run the same queries during analysis.
-PaleobiologyDB.jl integrates [DataCaches.jl](https://github.com/jeetsukumaran/DataCaches.jl) to address both scenarios: pre-fetch all data once, then serve every subsequent identical call from a local cache with no network round-trip.
+PaleobiologyDB.jl integrates [DataCaches.jl](https://github.com/JuliaData/DataCaches.jl) to address both scenarios: pre-fetch all data once, then serve every subsequent identical call from a local cache with no network round-trip.
 
 ```julia
 # Enable transparent autocaching for all API functions

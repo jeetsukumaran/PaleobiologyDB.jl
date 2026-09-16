@@ -164,11 +164,35 @@ if _CAIRO_TTM_AVAILABLE
         return leaves, text_plots
     end
 
+    function _image_scatter_children(plot)
+        matches = Any[]
+        for child in plot.plots
+            if hasproperty(child, :marker)
+                markers = child.marker[]
+                if markers isa AbstractVector &&
+                        !isempty(markers) &&
+                        first(markers) isa AbstractMatrix
+                    push!(matches, child)
+                end
+            end
+            append!(matches, _image_scatter_children(child))
+        end
+        return matches
+    end
+
+    function _overlay_image_scatter(overlay)
+        base_overlay = hasproperty(overlay, :overlay) ? overlay.overlay : overlay
+        return only(_image_scatter_children(base_overlay))
+    end
+
     function _overlay_left_edge_px(overlay, i::Integer = 1)
-        pos = overlay.positions[][i]
-        offset = overlay.marker_offset[][i]
-        size = overlay.markersize[][i]
-        return Float64(pos[1] + offset[1] - 0.5f0 * size[1])
+        glyph_scatter = _overlay_image_scatter(overlay)
+        pos = glyph_scatter.positions[][i]
+        pixel_pos = glyph_scatter.space[] === :pixel ? pos :
+            Makie.project(Makie.parent_scene(glyph_scatter), glyph_scatter.space[], :pixel, pos)
+        offset = glyph_scatter.marker_offset[][i]
+        size = glyph_scatter.markersize[][i]
+        return Float64(pixel_pos[1] + offset[1] - 0.5f0 * size[1])
     end
 
     function _managed_overlay_atomic_plots(scene)
@@ -196,25 +220,25 @@ if _CAIRO_TTM_AVAILABLE
         end
     end
 
-    function _visible_pixel_glyph_plot_children(plt)::Vector{Any}
+    function _visible_glyph_plot_children(plt)::Vector{Any}
         return Any[
             plot for plot in plt.plots
-            if hasproperty(plot, :space) &&
+            if hasproperty(plot, :markerspace) &&
                 hasproperty(plot, :marker) &&
                 hasproperty(plot, :visible) &&
-                plot.space[] == :pixel &&
+                plot.markerspace[] == :pixel &&
                 plot.visible[] &&
                 plot.marker[] isa AbstractVector{<:AbstractMatrix}
         ]
     end
 
-    function _visible_pixel_glyph_atomic_plots(scene)::Vector{Any}
+    function _visible_glyph_atomic_plots(scene)::Vector{Any}
         return Any[
             plot for plot in Makie.collect_atomic_plots(scene)
-            if hasproperty(plot, :space) &&
+            if hasproperty(plot, :markerspace) &&
                 hasproperty(plot, :marker) &&
                 hasproperty(plot, :visible) &&
-                plot.space[] == :pixel &&
+                plot.markerspace[] == :pixel &&
                 plot.visible[] &&
                 plot.marker[] isa AbstractVector{<:AbstractMatrix}
         ]
@@ -290,6 +314,15 @@ if _CAIRO_TTM_AVAILABLE
                 )
                 n = anchor_positions isa AbstractVector ? length(anchor_positions) : length(anchor_positions[])
                 images = _resolve_images(taxon, glyph, n; image_rendering)
+                missing_index = findfirst(isnothing, images)
+                if on_missing === :skip && !isnothing(missing_index) && all(isnothing, images)
+                    return nothing
+                elseif on_missing === :error && !isnothing(missing_index)
+                    error(
+                        "augment_phylopic: missing image for data point $missing_index " *
+                            "(on_missing = :error)."
+                    )
+                end
                 isdefined(PhyloPicMakie, :_augment_resolved_phylopic_anchored!) || throw(
                     ErrorException(
                         "PaleobiologyDB.PBDBMakie requires a PhyloPicMakie build " *
@@ -578,7 +611,7 @@ if _CAIRO_TTM_AVAILABLE
 
         _materialize_tree_overlay!(fig)
         anchor_x_1 = first(plan.anchor_positions[])[1]
-        size_1 = first(overlay.markersize[])
+        size_1 = first(_overlay_image_scatter(overlay).markersize[])
         left_edge_1 = _overlay_left_edge_px(overlay)
         label_right_1 = Float64(Makie.maximum(Makie.boundingbox(first(leaf_text_plots), :pixel))[1])
         @test size_1[2] > 0.0f0
@@ -587,7 +620,7 @@ if _CAIRO_TTM_AVAILABLE
         xlims!(ax, 0, 40)
         _materialize_tree_overlay!(fig)
         anchor_x_2 = first(plan.anchor_positions[])[1]
-        size_2 = first(overlay.markersize[])
+        size_2 = first(_overlay_image_scatter(overlay).markersize[])
         left_edge_2 = _overlay_left_edge_px(overlay)
         label_right_2 = Float64(Makie.maximum(Makie.boundingbox(first(leaf_text_plots), :pixel))[1])
         @test anchor_x_2 > anchor_x_1
@@ -595,7 +628,7 @@ if _CAIRO_TTM_AVAILABLE
 
         ylims!(ax, 0, 16)
         _materialize_tree_overlay!(fig)
-        size_3 = first(overlay.markersize[])
+        size_3 = first(_overlay_image_scatter(overlay).markersize[])
         left_edge_3 = _overlay_left_edge_px(overlay)
         label_right_3 = Float64(Makie.maximum(Makie.boundingbox(first(leaf_text_plots), :pixel))[1])
         @test size_3[2] < size_2[2]
@@ -603,7 +636,7 @@ if _CAIRO_TTM_AVAILABLE
 
         resize!(fig.scene, 900, 700)
         _materialize_tree_overlay!(fig)
-        size_4 = first(overlay.markersize[])
+        size_4 = first(_overlay_image_scatter(overlay).markersize[])
         left_edge_4 = _overlay_left_edge_px(overlay)
         label_right_4 = Float64(Makie.maximum(Makie.boundingbox(first(leaf_text_plots), :pixel))[1])
         @test size_4[2] > size_3[2]
@@ -629,7 +662,7 @@ if _CAIRO_TTM_AVAILABLE
         _materialize_tree_overlay!(fig)
         @test !isnothing(overlay)
         @test _sane_tree_limits(ax)
-        @test !isempty(_visible_pixel_glyph_atomic_plots(ax.scene))
+        @test !isempty(_visible_glyph_atomic_plots(ax.scene))
     end
 
     @testset "PBDBMakie — explicit convenience overload honors axis and keeps sane limits" begin
@@ -651,7 +684,7 @@ if _CAIRO_TTM_AVAILABLE
             _materialize_tree_overlay!(fig)
             @test _sane_tree_limits(ax)
             @test !isempty(plt[:axis_overlay_handles][])
-            @test !isempty(_visible_pixel_glyph_atomic_plots(ax.scene))
+            @test !isempty(_visible_glyph_atomic_plots(ax.scene))
         end
     end
 
@@ -693,7 +726,7 @@ if _CAIRO_TTM_AVAILABLE
         )
 
         _materialize_tree_overlay!(fig)
-        @test isempty(_visible_pixel_glyph_plot_children(plt))
+        @test isempty(_visible_glyph_plot_children(plt))
     end
 
     @testset "PBDBMakie — deleting the tree plot deletes axis-scene overlay handles" begin
@@ -721,7 +754,7 @@ if _CAIRO_TTM_AVAILABLE
             _materialize_tree_overlay!(fig)
             @test isempty(plt[:axis_overlay_handles][])
             @test isempty(_managed_overlay_atomic_plots(ax.scene))
-            @test isempty(_visible_pixel_glyph_atomic_plots(ax.scene))
+            @test isempty(_visible_glyph_atomic_plots(ax.scene))
         end
     end
 

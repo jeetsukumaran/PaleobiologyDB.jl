@@ -50,6 +50,15 @@ function _augment_taxon_phylopic_anchored!(
     )
     n = anchor_positions isa AbstractVector ? length(anchor_positions) : length(anchor_positions[])
     images = _resolve_images(taxon, glyph, n; image_rendering)
+    missing_index = findfirst(isnothing, images)
+    if on_missing === :skip && !isnothing(missing_index) && all(isnothing, images)
+        return nothing
+    elseif on_missing === :error && !isnothing(missing_index)
+        error(
+            "augment_phylopic: missing image for data point $missing_index " *
+                "(on_missing = :error)."
+        )
+    end
     isdefined(PhyloPicMakie, :_augment_resolved_phylopic_anchored!) || throw(
         ErrorException(
             "PaleobiologyDB.PBDBMakie requires a PhyloPicMakie build " *
@@ -197,7 +206,7 @@ function augment_phylopic!(
         )
     )
     images = _resolve_images(taxon, glyph, n; image_rendering)
-    return PhyloPicMakie.augment_phylopic!(
+    PhyloPicMakie.augment_phylopic!(
         ax, x, y, images;
         glyph_size = glyph_size,
         aspect = aspect,
@@ -208,6 +217,7 @@ function augment_phylopic!(
         mirror = mirror,
         on_missing = on_missing,
     )
+    return nothing
 end
 
 """
