@@ -359,6 +359,7 @@ PBDB_LIVE=1 julia --project -e 'using Pkg; Pkg.test()'
 ## Contributing
 
 Contributions are welcome. Please fork the repository, add tests for new functionality, and submit a pull request.
+Project contributors are listed in [CONTRIBUTORS.md](CONTRIBUTORS.md).
 
 ## Maintainers
 

@@ -382,6 +382,8 @@ git clone https://github.com/<YOUR_GITHUB_USERNAME>/PackageName.jl.git
    - If a contribution warrants authorship, coordinate with the package
      maintainers before updating project and citation metadata.
 
+   - Optionally, add your name to the repository's `CONTRIBUTORS.md` file.
+
    - All changes should be compatible with the latest stable version of Julia.
 
    - Please comment liberally for complex pieces of internal code to

@@ -17,6 +17,7 @@
   metadata.
 - Renamed `AUTHORS.md` to `MAINTAINERS.md` and separated maintainer contacts
   from project authorship metadata.
+- Added `CONTRIBUTORS.md` to record contributors separately from maintainers.
 
 ### Fixed
 
