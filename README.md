@@ -364,6 +364,7 @@ Project contributors are listed in [CONTRIBUTORS.md](CONTRIBUTORS.md).
 ## Maintainers
 
 - Jeet Sukumaran <jeetsukumaran@gmail.com>
+- Deloris Franklin 
 
 ## Citation
 
